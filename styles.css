@@ -5,25 +5,28 @@ body {
     padding: 0;
 }
 
-header {
+.header-container {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
 }
 
 .mathflash-header {
-    width: 400px;
+    max-width: 400px;
 }
 
 .header-subtext {
-    display: flex;
-    margin-top: -15px;
-    justify-content: center;
-    align-items:flex-start;
+    text-align: center;
     color: #0b5394;
     font-weight:normal;
     font-size: 1.75rem;
+}
 
+.back-pocket-math-logo {
+    width: 250px;
+    margin-top: 5px;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
 }
 
 .container {
@@ -63,6 +66,7 @@ main {
     width: 500px;
     height: 300px;
     border: 1px solid #dee2e6;
+    border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
