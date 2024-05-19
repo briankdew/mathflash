@@ -6,9 +6,24 @@ body {
 }
 
 header {
-    background-color:#ffffff00;
-    padding-left: 2rem;
-    font-size: 2.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mathflash-header {
+    width: 400px;
+}
+
+.header-subtext {
+    display: flex;
+    margin-top: -15px;
+    justify-content: center;
+    align-items:flex-start;
+    color: #0b5394;
+    font-weight:normal;
+    font-size: 1.75rem;
+
 }
 
 .container {
