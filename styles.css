@@ -63,17 +63,18 @@ main {
 }
 
 .flashcard {
-    width: 500px;
-    height: 300px;
-    border: 1px solid #dee2e6;
-    border-radius: 10px;
+    max-width: 750px;
+    max-height: 450px;
+    border: 0px solid #dee2e6;
+    border-radius: 30px;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
     display: flex;
     justify-content: center;
     align-items: center;
     font-family: "Nunito", sans-serif;
     color: #0b5394;
     font-weight: bold;
-    font-size: 7rem;
+    font-size: 8rem;
     cursor: pointer;
     background-color: #ffffff;
 }
