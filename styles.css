@@ -1,0 +1,76 @@
+body {
+    font-family: 'Fredoka', sans-serif;
+    background-color: #eeece1;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color:#ffffff00;
+    padding-left: 2rem;
+    font-size: 2.5rem;
+}
+
+.math {
+    color: #3d85c6;
+}
+
+.flash {
+    color:#0b5394;
+}
+
+.tm {
+    vertical-align: 2.93rem;
+    margin-left: -0.39rem;
+    font-size: 1.15rem;
+    font-weight: lighter;
+    color: #3d85c6;
+}
+
+.container {
+    display: flex;
+}
+
+nav {
+    background-color: #e5e3d8;
+    padding: 1rem;
+    border-right: 1px solid #dee2e6;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+nav ul li {
+    margin: 0.5rem 0;
+}
+
+nav ul li img {
+    width: 125px;
+    cursor: pointer;
+}
+
+main {
+    width: 80%;
+    height: auto;
+    padding: 0rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.flashcard {
+    width: 500px;
+    height: 300px;
+    border: 1px solid #dee2e6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: "Nunito", sans-serif;
+    color: #0b5394;
+    font-weight: bold;
+    font-size: 7rem;
+    cursor: pointer;
+    background-color: #ffffff;
+}
