@@ -12,25 +12,36 @@
 </head>
 <body>
     <header class="header-container">
-            <img src="/images/mathflash™ stylized text image 20240518.svg" alt="mathflash stylized text" class="mathflash-header">
+            <img src="images/mathflash™ stylized text image 20240518.svg" alt="mathflash stylized text" class="mathflash-header">
             <div class="header-subtext">a flashcard app by</div>
-            <img src="/images/back-pocket math™ logo 20240518.svg" alt="back-pocket math logo" class="back-pocket-math-logo">
+            <img src="images/back-pocket math™ logo 20240518.svg" alt="back-pocket math logo" class="back-pocket-math-logo">
     </header>
     <div class="container">
         <nav>
-            <ul>
-                <li><img src="/images/multiplication.svg" alt="Multiplication" id="multiply"></li>
-                <li><img src="/images/division.svg" alt="Division" id="divide"></li>
-                <li><img src="/images/addition.svg" alt="Addition" id="add"></li>
-                <li><img src="/images/subtraction.svg" alt="Subtraction" id="subtract"></li>
-            </ul>
+          <ul>
+            <li><img src="images/multiplication.svg" alt="Multiplication" id="multiply"></li>
+            <li><img src="images/division.svg" alt="Division" id="divide"></li>
+            <li><img src="images/addition.svg" alt="Addition" id="add"></li>
+            <li><img src="images/subtraction.svg" alt="Subtraction" id="subtract"></li>
+          </ul>
         </nav>
         <main>
-            <div class="flashcard">
-                <p id="problem">select</p>
+          <div class="new-flashcard">
+            <div class="flashcard-top-row">
+              <div class="term-1" id="first-value">000</div>
+              <div class="operation-sign" id="operator">÷</div>
+              <div class="term-2" id="second-value">000</div>
             </div>
+            <div class="flashcard-bottom-row">
+              <div class="equals-sign" id="equals">=</div>
+              <div class="result" id="answer">000</div>
+              <div class="empty"></div>
+            </div>
+          </div>
         </main>
-    </div>
-    <script src="scripts.js"></script>
+      </div>
+    
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>  
+    <script src="js/scripts.js"></script>
 </body>
 </html>
