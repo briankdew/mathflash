@@ -11,20 +11,38 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header class="header-container">
-            <img src="images/mathflash™ stylized text image 20240518.svg" alt="mathflash stylized text" class="mathflash-header">
-            <div class="header-subtext">a flashcard app by</div>
-            <img src="images/back-pocket math™ logo 20240518.svg" alt="back-pocket math logo" class="back-pocket-math-logo">
-    </header>
     <div class="container">
+        <header class="header-container">
+            <img src="images/mathflash™ stylized text image 20240518.svg" alt="mathflash stylized text" class="mathflash-header-image">
+        </header>
         <nav>
-          <ul>
-            <li><img src="images/multiplication.svg" alt="Multiplication" id="multiply"></li>
-            <li><img src="images/division.svg" alt="Division" id="divide"></li>
-            <li><img src="images/addition.svg" alt="Addition" id="add"></li>
-            <li><img src="images/subtraction.svg" alt="Subtraction" id="subtract"></li>
-          </ul>
-        </nav>
+            <div class="menu-wrapper">
+                <ul>
+                    <li><h1 class="menu-header">menu</h1></li>
+                    <li>
+                        <h2>basic operations</h2>
+                        <ul>
+                            <li><img src="images/multiplication.svg" alt="Multiplication" id="multiply"></li>
+                            <li><img src="images/division.svg" alt="Division" id="divide"></li>
+                        </ul>
+                        <ul>
+                            <li><img src="images/addition.svg" alt="Addition" id="add"></li>
+                            <li><img src="images/subtraction.svg" alt="Subtraction" id="subtract"></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <h2>advanced operations</h2>
+                        <ul>
+                            <li><img src="images/multiplication.svg" alt="Multiplication" id="multiply"></li>
+                            <li><img src="images/division.svg" alt="Division" id="divide"></li>
+                        </ul>
+                        <ul>
+                            <li><img src="images/addition.svg" alt="Addition" id="add"></li>
+                            <li><img src="images/subtraction.svg" alt="Subtraction" id="subtract"></li>
+                        </ul>
+                    </li>
+            </div>
+          </nav>
         <main>
           <div class="new-flashcard">
             <div class="flashcard-top-row">
@@ -41,6 +59,10 @@
         </main>
       </div>
     
+    <footer>
+        <div class="footer-text">a flashcard app by</div>
+        <img src="images/back-pocket math™ logo 20240518.svg" alt="back-pocket math logo" class="back-pocket-math-logo">
+    </footer>
     <script src="node_modules/jquery/dist/jquery.min.js"></script>  
     <script src="js/scripts.js"></script>
 </body>

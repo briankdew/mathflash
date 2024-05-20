@@ -5,60 +5,84 @@ body {
     padding: 0;
 }
 
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0rem;
+  margin-bottom: 100px;
+}
+
 .header-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  position: absolute;
+  z-index: 10;
+
+  margin-left: 500px; /* adjust the margin to match the nav width */
 }
 
-.mathflash-header {
-    max-width: 400px;
+.mathflash-header-image {
+  width: 250px;
+  height: auto;
+  max-width: 250px;
+
+  position: absolute;
+  z-index: 100;
 }
 
-.header-subtext {
-    text-align: center;
-    color: #0b5394;
-    font-weight:normal;
-    font-size: 1.75rem;
+nav {
+  background-color: #e5e3d8;
+  padding: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 200px; /* adjust the width as needed */
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* z-index: 1; */
 }
 
-.back-pocket-math-logo {
-    width: 250px;
-    margin-top: 5px;
-    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+nav .menu-wrapper {
+  color: #0b5394;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
 }
 
-  .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 1rem;
-  }
-  
-  nav {
-    background-color: #e5e3d8;
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-  }
-  
-  nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    justify-content: space-between;
-  }
-  
-  nav ul li {
-    margin: 0.25rem;
-  }
-  
-  nav ul li img {
-    width: 100px;
-    cursor: pointer;
-  }
+nav .menu-header {
+  font-size: 1.5rem;
+}
+
+nav h2 {
+  font-size: 1rem;
+  margin-top: 10px;
+}
+
+nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+nav ul li {
+  margin: 0.25rem;
+  width: 100%; /* adjust the width as needed */
+}
+
+nav ul li img {
+  width: 75px;
+  cursor: pointer;
+}
   
   main {
     width: auto;
@@ -73,6 +97,7 @@ body {
     aspect-ratio: 1.618 / 1;
     width: 600px;
     height: auto;
+    margin-top: 200px;
     border-radius: 30px;
     display: flex;
     flex-direction: column;
@@ -171,7 +196,7 @@ body {
     aspect-ratio: 1.618 / 1;
     width: 50%;
     height: auto;
-    background-color: #000000;
+    background-color: #ffffff;
     border-radius: 20px;
 
     position: relative;
@@ -196,4 +221,26 @@ body {
     justify-content: center;
     align-items: center;
     padding: 0 20px;
+  }
+
+footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    height: 100px;
+    text-align: center;
+    color: #0b5394;
+    font-weight:normal;
+    font-size: 1rem;
+}
+
+  .footer-text {
+    display: flex;
+  }
+
+  .back-pocket-math-logo {
+    width: 200px;
+    margin-top: 5px;
+
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
   }
