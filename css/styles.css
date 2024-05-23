@@ -1,99 +1,83 @@
 body {
     font-family: 'Fredoka', sans-serif;
     background-color: #eeece1;
-    margin: 0;
-    padding: 0;
 }
 
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0rem;
-  margin-bottom: 100px;
-}
-
-.header-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  position: absolute;
-  z-index: 10;
-
-  margin-left: 500px; /* adjust the margin to match the nav width */
-}
-
-.mathflash-header-image {
-  width: 250px;
-  height: auto;
-  max-width: 250px;
-
-  position: absolute;
-  z-index: 100;
-}
-
-nav {
-  background-color: #e5e3d8;
-  padding: 0.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 200px; /* adjust the width as needed */
+.navigation-container {
   position: fixed;
   top: 0;
   left: 0;
-  /* z-index: 1; */
+  z-index: 100;
+  
+  width: 210px;
+  background-color: #e5e3d8;
+  padding: 1rem;
 }
 
-nav .menu-wrapper {
-  color: #0b5394;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+.menu-wrapper {
   width: 100%;
+  color: #0b5394;
+
+  list-style: none;
+
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+  padding: 0;
+  margin: 0;
 }
 
-nav .menu-header {
+.pick-pocket-header img {
+  width: 200px;
+}
+
+.menu-wrapper img {
+  width: 90px;
+  cursor: pointer;
+}
+
+.menu-sub-header {
   font-size: 1.5rem;
-}
-
-nav h2 {
-  font-size: 1rem;
   margin-top: 10px;
 }
 
-nav ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-}
-
 nav ul li {
-  margin: 0.25rem;
-  width: 100%; /* adjust the width as needed */
+  margin: 0.1rem;
+  width: 100%;
 }
 
-nav ul li img {
-  width: 75px;
-  cursor: pointer;
+main {
+  margin-left: 210px;
+
+  /* width: auto;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items:top; */
+
+
 }
   
-  main {
-    width: auto;
-    height: auto;
-    padding: 0;
+
+  .header-container {
     display: flex;
     justify-content: center;
-    align-items: center;
   }
   
-  .new-flashcard {
+  .mathflash-header-image {
+    width: 250px;
+    height: auto;
+    padding: 0.5rem;
+  
+    position: absolute;
+    z-index: 100;
+  }
+
+  
+  /* .new-flashcard {
     aspect-ratio: 1.618 / 1;
     width: 600px;
     height: auto;
@@ -103,7 +87,7 @@ nav ul li img {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    /* background-color: #ffffff; */
+    background-color: #ffffff;
     filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
     font-family: "Nunito", sans-serif;
     font-size: 7rem;
@@ -221,26 +205,27 @@ nav ul li img {
     justify-content: center;
     align-items: center;
     padding: 0 20px;
-  }
+  }*/
 
 footer {
-    position: relative;
+    position: absolute;
     bottom: 0;
-    width: 100%;
-    height: 100px;
-    text-align: center;
+    margin-left: 210px;
+
+    display: flex;
+    flex-direction:column;
+    justify-content: center;
+}
+
+  .footer-text {
     color: #0b5394;
     font-weight:normal;
     font-size: 1rem;
 }
 
-  .footer-text {
-    display: flex;
-  }
-
-  .back-pocket-math-logo {
+  /* .back-pocket-math-logo {
     width: 200px;
     margin-top: 5px;
 
     filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
-  }
+  } */
