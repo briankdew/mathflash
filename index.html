@@ -513,7 +513,7 @@
           Problems Remaining: <span id="countDisplay">0</span>
         </div>
         
-        <input type="text" id="answerInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+        <input type="text" id="answerInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="go">
         <div class="answer-label">Answer</div>
       </div>
     </section>
@@ -720,6 +720,12 @@
           this.fillMissingSlot();
           setTimeout(() => this.nextProblem(), 300);
         } else {
+          // --- LOGGING THE ERROR ---
+          const p = this.state.currentProblem;
+          const opSymbol = (this.dom.opSelect.value === 'addsub') ? '+' : '×'; 
+          // For simplicity in the log, we can just log the specific attempt with context:
+          this.updateLog(`Incorrect: ${userVal} (Problem: ${p.left} ${opSymbol} ${p.right})`);
+
           this.dom.input.classList.add('error');
           setTimeout(() => this.dom.input.classList.remove('error'), 400);
           this.dom.input.select();
@@ -800,12 +806,33 @@
             this.initSession();
           });
         });
+
+        // --- UPDATED INPUT HANDLING FOR AUTO-SUBMIT & SMART CHECK ---
+        this.dom.input.addEventListener('input', () => {
+          // 1. Clean the input (numbers only)
+          this.dom.input.value = this.dom.input.value.replace(/[^0-9]/g, '');
+          
+          if (!this.state.currentProblem) return;
+
+          const userStr = this.dom.input.value;
+          const correctStr = String(this.state.currentProblem.correct);
+          const userVal = parseInt(userStr);
+
+          // 2. Check: Is it correct? (Success case)
+          if (userVal === this.state.currentProblem.correct) {
+            this.dom.input.blur(); // Dismiss keyboard smoothly
+            this.checkAnswer();
+          } 
+          // 3. Check: Is it the right LENGTH but wrong value? (Failure case)
+          else if (userStr.length >= correctStr.length) {
+             this.checkAnswer(); // This triggers logging and the "Shake" animation!
+          }
+        });
+
         this.dom.input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') this.checkAnswer();
         });
-        this.dom.input.addEventListener('input', () => {
-          this.dom.input.value = this.dom.input.value.replace(/[^0-9]/g, '');
-        });
+        
         this.dom.downloadBtn.addEventListener('click', () => this.downloadLog());
         
         // Listen for screen resize changes to update scale
