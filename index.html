@@ -193,6 +193,12 @@
       background-repeat: no-repeat; background-position: right 0.7rem center;
       background-size: 1em;
     }
+    
+    /* Ensure all select options have a white background */
+    select option {
+      background-color: white;
+      color: var(--color-text-main);
+    }
 
     .operation-toggle-container {
       display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;
@@ -208,13 +214,13 @@
       width: auto; /* Allow it to shrink to fit content */
       text-align: center; 
       text-align-last: center; 
-      /* min-width: 250px;  Removed to allow centering */
       
       /* New styles from design request */
       border-color: var(--palette-beige-02); /* Beige 02 border */
-      font-family: 'Fredoka', sans-serif; /* Fredoka font */
-      font-size: 1.5rem; /* 18pt approx 24px */
-      font-weight: 500; /* Medium weight */
+      /* Reverted font to match settings selectors (inherits Archivo) */
+      font-family: inherit; 
+      font-size: 1.2rem; 
+      font-weight: 600; 
       padding: 0.5rem 1rem; /* Adjusted padding for larger font */
     }
 
