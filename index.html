@@ -236,13 +236,16 @@
       overflow: visible;
     }
 
-    /* Operation Display Text */
+    /* Operation Display Text (Above Cards) */
     #operationDisplay {
       position: absolute;
+      /* Adjusted coordinate: -13.5rem (approx -216px) relative to center */
+      /* This preserves the visual gap above the cards regardless of scale */
       top: -13.5rem; 
       left: 50%;
       transform: translateX(-50%);
       font-family: 'Fredoka', sans-serif;
+      /* Increased to ~32pt match your mock-up */
       font-size: 2.6rem; 
       font-weight: 500;
       z-index: 10;
@@ -400,21 +403,29 @@
     
     /* REFACTORED CHIP TO BE A "MINI CARD" */
     .chip {
+      /* Replica Geometry: Aspect Ratio 1.4 to match 210/150 cards */
       aspect-ratio: 1.4 / 1;
-      width: 100%; 
+      width: 100%; /* Fills grid cell */
       border: none;
-      border-radius: 5px; 
+      
+      /* Replica Shape: Scaled Border Radius */
+      border-radius: 5px; /* approx 20% of 22px */
+      
+      /* Layout */
       display: flex; justify-content: center; align-items: center;
-      padding: 0; 
+      padding: 0; /* Remove button padding */
+      
+      /* Replica Font */
       font-family: 'Nunito', sans-serif; 
       font-weight: 700;
-      font-size: 1.5rem; 
+      font-size: 1.5rem; /* Proportional-ish scaled font */
       
       /* Base State (Unselected): Beige 01 Bg, Beige 03 Text, No Shadow */
       background-color: var(--palette-beige-01);
       color: var(--palette-beige-03);
       box-shadow: none; 
       text-shadow: none;
+      
       cursor: pointer;
     }
     
@@ -429,9 +440,17 @@
     /* Selected State: Pops up with Theme color & Shadows */
     .chip[aria-pressed="true"] {
       color: var(--theme-text-operand);
+      /* Background matches operand cards (Beige 01) */
       background-color: var(--palette-beige-01);
+      
+      /* Mini Shadows (approx 25% of --shadow-card) */
       box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
       text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    /* SPECIFIC OVERRIDE FOR "ALL" CHIP when active/selectable */
+    #chipAll[aria-pressed="true"] {
+      background-color: var(--palette-beige-02);
     }
 
     .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
