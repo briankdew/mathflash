@@ -225,8 +225,8 @@
     
     #problemArea {
       position: relative;
-      /* Increased to 5rem to give the new large label room to breathe */
-      margin-top: 5rem; 
+      /* Updated from 5rem to 2rem to move layout up */
+      margin-top: 2rem; 
       margin-bottom: 2rem;
       height: 350px;
       display: flex;
@@ -349,7 +349,9 @@
 
     /* --- INPUT AREA --- */
     .answer-section {
-      margin-top: 2rem; display: flex; flex-direction: column; align-items: center;
+      /* Removed top margin to close the gap as requested */
+      margin-top: 0; 
+      display: flex; flex-direction: column; align-items: center;
     }
 
     #answerInput {
@@ -384,7 +386,7 @@
     .answer-label { margin-top: 1rem; font-weight: 700; font-size: 1.2rem; }
     .remaining-counter { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted); font-weight: 600; }
 
-    /* -- Buttons & Chips -- */
+    /* -- Buttons & Chips (Restored Mini-Card Intent) -- */
     .btn {
       font-family: 'Archivo', sans-serif; cursor: pointer; border: none;
       border-radius: var(--border-radius-pill); padding: 0.5rem 1.2rem;
@@ -397,13 +399,44 @@
     .chip-grid {
       display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 0.5rem;
     }
+    
+    /* REFACTORED CHIP TO BE A "MINI CARD" */
     .chip {
-      background-color: var(--palette-beige-01); border: none; border-radius: 6px;
-      padding: 4px 0; font-family: 'Nunito', sans-serif; font-weight: 700;
-      font-size: 1.1rem; color: var(--palette-beige-03); cursor: pointer;
+      /* Replica Geometry: Aspect Ratio 1.4 to match 210/150 cards */
+      aspect-ratio: 1.4 / 1;
+      width: 100%; /* Fills grid cell */
+      border: none;
+      
+      /* Replica Shape: Scaled Border Radius */
+      border-radius: 5px; /* approx 20% of 22px */
+      
+      /* Layout */
+      display: flex; justify-content: center; align-items: center;
+      padding: 0; /* Remove button padding */
+      
+      /* Replica Font */
+      font-family: 'Nunito', sans-serif; 
+      font-weight: 700;
+      font-size: 1.5rem; /* Proportional-ish scaled font */
+      
+      /* Base State (Unselected): Beige 01 Bg, Beige 03 Text, No Shadow */
+      background-color: var(--palette-beige-01);
+      color: var(--palette-beige-03);
+      box-shadow: none; 
+      text-shadow: none;
+      
+      cursor: pointer;
     }
+    
+    /* Selected State: Pops up with Theme color & Shadows */
     .chip[aria-pressed="true"] {
-      color: var(--theme-text-operand); background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      color: var(--theme-text-operand);
+      /* Background matches operand cards (Beige 01) */
+      background-color: var(--palette-beige-01);
+      
+      /* Mini Shadows (approx 25% of --shadow-card) */
+      box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+      text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
     }
 
     .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
@@ -517,6 +550,9 @@
       </div>
       <div class="control-group">
         <button id="restartBtn" class="btn btn-primary" style="width: 100%;">Restart Session</button>
+        <div class="remaining-counter" style="text-align: center; margin-top: 1rem;">
+          Problems Remaining: <span id="countDisplay">0</span>
+        </div>
       </div>
     </aside>
 
@@ -553,10 +589,6 @@
       </div>
 
       <div class="answer-section">
-        <div class="remaining-counter">
-          Problems Remaining: <span id="countDisplay">0</span>
-        </div>
-        
         <input type="text" id="answerInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="go">
         <div class="answer-label">Answer</div>
       </div>
@@ -701,7 +733,7 @@
         ].forEach(el => el.classList.add('d-none'));
 
         if (mode === this.MODES.ADDITION) {
-          // ADDITION THEME
+          // ADDITION THEME (PDF says GREEN)
           root.style.setProperty('--theme-text-operand', 'var(--palette-blue-07)');
           root.style.setProperty('--theme-text-result',  'var(--palette-blue-08)');
           root.style.setProperty('--theme-logo-math',    'var(--palette-blue-03)');
@@ -718,7 +750,7 @@
           this.dom.leftIconMinus.classList.remove('d-none');
           this.dom.rightIconMinus.classList.remove('d-none');
         } else {
-          // MULTIPLICATION THEME
+          // MULTIPLICATION THEME (PDF says BLUE)
           root.style.setProperty('--theme-text-operand', 'var(--palette-green-07)');
           root.style.setProperty('--theme-text-result',  'var(--palette-green-08)');
           root.style.setProperty('--theme-logo-math',    'var(--palette-green-03)');
@@ -832,9 +864,12 @@
         this.dom.cardResult.textContent = "---";
 
         // 2. Apply specific beige colors for the "done" state via inline styles
+        // Operand cards -> Beige 02
         const beige02 = 'var(--palette-beige-02)';
         this.dom.cardLeft.style.color = beige02;
         this.dom.cardRight.style.color = beige02;
+
+        // Result card -> Beige 03
         this.dom.cardResult.style.color = 'var(--palette-beige-03)';
 
         let timeMsg = "";
@@ -869,12 +904,20 @@
         const container = document.getElementById('problemArea');
         const anchor = document.querySelector('.constellation-anchor');
         
+        // The "Safe Zone" width required for your layout (Cards + Margins)
+        // 145px * 2 (positions) + 210px (card width) + 40px (safety margin)
         const requiredWidth = 540; 
+        
         const availableWidth = container.clientWidth;
         
+        // Calculate scale: If screen is smaller than 540, shrink. Otherwise, 1.
         const scale = Math.min(1, availableWidth / requiredWidth);
         
+        // Apply the scale
         anchor.style.transform = `scale(${scale})`;
+        
+        // Adjust height so the empty vertical space shrinks too
+        // 350px is base height
         container.style.height = `${350 * scale}px`;
       }
 
@@ -890,7 +933,9 @@
           });
         });
 
+        // --- UPDATED INPUT HANDLING FOR AUTO-SUBMIT & SMART CHECK ---
         this.dom.input.addEventListener('input', () => {
+          // 1. Clean the input (numbers only)
           this.dom.input.value = this.dom.input.value.replace(/[^0-9]/g, '');
           
           if (!this.state.currentProblem) return;
@@ -899,11 +944,14 @@
           const correctStr = String(this.state.currentProblem.correct);
           const userVal = parseInt(userStr);
 
+          // 2. Check: Is it correct? (Success case)
           if (userVal === this.state.currentProblem.correct) {
+            // REMOVED BLUR: Keyboard stays open now!
             this.checkAnswer();
           } 
+          // 3. Check: Is it the right LENGTH but wrong value? (Failure case)
           else if (userStr.length >= correctStr.length) {
-             this.checkAnswer();
+             this.checkAnswer(); // This triggers logging and the "Shake" animation!
           }
         });
 
@@ -913,6 +961,7 @@
         
         this.dom.downloadBtn.addEventListener('click', () => this.downloadLog());
         
+        // Listen for screen resize changes to update scale
         window.addEventListener('resize', () => this.handleResize());
       }
     }
@@ -921,4 +970,3 @@
   </script>
 </body>
 </html>
-}
