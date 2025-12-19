@@ -236,11 +236,9 @@
       overflow: visible;
     }
 
-    /* Operation Display Text - NOW RELATIVE TO SCALED ANCHOR */
+    /* Operation Display Text */
     #operationDisplay {
       position: absolute;
-      /* Adjusted coordinate: -13.5rem (approx -216px) relative to center */
-      /* This preserves the visual gap above the cards regardless of scale */
       top: -13.5rem; 
       left: 50%;
       transform: translateX(-50%);
@@ -402,39 +400,36 @@
     
     /* REFACTORED CHIP TO BE A "MINI CARD" */
     .chip {
-      /* Replica Geometry: Aspect Ratio 1.4 to match 210/150 cards */
       aspect-ratio: 1.4 / 1;
-      width: 100%; /* Fills grid cell */
+      width: 100%; 
       border: none;
-      
-      /* Replica Shape: Scaled Border Radius */
-      border-radius: 5px; /* approx 20% of 22px */
-      
-      /* Layout */
+      border-radius: 5px; 
       display: flex; justify-content: center; align-items: center;
-      padding: 0; /* Remove button padding */
-      
-      /* Replica Font */
+      padding: 0; 
       font-family: 'Nunito', sans-serif; 
       font-weight: 700;
-      font-size: 1.5rem; /* Proportional-ish scaled font */
+      font-size: 1.5rem; 
       
       /* Base State (Unselected): Beige 01 Bg, Beige 03 Text, No Shadow */
       background-color: var(--palette-beige-01);
       color: var(--palette-beige-03);
       box-shadow: none; 
       text-shadow: none;
-      
       cursor: pointer;
+    }
+    
+    /* Style for disabled state (Non-selectable) */
+    .chip:disabled {
+      cursor: default;
+      /* Visual style is already handled by the unpressed class settings, 
+         but pointer-events ensures no clicking */
+      pointer-events: none;
     }
     
     /* Selected State: Pops up with Theme color & Shadows */
     .chip[aria-pressed="true"] {
       color: var(--theme-text-operand);
-      /* Background matches operand cards (Beige 01) */
       background-color: var(--palette-beige-01);
-      
-      /* Mini Shadows (approx 25% of --shadow-card) */
       box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
       text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
     }
@@ -538,6 +533,7 @@
           <button type="button" class="chip" data-val="7">7</button>
           <button type="button" class="chip" data-val="8">8</button>
           <button type="button" class="chip" data-val="9">9</button>
+          <button type="button" class="chip" data-val="all" id="chipAll">All</button>
         </div>
       </div>
 
@@ -667,6 +663,9 @@
         this.dom.input.value = '';
         this.dom.input.disabled = false;
         
+        // Update the All Chip UI state immediately on init
+        this.updateAllChipUI();
+
         // --- RESET CARD COLORS ON START ---
         this.dom.cardLeft.style.color = '';
         this.dom.cardRight.style.color = '';
@@ -679,7 +678,7 @@
 
         let pool = this.generateProblemPool();
         const activeChips = Array.from(this.dom.chips)
-          .filter(c => c.getAttribute('aria-pressed') === 'true')
+          .filter(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true')
           .map(c => parseInt(c.dataset.val));
         
         if (activeChips.length > 0 && activeChips.length < 9) {
@@ -909,14 +908,44 @@
         container.style.height = `${350 * scale}px`;
       }
 
+      // New Helper to sync the "All" chip state based on 1-9 status
+      updateAllChipUI() {
+        const numberChips = Array.from(this.dom.chips).filter(c => c.dataset.val !== 'all');
+        const allAreSelected = numberChips.every(c => c.getAttribute('aria-pressed') === 'true');
+        const allChip = document.getElementById('chipAll');
+
+        if (allAreSelected) {
+          // If 1-9 are ALL selected, disable "All" button and show it as unpressed/gray
+          allChip.setAttribute('aria-pressed', 'false');
+          allChip.disabled = true;
+        } else {
+          // If any are missing, enable "All" button and show it as pressed/active
+          allChip.setAttribute('aria-pressed', 'true');
+          allChip.disabled = false;
+        }
+      }
+
       bindEvents() {
         const resetTriggers = [this.dom.opSelect, this.dom.orderSelect, this.dom.operandOrderSelect, this.dom.missingSelect];
         resetTriggers.forEach(el => el.addEventListener('change', () => this.initSession()));
         this.dom.restartBtn.addEventListener('click', () => this.initSession());
+        
         this.dom.chips.forEach(chip => {
           chip.addEventListener('click', () => {
-            const isPressed = chip.getAttribute('aria-pressed') === 'true';
-            chip.setAttribute('aria-pressed', !isPressed);
+            if (chip.dataset.val === 'all') {
+              // "All" clicked: Turn ON all number chips
+              this.dom.chips.forEach(c => {
+                if (c.dataset.val !== 'all') c.setAttribute('aria-pressed', 'true');
+              });
+            } else {
+              // Number chip clicked: Toggle self
+              const isPressed = chip.getAttribute('aria-pressed') === 'true';
+              chip.setAttribute('aria-pressed', !isPressed);
+            }
+            
+            // Recalculate UI state for "All" button
+            this.updateAllChipUI();
+            
             this.initSession();
           });
         });
