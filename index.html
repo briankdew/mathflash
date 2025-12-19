@@ -319,16 +319,20 @@
     }
 
     #answerInput {
-      width: 100%; 
-      max-width: 290px; 
+      /* MATCHING THE RESULT CARD GEOMETRY */
+      /* Base width of result card is 290px. */
+      /* On mobile, cards scale to ~50% of screen. */
+      /* So we set width to 50vw, capped at 290px max. */
+      width: clamp(180px, 50vw, 290px);
       
-      /* 1. Responsive Height: 
-         Shrinks to ~100px on mobile, grows to exactly 150px (Result Card height) on desktop */
-      height: clamp(100px, 28vw, 150px);
+      /* Base height of result card is 150px. */
+      /* We scale this proportionally (approx 26% of screen width). */
+      height: clamp(90px, 26vw, 150px);
       
       border-radius: var(--border-radius-card); 
       border: 2px solid transparent;
       box-shadow: var(--shadow-card);
+      
       font-family: 'Nunito', sans-serif; 
       font-weight: 700;
       text-align: center; 
@@ -336,10 +340,10 @@
       outline: none;
       transition: border-color 0.2s;
 
-      /* 2. Responsive Text: 
-         Matches the 133px of the cards on desktop, scales down on phone */
-      font-size: clamp(60px, 20vw, 133px);
-      line-height: 1; /* Keeps the big numbers centered vertically */
+      /* Base font size of card is 133px. */
+      /* We scale this proportionally so numbers look right. */
+      font-size: clamp(60px, 22vw, 133px);
+      line-height: 1; 
     }
     
     #answerInput:focus { border-color: var(--theme-text-operand); }
