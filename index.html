@@ -185,11 +185,13 @@
       margin-bottom: 0.35rem; text-align: left;
     }
 
+    /* Standard Selectors (Settings) - 50% Width */
     .select-input {
-      width: 50%; padding: 0.4rem 0.8rem;
+      width: 50%; 
+      padding: 0.4rem 0.8rem;
       border-radius: var(--border-radius-pill);
       border: 1px solid var(--palette-beige-01); 
-      background-color: var(--color-white); /* Explicit white background */
+      background-color: var(--color-white);
       font-family: inherit; font-size: 0.95rem; color: var(--color-text-main);
       appearance: none;
       background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
@@ -197,34 +199,24 @@
       background-size: 1em;
     }
     
-    /* Ensure all select options have a white background */
+    /* Operation Selector - 80% Width Override */
+    #operationSelect {
+      width: 80%;
+    }
+    
     select option {
       background-color: var(--color-white);
       color: var(--color-text-main);
     }
 
-    .operation-toggle-container {
-      display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;
+    /* Sidebar Headers */
+    .panel-settings h3 {
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
     }
-    
-    /* Remove top margin from the h3 inside the container */
-    .operation-toggle-container h3 {
+    /* First header needs no top margin */
+    .panel-settings h3:first-of-type {
       margin-top: 0;
-    }
-
-    /* Updated styles for the operation selector */
-    .operation-select-large {
-      width: auto; 
-      text-align: center; 
-      text-align-last: center; 
-      
-      border-color: var(--palette-beige-02);
-      font-family: inherit; /* Matches standard app font */
-      font-size: 1.2rem; 
-      font-weight: 600; 
-      /* Increased right padding to 3rem to clear the arrow icon */
-      padding: 0.5rem 3rem 0.5rem 1rem;
-      background-color: var(--color-white);
     }
 
     /* =========================================
@@ -233,7 +225,8 @@
     
     #problemArea {
       position: relative;
-      margin-top: 2rem;
+      /* Increased to 5rem to give the new large label room to breathe */
+      margin-top: 5rem; 
       margin-bottom: 2rem;
       height: 350px;
       display: flex;
@@ -241,6 +234,21 @@
       align-items: center;
       /* Ensure overflow doesn't hide the constellation */
       overflow: visible;
+    }
+
+    /* Operation Display Text (Above Cards) */
+    #operationDisplay {
+      position: absolute;
+      /* Moved up to -3.5rem to create the gap above the cards */
+      top: -3.5rem; 
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Fredoka', sans-serif;
+      /* Increased to ~32pt match your mock-up */
+      font-size: 2.6rem; 
+      font-weight: 500;
+      z-index: 10;
+      white-space: nowrap; 
     }
 
     .constellation-anchor {
@@ -345,29 +353,17 @@
     }
 
     #answerInput {
-      /* MATCHING THE RESULT CARD GEOMETRY */
-      /* Base width of result card is 290px. */
-      /* On mobile, cards scale to ~50% of screen. */
-      /* So we set width to 50vw, capped at 290px max. */
       width: clamp(180px, 50vw, 290px);
-      
-      /* Base height of result card is 150px. */
-      /* We scale this proportionally (approx 26% of screen width). */
       height: clamp(90px, 26vw, 150px);
-      
       border-radius: var(--border-radius-card); 
       border: 2px solid transparent;
       box-shadow: var(--shadow-card);
-      
       font-family: 'Nunito', sans-serif; 
       font-weight: 700;
       text-align: center; 
       color: var(--color-text-muted); 
       outline: none;
       transition: border-color 0.2s;
-
-      /* Base font size of card is 133px. */
-      /* We scale this proportionally so numbers look right. */
       font-size: clamp(60px, 22vw, 133px);
       line-height: 1; 
     }
@@ -462,6 +458,14 @@
     </header>
 
     <aside class="panel-settings">
+      <h3>Operation</h3>
+      <div class="control-group" style="margin-top: -0.5rem;">
+        <select id="operationSelect" class="select-input">
+          <option value="addsub">Addition / Subtraction</option>
+          <option value="multdiv">Multiplication / Division</option>
+        </select>
+      </div>
+
       <h3>Settings</h3>
       <div class="control-group">
         <label class="control-label" for="problemOrder">Problem Order</label>
@@ -518,15 +522,9 @@
 
     <section class="panel-practice">
       
-      <div class="operation-toggle-container">
-        <h3>Operation</h3>
-        <select id="operationSelect" class="select-input operation-select-large">
-          <option value="addsub">Addition / Subtraction</option>
-          <option value="multdiv">Multiplication / Division</option>
-        </select>
-      </div>
-
       <div id="problemArea">
+        <div id="operationDisplay"></div>
+
         <div class="constellation-anchor">
           
           <div class="geo-ellipse" id="ellipseLarge"></div>
@@ -596,6 +594,7 @@
           cardLeft: document.getElementById('cardLeft'),
           cardRight: document.getElementById('cardRight'),
           cardResult: document.getElementById('cardResult'),
+          operationDisplay: document.getElementById('operationDisplay'),
           
           // Icon References
           mainIconPlus: document.getElementById('mainIconPlus'),
@@ -638,7 +637,6 @@
         this.dom.input.disabled = false;
         
         // --- RESET CARD COLORS ON START ---
-        // Clear inline styles so theme variables take over again
         this.dom.cardLeft.style.color = '';
         this.dom.cardRight.style.color = '';
         this.dom.cardResult.style.color = '';
@@ -693,6 +691,7 @@
 
       applyTheme(mode) {
         const root = document.documentElement;
+        const opDisplay = this.dom.operationDisplay;
         
         // Hide all icons first
         [
@@ -702,7 +701,7 @@
         ].forEach(el => el.classList.add('d-none'));
 
         if (mode === this.MODES.ADDITION) {
-          // ADDITION THEME (PDF says GREEN)
+          // ADDITION THEME
           root.style.setProperty('--theme-text-operand', 'var(--palette-blue-07)');
           root.style.setProperty('--theme-text-result',  'var(--palette-blue-08)');
           root.style.setProperty('--theme-logo-math',    'var(--palette-blue-03)');
@@ -710,18 +709,26 @@
           root.style.setProperty('--theme-tagline',      'var(--palette-blue-05)');
           root.style.setProperty('--theme-btn-bg',       'var(--palette-blue-07)');
           
+          // Dual Color Text for Addition/Subtraction (Blue 03 / Blue 06)
+          // No whitespace between spans for logo style
+          opDisplay.innerHTML = `<span style="color: var(--palette-blue-03)">addition</span><span style="color: var(--palette-blue-06)">subtraction</span>`;
+
           // Show Add/Sub Icons
           this.dom.mainIconPlus.classList.remove('d-none');
           this.dom.leftIconMinus.classList.remove('d-none');
           this.dom.rightIconMinus.classList.remove('d-none');
         } else {
-          // MULTIPLICATION THEME (PDF says BLUE)
+          // MULTIPLICATION THEME
           root.style.setProperty('--theme-text-operand', 'var(--palette-green-07)');
           root.style.setProperty('--theme-text-result',  'var(--palette-green-08)');
           root.style.setProperty('--theme-logo-math',    'var(--palette-green-03)');
           root.style.setProperty('--theme-logo-flash',   'var(--palette-green-06)');
           root.style.setProperty('--theme-tagline',      'var(--palette-green-05)');
           root.style.setProperty('--theme-btn-bg',       'var(--palette-green-07)');
+
+          // Dual Color Text for Multiplication/Division (Green 03 / Green 06)
+          // No whitespace between spans for logo style
+          opDisplay.innerHTML = `<span style="color: var(--palette-green-03)">multiplication</span><span style="color: var(--palette-green-06)">division</span>`;
           
           // Show Mult/Div Icons
           this.dom.mainIconTimes.classList.remove('d-none');
@@ -825,12 +832,9 @@
         this.dom.cardResult.textContent = "---";
 
         // 2. Apply specific beige colors for the "done" state via inline styles
-        // Operand cards -> Beige 02
         const beige02 = 'var(--palette-beige-02)';
         this.dom.cardLeft.style.color = beige02;
         this.dom.cardRight.style.color = beige02;
-
-        // Result card -> Beige 03
         this.dom.cardResult.style.color = 'var(--palette-beige-03)';
 
         let timeMsg = "";
@@ -865,20 +869,12 @@
         const container = document.getElementById('problemArea');
         const anchor = document.querySelector('.constellation-anchor');
         
-        // The "Safe Zone" width required for your layout (Cards + Margins)
-        // 145px * 2 (positions) + 210px (card width) + 40px (safety margin)
         const requiredWidth = 540; 
-        
         const availableWidth = container.clientWidth;
         
-        // Calculate scale: If screen is smaller than 540, shrink. Otherwise, 1.
         const scale = Math.min(1, availableWidth / requiredWidth);
         
-        // Apply the scale
         anchor.style.transform = `scale(${scale})`;
-        
-        // Adjust height so the empty vertical space shrinks too
-        // 350px is base height
         container.style.height = `${350 * scale}px`;
       }
 
@@ -894,9 +890,7 @@
           });
         });
 
-        // --- UPDATED INPUT HANDLING FOR AUTO-SUBMIT & SMART CHECK ---
         this.dom.input.addEventListener('input', () => {
-          // 1. Clean the input (numbers only)
           this.dom.input.value = this.dom.input.value.replace(/[^0-9]/g, '');
           
           if (!this.state.currentProblem) return;
@@ -905,14 +899,11 @@
           const correctStr = String(this.state.currentProblem.correct);
           const userVal = parseInt(userStr);
 
-          // 2. Check: Is it correct? (Success case)
           if (userVal === this.state.currentProblem.correct) {
-            // REMOVED BLUR: Keyboard stays open now!
             this.checkAnswer();
           } 
-          // 3. Check: Is it the right LENGTH but wrong value? (Failure case)
           else if (userStr.length >= correctStr.length) {
-             this.checkAnswer(); // This triggers logging and the "Shake" animation!
+             this.checkAnswer();
           }
         });
 
@@ -922,7 +913,6 @@
         
         this.dom.downloadBtn.addEventListener('click', () => this.downloadLog());
         
-        // Listen for screen resize changes to update scale
         window.addEventListener('resize', () => this.handleResize());
       }
     }
@@ -931,3 +921,4 @@
   </script>
 </body>
 </html>
+}
