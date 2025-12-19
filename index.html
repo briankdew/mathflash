@@ -610,7 +610,13 @@
       initSession() {
         this.dom.input.value = '';
         this.dom.input.disabled = false;
-        this.dom.input.focus();
+        
+        // --- RESET CARD COLORS ON START ---
+        // Clear inline styles so theme variables take over again
+        this.dom.cardLeft.style.color = '';
+        this.dom.cardRight.style.color = '';
+        this.dom.cardResult.style.color = '';
+
         this.updateLog("Session Ready.");
         
         const mode = this.dom.opSelect.value;
@@ -636,6 +642,27 @@
         
         // Initial resize trigger to set correct scale
         this.handleResize();
+
+        // Prevent Scroll on focus to stop jumping
+        this.dom.input.focus({ preventScroll: true });
+        
+        // Manually scroll the cards to the top of the viewport + small offset
+        setTimeout(() => {
+          const problemArea = document.getElementById('problemArea');
+          if (problemArea) {
+             // CHANGE THIS VALUE to adjust the scroll position
+             // Higher number = Scrolls higher (shows more top margin)
+             const offset = 120; 
+             
+             const elementPosition = problemArea.getBoundingClientRect().top + window.scrollY;
+             const offsetPosition = elementPosition - offset;
+             
+             window.scrollTo({
+               top: offsetPosition,
+               behavior: "smooth"
+             });
+          }
+        }, 300);
       }
 
       applyTheme(mode) {
@@ -723,7 +750,9 @@
         this.dom.cardResult.textContent = show('result', p.result);
         
         this.dom.input.value = '';
-        this.dom.input.focus();
+        
+        // Prevent Scroll on focus to stop jumping
+        this.dom.input.focus({ preventScroll: true });
       }
 
       checkAnswer() {
@@ -762,9 +791,21 @@
       endSession() {
         this.dom.input.disabled = true;
         this.dom.countDisplay.textContent = "0";
-        this.dom.cardLeft.textContent = "✔";
-        this.dom.cardRight.textContent = "✔";
-        this.dom.cardResult.textContent = "Done";
+        
+        // --- NEW END SESSION STATE ---
+        // 1. Set the text content to U+2012 figure dashes
+        this.dom.cardLeft.textContent = "‒‒";
+        this.dom.cardRight.textContent = "‒‒";
+        this.dom.cardResult.textContent = "‒‒‒";
+
+        // 2. Apply specific beige colors for the "done" state via inline styles
+        // Operand cards -> Beige 02
+        const beige02 = 'var(--palette-beige-02)';
+        this.dom.cardLeft.style.color = beige02;
+        this.dom.cardRight.style.color = beige02;
+
+        // Result card -> Beige 03
+        this.dom.cardResult.style.color = 'var(--palette-beige-03)';
 
         let timeMsg = "";
         if (this.state.isTimerRunning) {
