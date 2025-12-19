@@ -319,13 +319,29 @@
     }
 
     #answerInput {
-      width: 100%; max-width: 290px; height: 154px;
-      border-radius: var(--border-radius-card); border: 2px solid transparent;
+      width: 100%; 
+      max-width: 290px; 
+      
+      /* 1. Responsive Height: 
+         Shrinks to ~100px on mobile, grows to exactly 150px (Result Card height) on desktop */
+      height: clamp(100px, 28vw, 150px);
+      
+      border-radius: var(--border-radius-card); 
+      border: 2px solid transparent;
       box-shadow: var(--shadow-card);
-      font-family: 'Nunito', sans-serif; font-size: 5rem; font-weight: 700;
-      text-align: center; color: var(--color-text-muted); outline: none;
+      font-family: 'Nunito', sans-serif; 
+      font-weight: 700;
+      text-align: center; 
+      color: var(--color-text-muted); 
+      outline: none;
       transition: border-color 0.2s;
+
+      /* 2. Responsive Text: 
+         Matches the 133px of the cards on desktop, scales down on phone */
+      font-size: clamp(60px, 20vw, 133px);
+      line-height: 1; /* Keeps the big numbers centered vertically */
     }
+    
     #answerInput:focus { border-color: var(--theme-text-operand); }
     #answerInput.error {
       animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
