@@ -376,9 +376,17 @@
       30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
       40%, 60% { transform: translate3d(4px, 0, 0); }
     }
-
-    .answer-label { margin-top: 1rem; font-weight: 700; font-size: 1.2rem; }
+    
+    /* Removed .answer-label as per request */
+    /* .answer-label { margin-top: 1rem; font-weight: 700; font-size: 1.2rem; } */
+    
     .remaining-counter { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted); font-weight: 600; }
+
+    /* NEW: Controls centered under input */
+    .session-controls-centered {
+      width: clamp(180px, 50vw, 290px); /* Matches input width exactly */
+      margin-top: 1rem;
+    }
 
     /* -- Buttons & Chips (Restored Mini-Card Intent) -- */
     .btn {
@@ -505,7 +513,7 @@
       <symbol id="icon-plus" viewBox="0 0 43 42.7">
         <path d="m21.579367 0.023679266c-1.3058815 0 -2.3014984 0.3397539 -2.9868546 1.0192583c-0.67609406 0.6703242 -1.0141411 1.6253037 -1.0141411 2.8649423l0 13.456964l-13.7534275 0c-1.194742 0 -2.1347904 0.32598114 -2.8201468 0.9779377c-0.6760938 0.65195656 -1.0141416 1.5702095 -1.0141416 2.754753c0 1.1845436 0.33804774 2.1027908 1.0141416 2.7547512c0.6853564 0.6427727 1.6254048 0.9641628 2.8201468 0.9641628l13.7534275 0l0 13.883953c0 1.2396355 0.33804703 2.2129822 1.0141411 2.9200363c0.68535614 0.69786835 1.6531887 1.0468063 2.9035015 1.0468063c1.3151417 0 2.2968674 -0.348938 2.945177 -1.0468063c0.6575718 -0.70705414 0.98635674 -1.6804008 0.98635674 -2.9200363l0 -13.883953l13.739532 0c1.2503128 0 2.199623 -0.32139015 2.8479347 -0.9641628c0.6575699 -0.6519604 0.9863548 -1.5702076 0.9863548 -2.7547512c0 -1.1845436 -0.32878494 -2.1027966 -0.9863548 -2.754753c-0.6483116 -0.65195656 -1.5976219 -0.9779377 -2.8479347 -0.9779377l-13.739532 0l0 -13.456964c0 -1.2396386 -0.32878494 -2.1946182 -0.98635674 -2.8649423c-0.6483097 -0.6795044 -1.602251 -1.0192583 -2.861824 -1.0192583z" fill-rule="evenodd"/>
       </symbol>
-      
+
       <symbol id="icon-minus" viewBox="0 0 43.2 7.4">
          <path d="m3.8342886 0c-1.1947422 0 -2.1347907 0.32598013 -2.820147 0.97793704c-0.6760938 0.65195686 -1.0141416 1.5702088 -1.0141416 2.7547522c0 1.1845434 0.33804774 2.102792 1.0141416 2.7547524c0.6853564 0.64277315 1.6254048 0.9641633 2.820147 0.9641633l35.508846 0c1.250309 0 2.2042503 -0.32139015 2.861824 -0.9641633c0.6575699 -0.6519604 0.9863548 -1.570209 0.9863548 -2.7547524c0 -1.1845434 -0.32878494 -2.1027951 -0.9863548 -2.7547522c-0.6575737 -0.6519569 -1.611515 -0.97793704 -2.861824 -0.97793704z" fill-rule="evenodd"/>
       </symbol>
@@ -588,13 +596,7 @@
           <span class="slider"></span>
         </label>
       </div>
-      <div class="control-group">
-        <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
-        <div class="remaining-counter" style="text-align: center; margin-top: 1rem;">
-          Problems Remaining: <span id="countDisplay">0</span>
-        </div>
-      </div>
-    </aside>
+      </aside>
 
     <section class="panel-practice">
       
@@ -629,7 +631,12 @@
 
       <div class="answer-section">
         <input type="text" id="answerInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="go">
-        <div class="answer-label">Answer</div>
+        <div class="control-group session-controls-centered">
+          <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
+          <div class="remaining-counter" style="text-align: center; margin-top: 0.5rem;">
+            Problems Remaining: <span id="countDisplay">0</span>
+          </div>
+        </div>
       </div>
     </section>
 
