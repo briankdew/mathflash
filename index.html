@@ -874,53 +874,69 @@
 
       // 3. Reset Session Action
       resetSession() {
+        // Capture timer state before resetting the session
+        const timerWasActive = this.state.isTimerRunning;
+
         // Calculate Metrics
         const sessionEndObj = new Date();
         const endTime = Date.now();
         const elapsedSec = (endTime - this.state.timerStart) / 1000;
         
-        // Format mm:ss
+        // Format: "X m Y s"
         const min = Math.floor(elapsedSec / 60);
         const sec = Math.floor(elapsedSec % 60);
-        const timeStr = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        const timeStr = `${min} m ${sec} s`;
         
-        // Date Formatting: "Dec. 21, 2025"
+        // Date Formatting
         const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
         const dateStr = this.state.sessionStartObj.toLocaleDateString('en-US', dateOptions);
         
-        // Time Formatting: "10:47:15 am"
+        // Time Formatting
         const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
         const startTimeStr = this.state.sessionStartObj.toLocaleTimeString('en-US', timeOptions).toLowerCase();
         const endTimeStr = sessionEndObj.toLocaleTimeString('en-US', timeOptions).toLowerCase();
 
         const n = this.state.stats.completed;
+        const total = this.state.totalProblems;
         const c = this.state.stats.correctFirst;
         const m = this.state.stats.missedFirst;
         
-        // Calculate Accuracy and Speed
-        // Accuracy: 100 * (c / n)
+        // Calculate Accuracy, Speed, and Efficiency (Always calculated)
         const accuracy = n > 0 ? (100 * (c / n)).toFixed(0) : 0;
-        
-        // Speed: c / ss (Correct per total seconds)
-        // Guard against div by zero if session is nearly instant
         const speedVal = elapsedSec > 0 ? (c / elapsedSec).toFixed(2) : '0.00';
+        const efficiencyVal = c > 0 ? (elapsedSec / c).toFixed(2) : '0.00';
+
+        // Detect if session was interrupted
+        let interruptMsg = "";
+        if (n < total) {
+            interruptMsg = `<div style="margin-bottom: 1rem; font-weight: bold;">[SESSION RESET BY USER]</div>`;
+        }
+
+        // Conditionally build rows based on Timer State
+        // If Timer was OFF: return empty string. If ON: return the table row.
+        const rowEndTime = timerWasActive ? `<tr><td>Session end time:</td><td>${endTimeStr}</td></tr>` : '';
+        const rowLength  = timerWasActive ? `<tr><td>Session length:</td><td>${timeStr}</td></tr>` : '';
+        const rowSpeed   = timerWasActive ? `<tr><td>Speed:</td><td>${speedVal} prob/sec</td></tr>` : '';
+        const rowEff     = timerWasActive ? `<tr><td>Efficiency:</td><td>${efficiencyVal} sec/prob</td></tr>` : '';
 
         // Generate HTML Block
         const reportHTML = `
+          ${interruptMsg}
           <table class="stats-table">
             <tr><td>Session date:</td><td>${dateStr}</td></tr>
             <tr><td>Session start time:</td><td>${startTimeStr}</td></tr>
-            <tr><td>Session end time:</td><td>${endTimeStr}</td></tr>
-            <tr><td>Session length:</td><td>${timeStr}</td></tr>
+            ${rowEndTime}
+            ${rowLength}
             <tr style="height: 10px;"></tr>
-            <tr><td>Problems selected:</td><td>${this.state.totalProblems}</td></tr>
+            <tr><td>Problems selected:</td><td>${total}</td></tr>
             <tr><td>Problems completed:</td><td>${n}</td></tr>
             <tr style="height: 10px;"></tr>
             <tr><td>Correct (first try):</td><td>${c}</td></tr>
             <tr><td>Missed (first try):</td><td>${m}</td></tr>
             <tr style="height: 10px;"></tr>
             <tr><td>Accuracy:</td><td>${accuracy} %</td></tr>
-            <tr><td>Speed:</td><td>${speedVal} prob/s</td></tr>
+            ${rowSpeed}
+            ${rowEff}
           </table>
           <hr style="border: 0; border-top: 1px dashed var(--palette-beige-02); margin: 1rem 0;">
         `;
