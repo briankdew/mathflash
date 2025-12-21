@@ -130,9 +130,10 @@
 
     header { grid-area: header; text-align: center; margin-bottom: 1rem; }
 
+    /* INCREASED SIDEBAR WIDTH TO 18.0rem TO ACCOMMODATE DATA LABELS */
     @media (min-width: 768px) {
       .app-layout {
-        grid-template-columns: 1fr 15.0rem;
+        grid-template-columns: 1fr 18.0rem; 
         grid-template-areas: 
           "header header"
           "practice practice"
@@ -143,7 +144,7 @@
 
     @media (min-width: 1100px) {
       .app-layout {
-        grid-template-columns: 15.0rem 1fr 15.0rem;
+        grid-template-columns: 18.0rem 1fr 18.0rem;
         grid-template-areas: 
           "header header header"
           "settings practice data";
@@ -189,7 +190,8 @@
     .select-input {
       width: 50%;
       width: fit-content;
-padding: 0.4rem 2.0rem 0.4rem 0.8rem;      border-radius: var(--border-radius-pill);
+      padding: 0.4rem 2.0rem 0.4rem 0.8rem;      
+      border-radius: var(--border-radius-pill);
       border: 1px solid var(--palette-beige-01); 
       background-color: var(--color-white);
       font-family: inherit; font-size: 0.95rem; color: var(--color-text-main);
@@ -448,10 +450,33 @@ padding: 0.4rem 2.0rem 0.4rem 0.8rem;      border-radius: var(--border-radius-pi
     input:checked + .slider { background-color: var(--theme-btn-bg); }
     input:checked + .slider:before { transform: translateX(22px); }
 
+    /* UPDATED: Height increased to 340px to accommodate data */
     .log-box {
-      width: 100%; height: 150px; background: white; border: 1px solid var(--palette-beige-01);
+      width: 100%; height: 340px; background: white; border: 1px solid var(--palette-beige-01);
       border-radius: 8px; padding: 0.5rem; font-size: 0.85rem; overflow-y: auto;
       margin-bottom: 0.5rem; font-family: monospace;
+    }
+    
+    /* Style for summary table inside log */
+    .stats-table {
+        width: 100%;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        border-collapse: collapse;
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+    .stats-table td {
+        padding: 2px 0;
+        vertical-align: top;
+    }
+    .stats-table td:first-child {
+        white-space: nowrap;
+        padding-right: 10px;
+    }
+    .stats-table td:nth-child(2) {
+        text-align: left;
+        font-weight: bold;
     }
   </style>
 </head>
@@ -608,8 +633,17 @@ padding: 0.4rem 2.0rem 0.4rem 0.8rem;      border-radius: var(--border-radius-pi
           currentProblem: null,
           totalProblems: 0,
           timerStart: 0,
+          sessionStartObj: null,
           isTimerRunning: false,
-          isSessionActive: false
+          isSessionActive: false,
+          
+          // Stats Tracking
+          currentProblemFirstTry: true,
+          stats: {
+            completed: 0,
+            correctFirst: 0,
+            missedFirst: 0
+          }
         };
 
         this.dom = {
@@ -782,10 +816,18 @@ padding: 0.4rem 2.0rem 0.4rem 0.8rem;      border-radius: var(--border-radius-pi
         this.state.queue = pool;
         this.state.totalProblems = pool.length;
         
+        // Stats Reset
+        this.state.stats = {
+          completed: 0,
+          correctFirst: 0,
+          missedFirst: 0
+        };
+
         // Timer Logic
-        const timerActive = this.dom.timerToggle.checked;
-        this.state.isTimerRunning = timerActive;
-        if (timerActive) this.state.timerStart = Date.now();
+        // Always track start time for stats, even if visual timer isn't used
+        this.state.sessionStartObj = new Date();
+        this.state.timerStart = Date.now();
+        this.state.isTimerRunning = this.dom.timerToggle.checked;
 
         // LOCK Controls
         this.toggleControls(true);
@@ -795,7 +837,7 @@ padding: 0.4rem 2.0rem 0.4rem 0.8rem;      border-radius: var(--border-radius-pi
         this.dom.input.value = '';
         this.dom.input.focus();
 
-        this.updateLog(`Session started (Timer ${timerActive ? 'ON' : 'OFF'}).`);
+        this.updateLog(`Session started.`);
         this.nextProblem();
         
         // Resize to ensure everything fits
@@ -804,22 +846,59 @@ padding: 0.4rem 2.0rem 0.4rem 0.8rem;      border-radius: var(--border-radius-pi
 
       // 3. Reset Session Action
       resetSession() {
-        // Log results if needed (End Session logic)
-        let timeMsg = "";
-        if (this.state.isTimerRunning) {
-          const elapsed = ((Date.now() - this.state.timerStart) / 1000).toFixed(1);
-          timeMsg = ` in ${elapsed}s`;
-        }
-        // Only log "Completed" if queue is empty, otherwise "Reset"
-        if(this.state.queue.length === 0) {
-             this.updateLog(`Completed ${this.state.totalProblems} problems${timeMsg}.`);
-        } else {
-             this.updateLog(`Session Reset.`);
-        }
+        // Calculate Metrics
+        const sessionEndObj = new Date();
+        const endTime = Date.now();
+        const elapsedSec = (endTime - this.state.timerStart) / 1000;
         
+        // Format mm:ss
+        const min = Math.floor(elapsedSec / 60);
+        const sec = Math.floor(elapsedSec % 60);
+        const timeStr = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        
+        // Date Formatting: "Dec. 21, 2025"
+        const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+        const dateStr = this.state.sessionStartObj.toLocaleDateString('en-US', dateOptions);
+        
+        // Time Formatting: "10:47:15 am"
+        const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
+        const startTimeStr = this.state.sessionStartObj.toLocaleTimeString('en-US', timeOptions).toLowerCase();
+        const endTimeStr = sessionEndObj.toLocaleTimeString('en-US', timeOptions).toLowerCase();
+
+        const n = this.state.stats.completed;
+        const c = this.state.stats.correctFirst;
+        const m = this.state.stats.missedFirst;
+        
+        // Calculate Accuracy and Speed
+        // Accuracy: 100 * (c / n)
+        const accuracy = n > 0 ? (100 * (c / n)).toFixed(0) : 0;
+        
+        // Speed: c / ss (Correct per total seconds)
+        // Guard against div by zero if session is nearly instant
+        const speedVal = elapsedSec > 0 ? (c / elapsedSec).toFixed(2) : '0.00';
+
+        // Generate HTML Block
+        const reportHTML = `
+          <table class="stats-table">
+            <tr><td>Session date:</td><td>${dateStr}</td></tr>
+            <tr><td>Session start time:</td><td>${startTimeStr}</td></tr>
+            <tr><td>Session end time:</td><td>${endTimeStr}</td></tr>
+            <tr><td>Session length:</td><td>${timeStr}</td></tr>
+            <tr style="height: 10px;"></tr>
+            <tr><td>Problems selected:</td><td>${this.state.totalProblems}</td></tr>
+            <tr><td>Problems completed:</td><td>${n}</td></tr>
+            <tr style="height: 10px;"></tr>
+            <tr><td>Correct (first try):</td><td>${c}</td></tr>
+            <tr><td>Missed (first try):</td><td>${m}</td></tr>
+            <tr style="height: 10px;"></tr>
+            <tr><td>Accuracy:</td><td>${accuracy} %</td></tr>
+            <tr><td>Speed:</td><td>${speedVal} prob/sec</td></tr>
+          </table>
+        `;
+
+        this.appendLogHTML(reportHTML);
+
         this.state.isTimerRunning = false;
-        
-        // Return to Idle
         this.initIdleState();
       }
 
@@ -850,6 +929,10 @@ padding: 0.4rem 2.0rem 0.4rem 0.8rem;      border-radius: var(--border-radius-pi
           this.resetSession(); // Use reset logic to end it
           return;
         }
+        
+        // Reset flag for the new problem
+        this.state.currentProblemFirstTry = true;
+        
         const p = this.state.queue.shift();
         this.state.currentProblem = this.configureProblemDisplay(p);
         this.renderProblem();
@@ -899,12 +982,25 @@ padding: 0.4rem 2.0rem 0.4rem 0.8rem;      border-radius: var(--border-radius-pi
         if (isNaN(userVal)) return;
 
         if (userVal === this.state.currentProblem.correct) {
+          // CORRECT LOGIC
+          this.state.stats.completed++;
+          if (this.state.currentProblemFirstTry) {
+            this.state.stats.correctFirst++;
+          }
+          
           this.fillMissingSlot();
           setTimeout(() => this.nextProblem(), 300);
         } else {
+          // INCORRECT LOGIC
+          if (this.state.currentProblemFirstTry) {
+            this.state.stats.missedFirst++;
+            this.state.currentProblemFirstTry = false;
+          }
+
           const p = this.state.currentProblem;
           const opSymbol = (this.dom.opSelect.value === 'addsub') ? '+' : '×'; 
-          this.updateLog(`Incorrect: ${userVal} (Problem: ${p.left} ${opSymbol} ${p.right})`);
+          // Optional: You can uncomment this if you still want per-mistake logging
+          // this.updateLog(`Incorrect: ${userVal} (Problem: ${p.left} ${opSymbol} ${p.right})`);
 
           this.dom.input.classList.add('error');
           setTimeout(() => this.dom.input.classList.remove('error'), 400);
@@ -922,6 +1018,12 @@ padding: 0.4rem 2.0rem 0.4rem 0.8rem;      border-radius: var(--border-radius-pi
       updateLog(msg) {
         const div = document.createElement('div');
         div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        this.dom.logBox.prepend(div);
+      }
+      
+      appendLogHTML(htmlString) {
+        const div = document.createElement('div');
+        div.innerHTML = htmlString;
         this.dom.logBox.prepend(div);
       }
 
