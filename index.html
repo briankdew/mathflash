@@ -1,4 +1,829 @@
-// 2. Start Session Action
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zane's MathFlash Practice</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500&family=Nunito:wght@400;700&family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================
+       1. VARIABLES (THEME CONFIGURATION)
+       ========================================= */
+    :root {
+      /* --- PALETTE DEFINITIONS (OKLCH) --- */
+      
+      /* Neutrals */
+      --color-white: #ffffff;
+
+      /* Backgrounds */
+      --palette-bg: oklch(0.96 0.015 101);       /* #f4f2e7 */
+
+      /* Beige Scale */
+      --palette-beige-00: oklch(0.92 0.0159 101); /* #e7e5d9 */
+      --palette-beige-01: oklch(0.88 0.0168 101); /* #dad8cc */
+      --palette-beige-02: oklch(0.8 0.0186 101);  /* #c0beb1 */
+      --palette-beige-03: oklch(0.72 0.0204 101); /* #a7a597 */
+      --palette-beige-04: oklch(0.64 0.0222 101); /* #8f8d7e */
+      --palette-beige-05: oklch(0.56 0.024 101);  /* #777565 */
+      --palette-beige-06: oklch(0.48 0.0258 101); /* #615e4e */
+      --palette-beige-07: oklch(0.4 0.0276 101);  /* #4b4837 */
+      --palette-beige-08: oklch(0.32 0.0294 101); /* #363322 */
+      --palette-beige-09: oklch(0.24 0.0312 101); /* #22200e */
+      --palette-beige-10: oklch(0.16 0.033 101);  /* #100d00 */
+
+      /* Blue Scale */
+      --palette-blue-00: oklch(0.96 0.0197 250); /* #e8f3ff */
+      --palette-blue-01: oklch(0.88 0.0354 250); /* #c7daef */
+      --palette-blue-02: oklch(0.8 0.0510 250);  /* #a6c1de */
+      --palette-blue-03: oklch(0.72 0.0667 250); /* #85a8cd */
+      --palette-blue-04: oklch(0.64 0.07 250);   /* #6b90b6 */
+      --palette-blue-05: oklch(0.56 0.0733 250); /* #53789e */
+      --palette-blue-06: oklch(0.48 0.0767 250); /* #3a6187 */
+      --palette-blue-07: oklch(0.4 0.08 250);    /* #224a71 */
+      --palette-blue-08: oklch(0.32 0.0833 250); /* #07345b */
+      --palette-blue-09: oklch(0.24 0.0867 250); /* #001f46 */
+      --palette-blue-10: oklch(0.16 0.09 250);   /* #000a2f */
+
+      /* Green Scale */
+      --palette-green-00: oklch(0.96 0.0197 136.6); /* #ecf5e8 */
+      --palette-green-01: oklch(0.88 0.0354 136.6); /* #cdddc6 */
+      --palette-green-02: oklch(0.8 0.051 136.6);   /* #afc6a6 */
+      --palette-green-03: oklch(0.718 0.0667 136.6);/* #91ae85 */
+      --palette-green-04: oklch(0.64 0.07 136.6);   /* #79966c */
+      --palette-green-05: oklch(0.56 0.0733 136.6); /* #607f53 */
+      --palette-green-06: oklch(0.48 0.0767 136.6); /* #49683b */
+      --palette-green-07: oklch(0.4 0.08 136.6);    /* #325124 */
+      --palette-green-08: oklch(0.32 0.0833 136.6); /* #1d3c0b */
+      --palette-green-09: oklch(0.24 0.0867 136.6); /* #072700 */
+      --palette-green-10: oklch(0.16 0.09 136.6);   /* #001300 */
+
+
+      /* --- SEMANTIC MAPPINGS --- */
+      
+      /* App Defaults */
+      --color-bg: var(--palette-bg);
+      --color-text-main: var(--palette-beige-08);
+      --color-text-muted: var(--palette-beige-05);
+      
+      /* Card Backgrounds */
+      --color-card-operand-bg: var(--palette-beige-01);
+      --color-card-result-bg: var(--palette-beige-02);
+      
+      /* Geometry / Shapes */
+      --color-ellipse-large-stroke: var(--palette-beige-00);
+      --color-ellipse-small-stroke: var(--palette-beige-01);
+      
+      --color-operator-circle-bg: var(--palette-beige-01);
+      --color-inverse-circle-bg: var(--palette-beige-00);
+      
+      /* Theme Variables (Updated via JS) */
+      --theme-text-operand: var(--palette-blue-07);
+      --theme-text-result: var(--palette-blue-08);
+      --theme-logo-math: var(--palette-blue-03);
+      --theme-logo-flash: var(--palette-blue-06);
+      --theme-tagline: var(--palette-blue-05);
+      --theme-btn-bg: var(--palette-blue-07);
+
+      /* Dimensions & Spacing */
+      --spacing-sm: 1rem;
+      --spacing-md: 1.5rem;
+      --border-radius-pill: 999px;
+      --border-radius-card: 22px;
+      --shadow-card: 0px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    /* =========================================
+       2. RESET & BASE STYLES
+       ========================================= */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Archivo', sans-serif;
+      background-color: var(--color-bg);
+      color: var(--color-text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* =========================================
+       3. GRID LAYOUT ARCHITECTURE
+       ========================================= */
+    .app-layout {
+      display: grid;
+      width: 100%;
+      max-width: 1920px;
+      margin: 0 auto;
+      padding: var(--spacing-sm);
+      gap: var(--spacing-md);
+      
+      grid-template-columns: 1fr;
+      grid-template-areas: 
+        "header"
+        "practice"
+        "data"
+        "settings";
+    }
+
+    header { grid-area: header; text-align: center; margin-bottom: 1rem; }
+
+    /* INCREASED SIDEBAR WIDTH TO 18.0rem TO ACCOMMODATE DATA LABELS */
+    @media (min-width: 768px) {
+      .app-layout {
+        grid-template-columns: 1fr 18.0rem; 
+        grid-template-areas: 
+          "header header"
+          "practice practice"
+          "settings data";
+        align-items: start;
+      }
+    }
+
+    @media (min-width: 1100px) {
+      .app-layout {
+        grid-template-columns: 18.0rem 1fr 18.0rem;
+        grid-template-areas: 
+          "header header header"
+          "settings practice data";
+      }
+    }
+
+    .panel-settings { grid-area: settings; }
+    .panel-practice { grid-area: practice; text-align: center; }
+    .panel-data     { grid-area: data; }
+
+    /* =========================================
+       4. COMPONENT STYLES
+       ========================================= */
+    
+    .logo {
+      font-family: 'Fredoka', sans-serif;
+      /* Logic: Min 40px | Ideal 10% of width | Max 80px (Matches 60pt) */
+      font-size: clamp(40px, 10vw, 80px);
+      font-weight: 500; /* Medium weight */
+      line-height: 1;
+    }
+    
+    .logo-math { color: var(--theme-logo-math); }
+    .logo-flash { color: var(--theme-logo-flash); }
+    
+    .tagline {
+      font-family: 'Fredoka', sans-serif;
+      /* Logic: Min 16px | Ideal 3% of width | Max 24px (Matches 18pt) */
+      font-size: clamp(16px, 3vw, 24px);
+      font-weight: 400; /* Normal weight */
+      color: var(--theme-tagline);
+      margin-top: 0.25rem;
+    }
+    
+    .control-group { margin-bottom: 1rem; }
+    
+    .control-label {
+      display: block; font-weight: 600; font-size: 0.95rem;
+      margin-bottom: 0.35rem; text-align: left;
+    }
+
+    /* Standard Selectors (Settings) - 50% Width */
+    .select-input {
+      width: 50%;
+      width: fit-content;
+      padding: 0.4rem 2.0rem 0.4rem 0.8rem;      
+      border-radius: var(--border-radius-pill);
+      border: 1px solid var(--palette-beige-01); 
+      background-color: var(--color-white);
+      font-family: inherit; font-size: 0.95rem; color: var(--color-text-main);
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat; background-position: right 0.7rem center;
+      background-size: 1em;
+    }
+    
+    
+    select option {
+      background-color: var(--color-white);
+      color: var(--color-text-main);
+    }
+
+    /* Sidebar Headers */
+    .panel-settings h3 {
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    /* First header needs no top margin */
+    .panel-settings h3:first-of-type {
+      margin-top: 0;
+    }
+
+    /* =========================================
+       5. THE CONSTELLATION LAYOUT
+       ========================================= */
+    
+    #problemArea {
+      position: relative;
+      margin-top: 1rem; 
+      margin-bottom: 2rem;
+      height: 350px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      /* Ensure overflow doesn't hide the constellation */
+      overflow: visible;
+    }
+
+    /* Operation Display Text */
+    #operationDisplay {
+      position: absolute;
+      top: -13.5rem; 
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Fredoka', sans-serif;
+      font-size: 2.6rem; 
+      font-weight: 500;
+      z-index: 10;
+      white-space: nowrap; 
+    }
+
+    .constellation-anchor {
+      position: relative;
+      width: 0px; height: 0px;
+      /* Smooth transition for resizing */
+      transition: transform 0.1s linear;
+    }
+
+    /* --- CARDS --- */
+    .geo-card {
+      position: absolute;
+      border-radius: var(--border-radius-card);
+      box-shadow: var(--shadow-card);
+      display: flex; justify-content: center; align-items: center;
+      font-family: 'Nunito', sans-serif; font-weight: 700;
+      text-shadow: var(--shadow-card);
+      
+      /* Target: 96px Cap Height. Nunito Ratio ~0.72. 96/0.72 ≈ 133px */
+      font-size: 133px;
+      line-height: 1; padding-top: 0.052em;
+      transform: translate(-50%, -50%);
+      z-index: 2; 
+    }
+
+    /* Operand Cards use Beige 01 and Theme Operand Text Color */
+    #cardLeft, #cardRight {
+      background-color: var(--color-card-operand-bg);
+      color: var(--theme-text-operand);
+    }
+
+    #cardLeft { left: -145px; top: -85px; width: 210px; height: 150px; }
+    #cardRight { left: 145px; top: -85px; width: 210px; height: 150px; }
+    
+    /* Result Card uses Beige 02 and Theme Result Text Color */
+    #cardResult { 
+      left: 0px; top: 85px; width: 290px; height: 150px;
+      background-color: var(--color-card-result-bg); 
+      color: var(--theme-text-result);
+    }
+
+    /* --- ELLIPSES --- */
+    .geo-ellipse {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: transparent;
+      z-index: -1; pointer-events: none;
+    }
+
+    /* Large: Beige 00 Stroke */
+    #ellipseLarge { 
+      width: 409px; height: 281px; left: 0px; top: 0px; 
+      border: 16px solid var(--color-ellipse-large-stroke);
+    }
+    /* Small: Beige 01 Stroke */
+    #ellipseSmall { 
+      width: 227px; height: 182px; left: 0px; top: 41.5px; 
+      border: 16px solid var(--color-ellipse-small-stroke);
+    }
+
+    /* --- OPERATOR CIRCLES --- */
+    .geo-circle {
+      position: absolute;
+      width: 63px; height: 63px;
+      border-radius: 50%;
+      display: flex; justify-content: center; align-items: center;
+      transform: translate(-50%, -50%);
+      z-index: 3; box-shadow: none;
+    }
+
+    /* Main Operator: Beige 01 Background, Icon matches Background */
+    #circleMain {
+      left: 0px; top: -41.5px; 
+      background-color: var(--color-operator-circle-bg);
+      color: var(--color-operator-circle-bg); /* Same color = Ghost Effect */
+    }
+
+    /* Inverses: Beige 00 Background, Icon matches Background */
+    .inverse-circle {
+      background-color: var(--color-inverse-circle-bg);
+      color: var(--color-inverse-circle-bg); /* Same color = Ghost Effect */
+    }
+    #circleInvLeft { left: -186.5px; top: 41.5px; }
+    #circleInvRight { left: 186.5px; top: 41.5px; }
+    
+    /* --- ICONS (SVG) --- */
+    .icon-svg {
+      width: 70%;  
+      height: 70%;
+      fill: currentColor; 
+      display: block;
+      /* The Shadow is the only thing visible since Fill matches Background */
+      filter: drop-shadow(0px 3px 5px rgba(0, 0, 0, 0.5));
+    }
+    
+    .d-none { display: none; }
+
+    /* --- INPUT AREA --- */
+    .answer-section {
+      margin-top: -1.0rem; 
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    #answerInput {
+      width: clamp(180px, 50vw, 290px);
+      height: clamp(90px, 26vw, 150px);
+      border-radius: var(--border-radius-card); 
+      border: 2px solid transparent;
+      box-shadow: var(--shadow-card);
+      font-family: 'Nunito', sans-serif; 
+      font-weight: 700;
+      text-align: center; 
+      color: var(--color-text-muted); 
+      outline: none;
+      transition: border-color 0.2s;
+      font-size: clamp(60px, 22vw, 133px);
+      line-height: 1; 
+    }
+    
+    #answerInput:focus { border-color: var(--theme-text-operand); }
+    #answerInput.error {
+      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+      border-color: #b00020; color: #b00020;
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-1px, 0, 0); }
+      20%, 80% { transform: translate3d(2px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+      40%, 60% { transform: translate3d(4px, 0, 0); }
+    }
+    
+    /* Removed .answer-label as per request */
+    /* .answer-label { margin-top: 1rem; font-weight: 700; font-size: 1.2rem; } */
+    
+    .remaining-counter { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted); font-weight: 600; }
+
+    /* NEW: Controls centered under input */
+    .session-controls-centered {
+      width: clamp(180px, 50vw, 290px); /* Matches input width exactly */
+      margin-top: 1rem;
+    }
+
+    /* -- Buttons & Chips (Restored Mini-Card Intent) -- */
+    .btn {
+      font-family: 'Archivo', sans-serif; cursor: pointer; border: none;
+      border-radius: var(--border-radius-pill); padding: 0.5rem 1.2rem;
+      font-size: 0.9rem; transition: filter 0.2s;
+    }
+    .btn:hover { filter: brightness(0.9); }
+    .btn-primary { background-color: var(--theme-btn-bg); color: white; box-shadow: var(--shadow-card); }
+    .btn-outline { background-color: white; border: 1px solid var(--palette-beige-01); color: var(--color-text-main); }
+
+    .chip-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 0.5rem;
+    }
+    
+    /* REFACTORED CHIP TO BE A "MINI CARD" */
+    .chip {
+      aspect-ratio: 1.4 / 1;
+      width: 100%;
+      max-width: 60px;    /* Limit maximum size */
+      margin: 0 auto;     /* Center in the grid cell */
+      border: none;
+      border-radius: 5px;
+      display: flex; justify-content: center; align-items: center;
+      padding: 0; 
+      font-family: 'Nunito', sans-serif; 
+      font-weight: 700;
+      font-size: 1.5rem; 
+      
+      /* Base State (Unselected): Beige 01 Bg, Beige 03 Text, No Shadow */
+      background-color: var(--palette-beige-01);
+      color: var(--palette-beige-03);
+      box-shadow: none; 
+      text-shadow: none;
+      cursor: pointer;
+    }
+    
+    /* Style for disabled state (Non-selectable) */
+    .chip:disabled {
+      cursor: default;
+      /* Visual style is already handled by the unpressed class settings, 
+         but pointer-events ensures no clicking */
+      pointer-events: none;
+    }
+    
+    /* Selected State: Pops up with Theme color & Shadows */
+    .chip[aria-pressed="true"] {
+      color: var(--theme-text-operand);
+      background-color: var(--palette-beige-01);
+      box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+      text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    /* SPECIFIC OVERRIDE FOR "ALL" CHIP when active/selectable */
+    #chipAll[aria-pressed="true"] {
+      background-color: var(--palette-beige-02);
+    }
+
+    /* TOGGLE SWITCH STYLE - FIXED INPUT VISIBILITY */
+    .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+    
+    /* Enforce position: absolute to ensure it doesn't take up flow space and is truly hidden */
+    .toggle-switch input { 
+      position: absolute; 
+      opacity: 0; 
+      width: 0; 
+      height: 0; 
+      margin: 0; 
+    }
+    
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--palette-beige-01); transition: .4s; border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
+      background-color: white; transition: .4s; border-radius: 50%;
+    }
+    input:checked + .slider { background-color: var(--theme-btn-bg); }
+    input:checked + .slider:before { transform: translateX(22px); }
+
+    /* UPDATED: Height increased to 340px to accommodate data */
+    .log-box {
+      width: 100%; height: 340px; background: white; border: 1px solid var(--palette-beige-01);
+      border-radius: 8px; padding: 0.5rem; font-size: 0.85rem; overflow-y: auto;
+      margin-bottom: 0.5rem; font-family: monospace;
+    }
+    
+    /* Style for summary table inside log */
+    .stats-table {
+        width: 100%;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        border-collapse: collapse;
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+    .stats-table td {
+        padding: 2px 0;
+        vertical-align: top;
+    }
+    .stats-table td:first-child {
+        white-space: nowrap;
+        padding-right: 10px;
+    }
+    .stats-table td:nth-child(2) {
+        text-align: left;
+        font-weight: bold;
+    }
+
+    /* NEW: Style for the "Session Started" message to match table font */
+    .session-start-msg {
+        font-family: monospace;
+        font-size: 0.9em;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <svg style="display: none;">
+    <defs>
+      <symbol id="icon-plus" viewBox="0 0 43 42.7">
+        <path d="m21.579367 0.023679266c-1.3058815 0 -2.3014984 0.3397539 -2.9868546 1.0192583c-0.67609406 0.6703242 -1.0141411 1.6253037 -1.0141411 2.8649423l0 13.456964l-13.7534275 0c-1.194742 0 -2.1347904 0.32598114 -2.8201468 0.9779377c-0.6760938 0.65195656 -1.0141416 1.5702095 -1.0141416 2.754753c0 1.1845436 0.33804774 2.1027908 1.0141416 2.7547512c0.6853564 0.6427727 1.6254048 0.9641628 2.8201468 0.9641628l13.7534275 0l0 13.883953c0 1.2396355 0.33804703 2.2129822 1.0141411 2.9200363c0.68535614 0.69786835 1.6531887 1.0468063 2.9035015 1.0468063c1.3151417 0 2.2968674 -0.348938 2.945177 -1.0468063c0.6575718 -0.70705414 0.98635674 -1.6804008 0.98635674 -2.9200363l0 -13.883953l13.739532 0c1.2503128 0 2.199623 -0.32139015 2.8479347 -0.9641628c0.6575699 -0.6519604 0.9863548 -1.5702076 0.9863548 -2.7547512c0 -1.1845436 -0.32878494 -2.1027966 -0.9863548 -2.754753c-0.6483116 -0.65195656 -1.5976219 -0.9779377 -2.8479347 -0.9779377l-13.739532 0l0 -13.456964c0 -1.2396386 -0.32878494 -2.1946182 -0.98635674 -2.8649423c-0.6483097 -0.6795044 -1.602251 -1.0192583 -2.861824 -1.0192583z" fill-rule="evenodd"/>
+      </symbol>
+
+      <symbol id="icon-minus" viewBox="0 0 43.2 7.4">
+         <path d="m3.8342886 0c-1.1947422 0 -2.1347907 0.32598013 -2.820147 0.97793704c-0.6760938 0.65195686 -1.0141416 1.5702088 -1.0141416 2.7547522c0 1.1845434 0.33804774 2.102792 1.0141416 2.7547524c0.6853564 0.64277315 1.6254048 0.9641633 2.820147 0.9641633l35.508846 0c1.250309 0 2.2042503 -0.32139015 2.861824 -0.9641633c0.6575699 -0.6519604 0.9863548 -1.570209 0.9863548 -2.7547524c0 -1.1845434 -0.32878494 -2.1027951 -0.9863548 -2.7547522c-0.6575737 -0.6519569 -1.611515 -0.97793704 -2.861824 -0.97793704z" fill-rule="evenodd"/>
+      </symbol>
+
+      <symbol id="icon-times" viewBox="-2.65 -2.45 43.7 42.7"> /* 38.4 37.8 */
+         <path d="m3.7250946 0c-0.608165 0 -1.1753755 0.15159208 -1.7016313 0.4547796c-0.6760938 0.3948489 -1.1993718 0.91825175 -1.5698355 1.5702088c-0.37046212 0.6519568 -0.5140169 1.3865564 -0.43066284 2.2038019c0.0833541 0.81724167 0.4954932 1.5931625 1.2364191 2.3277655l12.628145 12.520349l-12.378083 12.272421c-0.9076341 0.899889 -1.3336656 1.8456821 -1.2780962 2.8373966c0.05556941 0.9825287 0.4260315 1.8273201 1.111388 2.5343704c0.6853665 0.70705414 1.5235289 1.0881271 2.5145154 1.1432228c0.057706118 0.0031814575 0.11525798 0.0047683716 0.17265725 0.0047683716c0.9375081 0 1.8338971 -0.42398834 2.689167 -1.2719536l12.461437 -12.355064l12.461437 12.355064c0.74092484 0.73460007 1.5096359 1.143219 2.3061295 1.2258644c0.14629745 0.01517868 0.29009247 0.022766113 0.43138504 0.022766113c0.6279831 0 1.2065887 -0.1499176 1.7358208 -0.4497528c0.6575737 -0.36729813 1.185482 -0.8861084 1.5837288 -1.5564346c0.39824677 -0.6795082 0.54180145 -1.4141121 0.43066406 -2.203804c-0.111141205 -0.78969574 -0.5371704 -1.5518494 -1.2780952 -2.2864437l-12.378086 -12.272421l12.628147 -12.520349c0.9724655 -0.9641633 1.4123878 -1.9237366 1.3197708 -2.8787162c-0.083351135 -0.96416306 -0.4815979 -1.7951789 -1.1947403 -2.4930506c-0.7038803 -0.707052 -1.5698357 -1.0881271 -2.5978699 -1.1432222c-0.067276 -0.0042437725 -0.13433075 -0.006365657 -0.20116425 -0.006365657c-0.9452133 0 -1.8459892 0.42451835 -2.7023354 1.2735517l-12.544792 12.437706l-12.544792 -12.437706c-0.74092484 -0.7345995 -1.5235271 -1.1569959 -2.347807 -1.267186c-0.19135046 -0.027712297 -0.37895823 -0.041566763 -0.5628216 -0.041566763z" fill-rule="evenodd"/>
+      </symbol>
+      
+      <symbol id="icon-divide" viewBox="0 0 43 42.7">
+         <path d="m20.99134 0c-1.4725895 0 -2.6256542 0.41321284 -3.459196 1.2396384c-0.8242798 0.817242 -1.2364178 1.9558741 -1.2364178 3.415893c0 1.469202 0.412138 2.6124244 1.2364178 3.429666c0.83354187 0.8172426 1.9866066 1.2258654 3.459196 1.2258654c1.5374203 0 2.7043762 -0.40862274 3.5008717 -1.2258654c0.79649544 -0.81724167 1.1947422 -1.960464 1.1947422 -3.429666c0 -1.5242975 -0.4121399 -2.6812935 -1.2364197 -3.4709878c-0.8242798 -0.78969455 -1.9773445 -1.1845435 -3.4591942 -1.1845435zm-17.157051 17.602867c-1.1947422 0 -2.1347907 0.32597923 -2.820147 0.9779358c-0.6760938 0.65195656 -1.0141416 1.5702095 -1.0141416 2.754753c0 1.1845436 0.33804774 2.1027908 1.0141416 2.7547512c0.6853564 0.6427746 1.6254048 0.96416473 2.820147 0.96416473l35.342136 0c1.2503128 0 2.199623 -0.32139015 2.847931 -0.96416473c0.6575737 -0.6519604 0.98635864 -1.5702076 0.98635864 -2.7547512c0 -1.1845436 -0.32878494 -2.1027966 -0.98635864 -2.754753c-0.6483078 -0.65195656 -1.5976181 -0.9779358 -2.847931 -0.9779358zm17.157051 15.743408c-1.4725895 0 -2.6256542 0.40861893 -3.459196 1.2258644c-0.8242798 0.8172455 -1.2364178 1.9604683 -1.2364178 3.4296684c0 1.4691963 0.412138 2.6124191 1.2364178 3.4296646c0.83354187 0.8172455 1.9866066 1.2258644 3.459196 1.2258644c1.5374203 0 2.7043762 -0.40861893 3.5008717 -1.2258644c0.79649544 -0.8172455 1.1947422 -1.9604683 1.1947422 -3.4296646c0 -1.5242958 -0.4121399 -2.6812935 -1.2364197 -3.4709892c-0.8242798 -0.78969955 -1.9773445 -1.1845436 -3.4591942 -1.1845436z" fill-rule="evenodd"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="app-layout">
+    
+    <header>
+      <div class="logo">
+        <span class="logo-math">math</span><span class="logo-flash">flash</span>
+      </div>
+      <div class="tagline">let’s put some math in your back pocket!</div>
+    </header>
+
+    <aside class="panel-settings">
+      <h3>Operation</h3>
+      <div class="control-group" style="margin-top: -0.5rem;">
+        <select id="operationSelect" class="select-input">
+          <option value="addsub">Addition / Subtraction</option>
+          <option value="multdiv">Multiplication / Division</option>
+        </select>
+      </div>
+
+      <h3>Settings</h3>
+      <div class="control-group">
+        <label class="control-label" for="problemOrder">Problem Order</label>
+        <select id="problemOrder" class="select-input">
+          <option value="random">Random</option>
+          <option value="standard">Standard</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label" for="operandOrder">Operand Order</label>
+        <select id="operandOrder" class="select-input">
+          <option value="random">Random</option>
+          <option value="standard">Standard</option>
+          <option value="reverse">Reverse</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label" for="missingValue">Missing Value</label>
+        <select id="missingValue" class="select-input">
+          <option value="random">Random</option>
+          <option value="result">Result Only</option>
+          <option value="operand">Operand Only</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Problem Set</label>
+        <div class="chip-grid" id="problemSetGrid">
+          <button type="button" class="chip" data-val="1">1</button>
+          <button type="button" class="chip" data-val="2">2</button>
+          <button type="button" class="chip" data-val="3">3</button>
+          <button type="button" class="chip" data-val="4">4</button>
+          <button type="button" class="chip" data-val="5">5</button>
+          <button type="button" class="chip" data-val="6">6</button>
+          <button type="button" class="chip" data-val="7">7</button>
+          <button type="button" class="chip" data-val="8">8</button>
+          <button type="button" class="chip" data-val="9">9</button>
+          <button type="button" class="chip" data-val="all" id="chipAll">All</button>
+        </div>
+      </div>
+
+      <div class="control-group" style="display: flex; align-items: center; justify-content: space-between;">
+        <label class="control-label" style="margin:0;">Session Timer</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="timerToggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      </aside>
+
+    <section class="panel-practice">
+      
+      <div id="problemArea">
+        <div class="constellation-anchor">
+          <div id="operationDisplay"></div>
+          
+          <div class="geo-ellipse" id="ellipseLarge"></div>
+          <div class="geo-ellipse" id="ellipseSmall"></div>
+
+          <div class="geo-card" id="cardLeft"></div>
+          <div class="geo-card" id="cardRight"></div>
+          <div class="geo-card" id="cardResult"></div>
+
+          <div class="geo-circle" id="circleMain">
+            <svg class="icon-svg d-none" id="mainIconPlus"><use href="#icon-plus"></use></svg>
+            <svg class="icon-svg d-none" id="mainIconTimes"><use href="#icon-times"></use></svg>
+          </div>
+
+          <div class="geo-circle inverse-circle" id="circleInvLeft">
+            <svg class="icon-svg d-none" id="leftIconMinus"><use href="#icon-minus"></use></svg>
+            <svg class="icon-svg d-none" id="leftIconDivide"><use href="#icon-divide"></use></svg>
+          </div>
+
+          <div class="geo-circle inverse-circle" id="circleInvRight">
+            <svg class="icon-svg d-none" id="rightIconMinus"><use href="#icon-minus"></use></svg>
+            <svg class="icon-svg d-none" id="rightIconDivide"><use href="#icon-divide"></use></svg>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="answer-section">
+        <input type="text" id="answerInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="go">
+        <div class="control-group session-controls-centered">
+          <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
+          <div class="remaining-counter" style="text-align: center; margin-top: 0.5rem;">
+            Problems Remaining: <span id="countDisplay">0</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel-data">
+      <h3>Session Results</h3>
+      <div id="sessionLog" class="log-box"></div>
+      <button id="downloadBtn" class="btn btn-outline" style="width: 100%;">Download Log</button>
+    </aside>
+
+  </div>
+
+  <script>
+    class MathSession {
+      constructor() {
+        this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
+        
+        this.state = {
+          queue: [],
+          currentProblem: null,
+          totalProblems: 0,
+          timerStart: 0,
+          sessionStartObj: null,
+          isTimerRunning: false,
+          isSessionActive: false,
+          
+          // Stats Tracking
+          currentProblemFirstTry: true,
+          stats: {
+            completed: 0,
+            correctFirst: 0,
+            missedFirst: 0
+          }
+        };
+
+        this.dom = {
+          opSelect: document.getElementById('operationSelect'),
+          orderSelect: document.getElementById('problemOrder'),
+          operandOrderSelect: document.getElementById('operandOrder'),
+          missingSelect: document.getElementById('missingValue'),
+          timerToggle: document.getElementById('timerToggle'),
+          
+          sessionBtn: document.getElementById('sessionToggleBtn'),
+          
+          chips: document.querySelectorAll('.chip'),
+          cardLeft: document.getElementById('cardLeft'),
+          cardRight: document.getElementById('cardRight'),
+          cardResult: document.getElementById('cardResult'),
+          operationDisplay: document.getElementById('operationDisplay'),
+          
+          // Icon References
+          mainIconPlus: document.getElementById('mainIconPlus'),
+          mainIconTimes: document.getElementById('mainIconTimes'),
+          leftIconMinus: document.getElementById('leftIconMinus'),
+          leftIconDivide: document.getElementById('leftIconDivide'),
+          rightIconMinus: document.getElementById('rightIconMinus'),
+          rightIconDivide: document.getElementById('rightIconDivide'),
+          
+          input: document.getElementById('answerInput'),
+          countDisplay: document.getElementById('countDisplay'),
+          logBox: document.getElementById('sessionLog'),
+          downloadBtn: document.getElementById('downloadBtn')
+        };
+
+        this.bindEvents();
+        // Initialize UI but DO NOT Start Session
+        this.initIdleState();
+      }
+
+      // --- LOGIC HELPERS ---
+      
+      // NEW: Centralized logic to generate the specific pool based on current selections
+      getFilteredPool() {
+        let pool = [];
+        for (let a = 1; a <= 9; a++) {
+          for (let b = a; b <= 9; b++) {
+            pool.push({ a: a, b: b, sum: a + b, product: a * b });
+          }
+        }
+
+        const activeChips = Array.from(this.dom.chips)
+          .filter(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true')
+          .map(c => parseInt(c.dataset.val));
+        
+        if (activeChips.length > 0 && activeChips.length < 9) {
+          pool = pool.filter(p => activeChips.includes(p.a));
+        }
+        
+        return pool;
+      }
+
+      shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      updateAllChipUI() {
+        const numberChips = Array.from(this.dom.chips).filter(c => c.dataset.val !== 'all');
+        const allAreSelected = numberChips.every(c => c.getAttribute('aria-pressed') === 'true');
+        const allChip = document.getElementById('chipAll');
+
+        if (allAreSelected) {
+          allChip.setAttribute('aria-pressed', 'false');
+          allChip.disabled = true;
+        } else {
+          allChip.setAttribute('aria-pressed', 'true');
+          allChip.disabled = false;
+        }
+      }
+      
+      // NEW: Updates the text display based on current selections (Live Count)
+      updatePendingCount() {
+          const pool = this.getFilteredPool();
+          this.dom.countDisplay.textContent = pool.length;
+      }
+
+      applyTheme(mode) {
+        const root = document.documentElement;
+        const opDisplay = this.dom.operationDisplay;
+        
+        [
+          this.dom.mainIconPlus, this.dom.mainIconTimes,
+          this.dom.leftIconMinus, this.dom.leftIconDivide,
+          this.dom.rightIconMinus, this.dom.rightIconDivide
+        ].forEach(el => el.classList.add('d-none'));
+
+        if (mode === this.MODES.ADDITION) {
+          root.style.setProperty('--theme-text-operand', 'var(--palette-blue-07)');
+          root.style.setProperty('--theme-text-result',  'var(--palette-blue-08)');
+          root.style.setProperty('--theme-logo-math',    'var(--palette-blue-03)');
+          root.style.setProperty('--theme-logo-flash',   'var(--palette-blue-06)');
+          root.style.setProperty('--theme-tagline',      'var(--palette-blue-05)');
+          root.style.setProperty('--theme-btn-bg',       'var(--palette-blue-07)');
+          opDisplay.innerHTML = `<span style="color: var(--palette-blue-03)">addition</span><span style="color: var(--palette-blue-06)">subtraction</span>`;
+          this.dom.mainIconPlus.classList.remove('d-none');
+          this.dom.leftIconMinus.classList.remove('d-none');
+          this.dom.rightIconMinus.classList.remove('d-none');
+        } else {
+          root.style.setProperty('--theme-text-operand', 'var(--palette-green-07)');
+          root.style.setProperty('--theme-text-result',  'var(--palette-green-08)');
+          root.style.setProperty('--theme-logo-math',    'var(--palette-green-03)');
+          root.style.setProperty('--theme-logo-flash',   'var(--palette-green-06)');
+          root.style.setProperty('--theme-tagline',      'var(--palette-green-05)');
+          root.style.setProperty('--theme-btn-bg',       'var(--palette-green-07)');
+          opDisplay.innerHTML = `<span style="color: var(--palette-green-03)">multiplication</span><span style="color: var(--palette-green-06)">division</span>`;
+          this.dom.mainIconTimes.classList.remove('d-none');
+          this.dom.leftIconDivide.classList.remove('d-none');
+          this.dom.rightIconDivide.classList.remove('d-none');
+        }
+      }
+
+      // --- SESSION CONTROL ---
+
+      // 1. Initial / Reset State
+      initIdleState() {
+        this.state.isSessionActive = false;
+        
+        // UI Visuals
+        this.dom.sessionBtn.textContent = "Start Session";
+        this.dom.input.disabled = true; 
+        this.dom.input.value = '';
+        
+        // Update the count immediately based on default selections
+        this.updatePendingCount();
+        
+        // Reset Cards to Dashes
+        this.dom.cardLeft.textContent = "--";
+        this.dom.cardRight.textContent = "--";
+        this.dom.cardResult.textContent = "---";
+        
+        // Card Colors (Done state)
+        const beige02 = 'var(--palette-beige-02)';
+        this.dom.cardLeft.style.color = beige02;
+        this.dom.cardRight.style.color = beige02;
+        this.dom.cardResult.style.color = 'var(--palette-beige-03)';
+
+        // Ensure Theme is applied (for Logo/etc)
+        this.applyTheme(this.dom.opSelect.value);
+        this.updateAllChipUI();
+
+        // UNLOCK Controls
+        this.toggleControls(false); 
+      }
+
+      // 2. Start Session Action
       startSession() {
         this.state.isSessionActive = true;
         this.dom.sessionBtn.textContent = "Reset Session";
@@ -55,3 +880,296 @@
         // Resize to ensure everything fits
         this.handleResize();
       }
+
+      // 3. Reset Session Action
+      resetSession() {
+        // Capture timer state before resetting the session
+        const timerWasActive = this.state.isTimerRunning;
+
+        // Calculate Metrics
+        const sessionEndObj = new Date();
+        const endTime = Date.now();
+        const elapsedSec = (endTime - this.state.timerStart) / 1000;
+        
+        // Format: "X m Y s"
+        const min = Math.floor(elapsedSec / 60);
+        const sec = Math.floor(elapsedSec % 60);
+        const timeStr = `${min} m ${sec} s`;
+        
+        // Date Formatting
+        const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+        const dateStr = this.state.sessionStartObj.toLocaleDateString('en-US', dateOptions);
+        
+        // Time Formatting
+        const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
+        const startTimeStr = this.state.sessionStartObj.toLocaleTimeString('en-US', timeOptions).toLowerCase();
+        const endTimeStr = sessionEndObj.toLocaleTimeString('en-US', timeOptions).toLowerCase();
+
+        const n = this.state.stats.completed;
+        const total = this.state.totalProblems;
+        const c = this.state.stats.correctFirst;
+        const m = this.state.stats.missedFirst;
+        
+        // Calculate Accuracy, Speed, and Efficiency (Always calculated)
+        const accuracy = n > 0 ? (100 * (c / n)).toFixed(0) : 0;
+        const speedVal = elapsedSec > 0 ? (c / elapsedSec).toFixed(2) : '0.00';
+        const efficiencyVal = c > 0 ? (elapsedSec / c).toFixed(2) : '0.00';
+
+        // Detect if session was interrupted
+        let interruptMsg = "";
+        if (n < total) {
+            interruptMsg = `<div style="margin-bottom: 1rem; font-weight: bold;">[SESSION RESET BY USER]</div>`;
+        }
+
+        // Conditionally build rows based on Timer State
+        // If Timer was OFF: return empty string. If ON: return the table row.
+        const rowEndTime = timerWasActive ? `<tr><td>Session end time:</td><td>${endTimeStr}</td></tr>` : '';
+        const rowLength  = timerWasActive ? `<tr><td>Session length:</td><td>${timeStr}</td></tr>` : '';
+        const rowSpeed   = timerWasActive ? `<tr><td>Speed:</td><td>${speedVal} prob/sec</td></tr>` : '';
+        const rowEff     = timerWasActive ? `<tr><td>Efficiency:</td><td>${efficiencyVal} sec/prob</td></tr>` : '';
+
+        // Generate HTML Block
+        const reportHTML = `
+          ${interruptMsg}
+          <table class="stats-table">
+            <tr><td>Session date:</td><td>${dateStr}</td></tr>
+            <tr><td>Session start time:</td><td>${startTimeStr}</td></tr>
+            ${rowEndTime}
+            ${rowLength}
+            <tr style="height: 10px;"></tr>
+            <tr><td>Problems selected:</td><td>${total}</td></tr>
+            <tr><td>Problems completed:</td><td>${n}</td></tr>
+            <tr style="height: 10px;"></tr>
+            <tr><td>Correct (first try):</td><td>${c}</td></tr>
+            <tr><td>Missed (first try):</td><td>${m}</td></tr>
+            <tr style="height: 10px;"></tr>
+            <tr><td>Accuracy:</td><td>${accuracy} %</td></tr>
+            ${rowSpeed}
+            ${rowEff}
+          </table>
+          <hr style="border: 0; border-top: 1px dashed var(--palette-beige-02); margin: 1rem 0;">
+        `;
+
+        this.appendLogHTML(reportHTML);
+
+        this.state.isTimerRunning = false;
+        this.initIdleState();
+      }
+
+      toggleControls(shouldDisable) {
+        // Disable/Enable Sidebar Inputs
+        this.dom.opSelect.disabled = shouldDisable;
+        this.dom.orderSelect.disabled = shouldDisable;
+        this.dom.operandOrderSelect.disabled = shouldDisable;
+        this.dom.missingSelect.disabled = shouldDisable;
+        this.dom.timerToggle.disabled = shouldDisable;
+        
+        // Disable/Enable Chips
+        this.dom.chips.forEach(chip => {
+          chip.disabled = shouldDisable;
+        });
+        
+        // NOTE: If we are UNLOCKING (shouldDisable = false), 
+        // we must re-run the All Chip Logic to ensure it sets itself correctly
+        if (!shouldDisable) {
+            this.updateAllChipUI();
+        }
+      }
+
+      // --- GAMEPLAY LOOP ---
+
+      nextProblem() {
+        if (this.state.queue.length === 0) {
+          this.resetSession(); // Use reset logic to end it
+          return;
+        }
+        
+        // Reset flag for the new problem
+        this.state.currentProblemFirstTry = true;
+        
+        const p = this.state.queue.shift();
+        this.state.currentProblem = this.configureProblemDisplay(p);
+        this.renderProblem();
+        this.dom.countDisplay.textContent = this.state.queue.length + 1;
+      }
+
+      configureProblemDisplay(p) {
+        let left = p.a;
+        let right = p.b;
+        const orderSetting = this.dom.operandOrderSelect.value;
+        
+        if (orderSetting === 'reverse') [left, right] = [p.b, p.a];
+        else if (orderSetting === 'random' && Math.random() > 0.5) [left, right] = [p.b, p.a];
+
+        const missingSetting = this.dom.missingSelect.value;
+        const slots = ['left', 'right', 'result'];
+        let missing = 'result';
+
+        if (missingSetting === 'operand') missing = Math.random() > 0.5 ? 'left' : 'right';
+        else if (missingSetting === 'random') missing = slots[Math.floor(Math.random() * slots.length)];
+
+        const mode = this.dom.opSelect.value;
+        const result = (mode === this.MODES.ADDITION) ? (left + right) : (left * right);
+
+        let correct;
+        if (missing === 'left') correct = left;
+        else if (missing === 'right') correct = right;
+        else correct = result;
+
+        return { left, right, result, missing, correct };
+      }
+
+      renderProblem() {
+        const p = this.state.currentProblem;
+        const show = (slot, val) => (p.missing === slot ? '' : val);
+
+        this.dom.cardLeft.textContent = show('left', p.left);
+        this.dom.cardRight.textContent = show('right', p.right);
+        this.dom.cardResult.textContent = show('result', p.result);
+        
+        this.dom.input.value = '';
+        this.dom.input.focus({ preventScroll: true });
+      }
+
+      checkAnswer() {
+        const userVal = parseInt(this.dom.input.value);
+        if (isNaN(userVal)) return;
+
+        if (userVal === this.state.currentProblem.correct) {
+          // CORRECT LOGIC
+          this.state.stats.completed++;
+          if (this.state.currentProblemFirstTry) {
+            this.state.stats.correctFirst++;
+          }
+          
+          this.fillMissingSlot();
+          setTimeout(() => this.nextProblem(), 300);
+        } else {
+          // INCORRECT LOGIC
+          if (this.state.currentProblemFirstTry) {
+            this.state.stats.missedFirst++;
+            this.state.currentProblemFirstTry = false;
+          }
+
+          const p = this.state.currentProblem;
+          const opSymbol = (this.dom.opSelect.value === 'addsub') ? '+' : '×'; 
+          // Optional: You can uncomment this if you still want per-mistake logging
+          // this.updateLog(`Incorrect: ${userVal} (Problem: ${p.left} ${opSymbol} ${p.right})`);
+
+          this.dom.input.classList.add('error');
+          setTimeout(() => this.dom.input.classList.remove('error'), 400);
+          this.dom.input.select();
+        }
+      }
+
+      fillMissingSlot() {
+        const p = this.state.currentProblem;
+        this.dom.cardLeft.textContent = p.left;
+        this.dom.cardRight.textContent = p.right;
+        this.dom.cardResult.textContent = p.result;
+      }
+
+      updateLog(msg) {
+        const div = document.createElement('div');
+        div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        this.dom.logBox.appendChild(div);
+        this.dom.logBox.scrollTop = this.dom.logBox.scrollHeight;
+      }
+      
+      appendLogHTML(htmlString) {
+        const div = document.createElement('div');
+        div.innerHTML = htmlString;
+        this.dom.logBox.appendChild(div);
+        this.dom.logBox.scrollTop = this.dom.logBox.scrollHeight;
+      }
+
+      downloadLog() {
+        if (!this.dom.logBox.innerText) return;
+        const blob = new Blob([this.dom.logBox.innerText], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `mathflash_log_${new Date().toISOString().slice(0,10)}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      handleResize() {
+        const container = document.getElementById('problemArea');
+        const anchor = document.querySelector('.constellation-anchor');
+        const requiredWidth = 540; 
+        const availableWidth = container.clientWidth;
+        const scale = Math.min(1, availableWidth / requiredWidth);
+        anchor.style.transform = `scale(${scale})`;
+        container.style.height = `${350 * scale}px`;
+      }
+
+      bindEvents() {
+        // SETTINGS CHANGE EVENTS: Just apply visuals, don't start session
+        const visualTriggers = [this.dom.opSelect];
+        visualTriggers.forEach(el => el.addEventListener('change', () => {
+            if (!this.state.isSessionActive) {
+                this.applyTheme(this.dom.opSelect.value);
+            }
+        }));
+        
+        // WATCH FOR CHIP/FILTER CHANGES to update Pending Count
+        const filterTriggers = [this.dom.chips]; 
+        // Note: chips are handled in their own click listener, but we also want to catch select/toggle changes
+        // that affect the pool size? Currently only chips affect pool size.
+        // If "Problem Order" or other selects affected size, we'd add them here.
+
+        // BUTTON TOGGLE EVENT
+        this.dom.sessionBtn.addEventListener('click', () => {
+            if (this.state.isSessionActive) {
+                this.resetSession();
+            } else {
+                this.startSession();
+            }
+        });
+        
+        this.dom.chips.forEach(chip => {
+          chip.addEventListener('click', () => {
+            if (chip.dataset.val === 'all') {
+              this.dom.chips.forEach(c => {
+                if (c.dataset.val !== 'all') c.setAttribute('aria-pressed', 'true');
+              });
+            } else {
+              const isPressed = chip.getAttribute('aria-pressed') === 'true';
+              chip.setAttribute('aria-pressed', !isPressed);
+            }
+            this.updateAllChipUI();
+            
+            // NEW: Recalculate pending problems count immediately
+            this.updatePendingCount();
+          });
+        });
+
+        this.dom.input.addEventListener('input', () => {
+          this.dom.input.value = this.dom.input.value.replace(/[^0-9]/g, '');
+          if (!this.state.currentProblem) return;
+          const userStr = this.dom.input.value;
+          const correctStr = String(this.state.currentProblem.correct);
+          const userVal = parseInt(userStr);
+          if (userVal === this.state.currentProblem.correct) {
+            this.checkAnswer();
+          } 
+          else if (userStr.length >= correctStr.length) {
+             this.checkAnswer();
+          }
+        });
+
+        this.dom.input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') this.checkAnswer();
+        });
+        
+        this.dom.downloadBtn.addEventListener('click', () => this.downloadLog());
+        window.addEventListener('resize', () => this.handleResize());
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => new MathSession());
+  </script>
+</body>
+</html>
