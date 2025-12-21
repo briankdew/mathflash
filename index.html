@@ -437,8 +437,18 @@
       background-color: var(--palette-beige-02);
     }
 
+    /* TOGGLE SWITCH STYLE - FIXED INPUT VISIBILITY */
     .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    
+    /* Enforce position: absolute to ensure it doesn't take up flow space and is truly hidden */
+    .toggle-switch input { 
+      position: absolute; 
+      opacity: 0; 
+      width: 0; 
+      height: 0; 
+      margin: 0; 
+    }
+    
     .slider {
       position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
       background-color: var(--palette-beige-01); transition: .4s; border-radius: 34px;
@@ -477,6 +487,14 @@
     .stats-table td:nth-child(2) {
         text-align: left;
         font-weight: bold;
+    }
+
+    /* NEW: Style for the "Session Started" message to match table font */
+    .session-start-msg {
+        font-family: monospace;
+        font-size: 0.9em;
+        margin-bottom: 0.5rem;
+        display: block;
     }
   </style>
 </head>
@@ -837,7 +855,10 @@
         this.dom.input.value = '';
         this.dom.input.focus();
 
-        this.updateLog(`Session started.`);
+        const timerStatus = this.state.isTimerRunning ? "ON" : "OFF";
+        const startMsg = `Session started (Timer ${timerStatus})`;
+        this.appendLogHTML(`<div class="session-start-msg">${startMsg}</div>`);
+
         this.nextProblem();
         
         // Resize to ensure everything fits
@@ -892,8 +913,9 @@
             <tr><td>Missed (first try):</td><td>${m}</td></tr>
             <tr style="height: 10px;"></tr>
             <tr><td>Accuracy:</td><td>${accuracy} %</td></tr>
-            <tr><td>Speed:</td><td>${speedVal} prob/sec</td></tr>
+            <tr><td>Speed:</td><td>${speedVal} problems/second</td></tr>
           </table>
+          <hr style="border: 0; border-top: 1px dashed var(--palette-beige-02); margin: 1rem 0;">
         `;
 
         this.appendLogHTML(reportHTML);
@@ -1018,13 +1040,15 @@
       updateLog(msg) {
         const div = document.createElement('div');
         div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        this.dom.logBox.prepend(div);
+        this.dom.logBox.appendChild(div);
+        this.dom.logBox.scrollTop = this.dom.logBox.scrollHeight;
       }
       
       appendLogHTML(htmlString) {
         const div = document.createElement('div');
         div.innerHTML = htmlString;
-        this.dom.logBox.prepend(div);
+        this.dom.logBox.appendChild(div);
+        this.dom.logBox.scrollTop = this.dom.logBox.scrollHeight;
       }
 
       downloadLog() {
