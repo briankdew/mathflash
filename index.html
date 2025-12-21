@@ -187,9 +187,9 @@
 
     /* Standard Selectors (Settings) - 50% Width */
     .select-input {
-      width: 50%; 
-      padding: 0.4rem 0.8rem;
-      border-radius: var(--border-radius-pill);
+      width: 50%;
+      width: fit-content;
+padding: 0.4rem 2.0rem 0.4rem 0.8rem;      border-radius: var(--border-radius-pill);
       border: 1px solid var(--palette-beige-01); 
       background-color: var(--color-white);
       font-family: inherit; font-size: 0.95rem; color: var(--color-text-main);
@@ -199,10 +199,6 @@
       background-size: 1em;
     }
     
-    /* Operation Selector - 80% Width Override */
-    #operationSelect {
-      width: 80%;
-    }
     
     select option {
       background-color: var(--color-white);
@@ -236,16 +232,13 @@
       overflow: visible;
     }
 
-    /* Operation Display Text (Above Cards) */
+    /* Operation Display Text */
     #operationDisplay {
       position: absolute;
-      /* Adjusted coordinate: -13.5rem (approx -216px) relative to center */
-      /* This preserves the visual gap above the cards regardless of scale */
       top: -13.5rem; 
       left: 50%;
       transform: translateX(-50%);
       font-family: 'Fredoka', sans-serif;
-      /* Increased to ~32pt match your mock-up */
       font-size: 2.6rem; 
       font-weight: 500;
       z-index: 10;
@@ -403,29 +396,23 @@
     
     /* REFACTORED CHIP TO BE A "MINI CARD" */
     .chip {
-      /* Replica Geometry: Aspect Ratio 1.4 to match 210/150 cards */
       aspect-ratio: 1.4 / 1;
-      width: 100%; /* Fills grid cell */
+      width: 100%;
+      max-width: 60px;    /* Limit maximum size */
+      margin: 0 auto;     /* Center in the grid cell */
       border: none;
-      
-      /* Replica Shape: Scaled Border Radius */
-      border-radius: 5px; /* approx 20% of 22px */
-      
-      /* Layout */
+      border-radius: 5px;
       display: flex; justify-content: center; align-items: center;
-      padding: 0; /* Remove button padding */
-      
-      /* Replica Font */
+      padding: 0; 
       font-family: 'Nunito', sans-serif; 
       font-weight: 700;
-      font-size: 1.5rem; /* Proportional-ish scaled font */
+      font-size: 1.5rem; 
       
       /* Base State (Unselected): Beige 01 Bg, Beige 03 Text, No Shadow */
       background-color: var(--palette-beige-01);
       color: var(--palette-beige-03);
       box-shadow: none; 
       text-shadow: none;
-      
       cursor: pointer;
     }
     
@@ -440,10 +427,7 @@
     /* Selected State: Pops up with Theme color & Shadows */
     .chip[aria-pressed="true"] {
       color: var(--theme-text-operand);
-      /* Background matches operand cards (Beige 01) */
       background-color: var(--palette-beige-01);
-      
-      /* Mini Shadows (approx 25% of --shadow-card) */
       box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
       text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
     }
@@ -485,7 +469,7 @@
          <path d="m3.8342886 0c-1.1947422 0 -2.1347907 0.32598013 -2.820147 0.97793704c-0.6760938 0.65195686 -1.0141416 1.5702088 -1.0141416 2.7547522c0 1.1845434 0.33804774 2.102792 1.0141416 2.7547524c0.6853564 0.64277315 1.6254048 0.9641633 2.820147 0.9641633l35.508846 0c1.250309 0 2.2042503 -0.32139015 2.861824 -0.9641633c0.6575699 -0.6519604 0.9863548 -1.570209 0.9863548 -2.7547524c0 -1.1845434 -0.32878494 -2.1027951 -0.9863548 -2.7547522c-0.6575737 -0.6519569 -1.611515 -0.97793704 -2.861824 -0.97793704z" fill-rule="evenodd"/>
       </symbol>
 
-      <symbol id="icon-times" viewBox="0 0 38.4 37.8">
+      <symbol id="icon-times" viewBox="-2.65 -2.45 43.7 42.7"> /* 38.4 37.8 */
          <path d="m3.7250946 0c-0.608165 0 -1.1753755 0.15159208 -1.7016313 0.4547796c-0.6760938 0.3948489 -1.1993718 0.91825175 -1.5698355 1.5702088c-0.37046212 0.6519568 -0.5140169 1.3865564 -0.43066284 2.2038019c0.0833541 0.81724167 0.4954932 1.5931625 1.2364191 2.3277655l12.628145 12.520349l-12.378083 12.272421c-0.9076341 0.899889 -1.3336656 1.8456821 -1.2780962 2.8373966c0.05556941 0.9825287 0.4260315 1.8273201 1.111388 2.5343704c0.6853665 0.70705414 1.5235289 1.0881271 2.5145154 1.1432228c0.057706118 0.0031814575 0.11525798 0.0047683716 0.17265725 0.0047683716c0.9375081 0 1.8338971 -0.42398834 2.689167 -1.2719536l12.461437 -12.355064l12.461437 12.355064c0.74092484 0.73460007 1.5096359 1.143219 2.3061295 1.2258644c0.14629745 0.01517868 0.29009247 0.022766113 0.43138504 0.022766113c0.6279831 0 1.2065887 -0.1499176 1.7358208 -0.4497528c0.6575737 -0.36729813 1.185482 -0.8861084 1.5837288 -1.5564346c0.39824677 -0.6795082 0.54180145 -1.4141121 0.43066406 -2.203804c-0.111141205 -0.78969574 -0.5371704 -1.5518494 -1.2780952 -2.2864437l-12.378086 -12.272421l12.628147 -12.520349c0.9724655 -0.9641633 1.4123878 -1.9237366 1.3197708 -2.8787162c-0.083351135 -0.96416306 -0.4815979 -1.7951789 -1.1947403 -2.4930506c-0.7038803 -0.707052 -1.5698357 -1.0881271 -2.5978699 -1.1432222c-0.067276 -0.0042437725 -0.13433075 -0.006365657 -0.20116425 -0.006365657c-0.9452133 0 -1.8459892 0.42451835 -2.7023354 1.2735517l-12.544792 12.437706l-12.544792 -12.437706c-0.74092484 -0.7345995 -1.5235271 -1.1569959 -2.347807 -1.267186c-0.19135046 -0.027712297 -0.37895823 -0.041566763 -0.5628216 -0.041566763z" fill-rule="evenodd"/>
       </symbol>
       
@@ -564,7 +548,7 @@
         </label>
       </div>
       <div class="control-group">
-        <button id="restartBtn" class="btn btn-primary" style="width: 100%;">Restart Session</button>
+        <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
         <div class="remaining-counter" style="text-align: center; margin-top: 1rem;">
           Problems Remaining: <span id="countDisplay">0</span>
         </div>
@@ -626,7 +610,8 @@
           currentProblem: null,
           totalProblems: 0,
           timerStart: 0,
-          isTimerRunning: false
+          isTimerRunning: false,
+          isSessionActive: false
         };
 
         this.dom = {
@@ -635,7 +620,9 @@
           operandOrderSelect: document.getElementById('operandOrder'),
           missingSelect: document.getElementById('missingValue'),
           timerToggle: document.getElementById('timerToggle'),
-          restartBtn: document.getElementById('restartBtn'),
+          
+          sessionBtn: document.getElementById('sessionToggleBtn'),
+          
           chips: document.querySelectorAll('.chip'),
           cardLeft: document.getElementById('cardLeft'),
           cardRight: document.getElementById('cardRight'),
@@ -657,16 +644,29 @@
         };
 
         this.bindEvents();
-        this.initSession();
+        // Initialize UI but DO NOT Start Session
+        this.initIdleState();
       }
 
-      generateProblemPool() {
-        const pool = [];
+      // --- LOGIC HELPERS ---
+      
+      // NEW: Centralized logic to generate the specific pool based on current selections
+      getFilteredPool() {
+        let pool = [];
         for (let a = 1; a <= 9; a++) {
           for (let b = a; b <= 9; b++) {
             pool.push({ a: a, b: b, sum: a + b, product: a * b });
           }
         }
+
+        const activeChips = Array.from(this.dom.chips)
+          .filter(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true')
+          .map(c => parseInt(c.dataset.val));
+        
+        if (activeChips.length > 0 && activeChips.length < 9) {
+          pool = pool.filter(p => activeChips.includes(p.a));
+        }
+        
         return pool;
       }
 
@@ -678,71 +678,30 @@
         return array;
       }
 
-      initSession() {
-        this.dom.input.value = '';
-        this.dom.input.disabled = false;
-        
-        // Update the All Chip UI state immediately on init
-        this.updateAllChipUI();
+      updateAllChipUI() {
+        const numberChips = Array.from(this.dom.chips).filter(c => c.dataset.val !== 'all');
+        const allAreSelected = numberChips.every(c => c.getAttribute('aria-pressed') === 'true');
+        const allChip = document.getElementById('chipAll');
 
-        // --- RESET CARD COLORS ON START ---
-        this.dom.cardLeft.style.color = '';
-        this.dom.cardRight.style.color = '';
-        this.dom.cardResult.style.color = '';
-
-        this.updateLog("Session Ready.");
-        
-        const mode = this.dom.opSelect.value;
-        this.applyTheme(mode);
-
-        let pool = this.generateProblemPool();
-        const activeChips = Array.from(this.dom.chips)
-          .filter(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true')
-          .map(c => parseInt(c.dataset.val));
-        
-        if (activeChips.length > 0 && activeChips.length < 9) {
-          pool = pool.filter(p => activeChips.includes(p.a));
+        if (allAreSelected) {
+          allChip.setAttribute('aria-pressed', 'false');
+          allChip.disabled = true;
+        } else {
+          allChip.setAttribute('aria-pressed', 'true');
+          allChip.disabled = false;
         }
-
-        if (this.dom.orderSelect.value === 'random') this.shuffle(pool);
-
-        this.state.queue = pool;
-        this.state.totalProblems = pool.length;
-        this.state.isTimerRunning = false;
-        this.state.timerStart = 0;
-
-        this.nextProblem();
-        
-        // Initial resize trigger to set correct scale
-        this.handleResize();
-
-        // Prevent Scroll on focus to stop jumping
-        this.dom.input.focus({ preventScroll: true });
-        
-        // Manually scroll the cards to the top of the viewport + small offset
-        setTimeout(() => {
-          const problemArea = document.getElementById('problemArea');
-          if (problemArea) {
-             // CHANGE THIS VALUE to adjust the scroll position
-             // Higher number = Scrolls higher (shows more top margin)
-             const offset = 120; 
-             
-             const elementPosition = problemArea.getBoundingClientRect().top + window.scrollY;
-             const offsetPosition = elementPosition - offset;
-             
-             window.scrollTo({
-               top: offsetPosition,
-               behavior: "smooth"
-             });
-          }
-        }, 300);
+      }
+      
+      // NEW: Updates the text display based on current selections (Live Count)
+      updatePendingCount() {
+          const pool = this.getFilteredPool();
+          this.dom.countDisplay.textContent = pool.length;
       }
 
       applyTheme(mode) {
         const root = document.documentElement;
         const opDisplay = this.dom.operationDisplay;
         
-        // Hide all icons first
         [
           this.dom.mainIconPlus, this.dom.mainIconTimes,
           this.dom.leftIconMinus, this.dom.leftIconDivide,
@@ -750,45 +709,147 @@
         ].forEach(el => el.classList.add('d-none'));
 
         if (mode === this.MODES.ADDITION) {
-          // ADDITION THEME
           root.style.setProperty('--theme-text-operand', 'var(--palette-blue-07)');
           root.style.setProperty('--theme-text-result',  'var(--palette-blue-08)');
           root.style.setProperty('--theme-logo-math',    'var(--palette-blue-03)');
           root.style.setProperty('--theme-logo-flash',   'var(--palette-blue-06)');
           root.style.setProperty('--theme-tagline',      'var(--palette-blue-05)');
           root.style.setProperty('--theme-btn-bg',       'var(--palette-blue-07)');
-          
-          // Dual Color Text for Addition/Subtraction (Blue 03 / Blue 06)
-          // No whitespace between spans for logo style
           opDisplay.innerHTML = `<span style="color: var(--palette-blue-03)">addition</span><span style="color: var(--palette-blue-06)">subtraction</span>`;
-
-          // Show Add/Sub Icons
           this.dom.mainIconPlus.classList.remove('d-none');
           this.dom.leftIconMinus.classList.remove('d-none');
           this.dom.rightIconMinus.classList.remove('d-none');
         } else {
-          // MULTIPLICATION THEME
           root.style.setProperty('--theme-text-operand', 'var(--palette-green-07)');
           root.style.setProperty('--theme-text-result',  'var(--palette-green-08)');
           root.style.setProperty('--theme-logo-math',    'var(--palette-green-03)');
           root.style.setProperty('--theme-logo-flash',   'var(--palette-green-06)');
           root.style.setProperty('--theme-tagline',      'var(--palette-green-05)');
           root.style.setProperty('--theme-btn-bg',       'var(--palette-green-07)');
-
-          // Dual Color Text for Multiplication/Division (Green 03 / Green 06)
-          // No whitespace between spans for logo style
           opDisplay.innerHTML = `<span style="color: var(--palette-green-03)">multiplication</span><span style="color: var(--palette-green-06)">division</span>`;
-          
-          // Show Mult/Div Icons
           this.dom.mainIconTimes.classList.remove('d-none');
           this.dom.leftIconDivide.classList.remove('d-none');
           this.dom.rightIconDivide.classList.remove('d-none');
         }
       }
 
+      // --- SESSION CONTROL ---
+
+      // 1. Initial / Reset State
+      initIdleState() {
+        this.state.isSessionActive = false;
+        
+        // UI Visuals
+        this.dom.sessionBtn.textContent = "Start Session";
+        this.dom.input.disabled = true; 
+        this.dom.input.value = '';
+        
+        // Update the count immediately based on default selections
+        this.updatePendingCount();
+        
+        // Reset Cards to Dashes
+        this.dom.cardLeft.textContent = "--";
+        this.dom.cardRight.textContent = "--";
+        this.dom.cardResult.textContent = "---";
+        
+        // Card Colors (Done state)
+        const beige02 = 'var(--palette-beige-02)';
+        this.dom.cardLeft.style.color = beige02;
+        this.dom.cardRight.style.color = beige02;
+        this.dom.cardResult.style.color = 'var(--palette-beige-03)';
+
+        // Ensure Theme is applied (for Logo/etc)
+        this.applyTheme(this.dom.opSelect.value);
+        this.updateAllChipUI();
+
+        // UNLOCK Controls
+        this.toggleControls(false); 
+      }
+
+      // 2. Start Session Action
+      startSession() {
+        this.state.isSessionActive = true;
+        this.dom.sessionBtn.textContent = "Reset Session";
+        
+        // Reset Card Colors to Theme defaults
+        this.dom.cardLeft.style.color = '';
+        this.dom.cardRight.style.color = '';
+        this.dom.cardResult.style.color = '';
+
+        // Prepare Pool using the helper
+        let pool = this.getFilteredPool();
+
+        if (this.dom.orderSelect.value === 'random') this.shuffle(pool);
+
+        this.state.queue = pool;
+        this.state.totalProblems = pool.length;
+        
+        // Timer Logic
+        const timerActive = this.dom.timerToggle.checked;
+        this.state.isTimerRunning = timerActive;
+        if (timerActive) this.state.timerStart = Date.now();
+
+        // LOCK Controls
+        this.toggleControls(true);
+
+        // Enable Input
+        this.dom.input.disabled = false;
+        this.dom.input.value = '';
+        this.dom.input.focus();
+
+        this.updateLog(`Session started (Timer ${timerActive ? 'ON' : 'OFF'}).`);
+        this.nextProblem();
+        
+        // Resize to ensure everything fits
+        this.handleResize();
+      }
+
+      // 3. Reset Session Action
+      resetSession() {
+        // Log results if needed (End Session logic)
+        let timeMsg = "";
+        if (this.state.isTimerRunning) {
+          const elapsed = ((Date.now() - this.state.timerStart) / 1000).toFixed(1);
+          timeMsg = ` in ${elapsed}s`;
+        }
+        // Only log "Completed" if queue is empty, otherwise "Reset"
+        if(this.state.queue.length === 0) {
+             this.updateLog(`Completed ${this.state.totalProblems} problems${timeMsg}.`);
+        } else {
+             this.updateLog(`Session Reset.`);
+        }
+        
+        this.state.isTimerRunning = false;
+        
+        // Return to Idle
+        this.initIdleState();
+      }
+
+      toggleControls(shouldDisable) {
+        // Disable/Enable Sidebar Inputs
+        this.dom.opSelect.disabled = shouldDisable;
+        this.dom.orderSelect.disabled = shouldDisable;
+        this.dom.operandOrderSelect.disabled = shouldDisable;
+        this.dom.missingSelect.disabled = shouldDisable;
+        this.dom.timerToggle.disabled = shouldDisable;
+        
+        // Disable/Enable Chips
+        this.dom.chips.forEach(chip => {
+          chip.disabled = shouldDisable;
+        });
+        
+        // NOTE: If we are UNLOCKING (shouldDisable = false), 
+        // we must re-run the All Chip Logic to ensure it sets itself correctly
+        if (!shouldDisable) {
+            this.updateAllChipUI();
+        }
+      }
+
+      // --- GAMEPLAY LOOP ---
+
       nextProblem() {
         if (this.state.queue.length === 0) {
-          this.endSession();
+          this.resetSession(); // Use reset logic to end it
           return;
         }
         const p = this.state.queue.shift();
@@ -832,8 +893,6 @@
         this.dom.cardResult.textContent = show('result', p.result);
         
         this.dom.input.value = '';
-        
-        // Prevent Scroll on focus to stop jumping
         this.dom.input.focus({ preventScroll: true });
       }
 
@@ -841,20 +900,12 @@
         const userVal = parseInt(this.dom.input.value);
         if (isNaN(userVal)) return;
 
-        if (this.dom.timerToggle.checked && !this.state.isTimerRunning) {
-          this.state.isTimerRunning = true;
-          this.state.timerStart = Date.now();
-          this.updateLog("Timer Started.");
-        }
-
         if (userVal === this.state.currentProblem.correct) {
           this.fillMissingSlot();
           setTimeout(() => this.nextProblem(), 300);
         } else {
-          // --- LOGGING THE ERROR ---
           const p = this.state.currentProblem;
           const opSymbol = (this.dom.opSelect.value === 'addsub') ? '+' : '×'; 
-          // For simplicity in the log, we can just log the specific attempt with context:
           this.updateLog(`Incorrect: ${userVal} (Problem: ${p.left} ${opSymbol} ${p.right})`);
 
           this.dom.input.classList.add('error');
@@ -868,31 +919,6 @@
         this.dom.cardLeft.textContent = p.left;
         this.dom.cardRight.textContent = p.right;
         this.dom.cardResult.textContent = p.result;
-      }
-
-      endSession() {
-        this.dom.input.disabled = true;
-        this.dom.countDisplay.textContent = "0";
-        
-        // --- NEW END SESSION STATE ---
-        // 1. Set the text content to Standard Hyphens
-        this.dom.cardLeft.textContent = "--";
-        this.dom.cardRight.textContent = "--";
-        this.dom.cardResult.textContent = "---";
-
-        // 2. Apply specific beige colors for the "done" state via inline styles
-        const beige02 = 'var(--palette-beige-02)';
-        this.dom.cardLeft.style.color = beige02;
-        this.dom.cardRight.style.color = beige02;
-        this.dom.cardResult.style.color = 'var(--palette-beige-03)';
-
-        let timeMsg = "";
-        if (this.state.isTimerRunning) {
-          const elapsed = ((Date.now() - this.state.timerStart) / 1000).toFixed(1);
-          timeMsg = ` in ${elapsed}s`;
-        }
-        this.updateLog(`Completed ${this.state.totalProblems} problems${timeMsg}.`);
-        this.state.isTimerRunning = false;
       }
 
       updateLog(msg) {
@@ -913,71 +939,63 @@
         document.body.removeChild(a);
       }
 
-      // Responsive scaling logic for the constellation
       handleResize() {
         const container = document.getElementById('problemArea');
         const anchor = document.querySelector('.constellation-anchor');
-        
         const requiredWidth = 540; 
         const availableWidth = container.clientWidth;
-        
         const scale = Math.min(1, availableWidth / requiredWidth);
-        
         anchor.style.transform = `scale(${scale})`;
         container.style.height = `${350 * scale}px`;
       }
 
-      // New Helper to sync the "All" chip state based on 1-9 status
-      updateAllChipUI() {
-        const numberChips = Array.from(this.dom.chips).filter(c => c.dataset.val !== 'all');
-        const allAreSelected = numberChips.every(c => c.getAttribute('aria-pressed') === 'true');
-        const allChip = document.getElementById('chipAll');
-
-        if (allAreSelected) {
-          // If 1-9 are ALL selected, disable "All" button and show it as unpressed/gray
-          allChip.setAttribute('aria-pressed', 'false');
-          allChip.disabled = true;
-        } else {
-          // If any are missing, enable "All" button and show it as pressed/active
-          allChip.setAttribute('aria-pressed', 'true');
-          allChip.disabled = false;
-        }
-      }
-
       bindEvents() {
-        const resetTriggers = [this.dom.opSelect, this.dom.orderSelect, this.dom.operandOrderSelect, this.dom.missingSelect];
-        resetTriggers.forEach(el => el.addEventListener('change', () => this.initSession()));
-        this.dom.restartBtn.addEventListener('click', () => this.initSession());
+        // SETTINGS CHANGE EVENTS: Just apply visuals, don't start session
+        const visualTriggers = [this.dom.opSelect];
+        visualTriggers.forEach(el => el.addEventListener('change', () => {
+            if (!this.state.isSessionActive) {
+                this.applyTheme(this.dom.opSelect.value);
+            }
+        }));
+        
+        // WATCH FOR CHIP/FILTER CHANGES to update Pending Count
+        const filterTriggers = [this.dom.chips]; 
+        // Note: chips are handled in their own click listener, but we also want to catch select/toggle changes
+        // that affect the pool size? Currently only chips affect pool size.
+        // If "Problem Order" or other selects affected size, we'd add them here.
+
+        // BUTTON TOGGLE EVENT
+        this.dom.sessionBtn.addEventListener('click', () => {
+            if (this.state.isSessionActive) {
+                this.resetSession();
+            } else {
+                this.startSession();
+            }
+        });
         
         this.dom.chips.forEach(chip => {
           chip.addEventListener('click', () => {
             if (chip.dataset.val === 'all') {
-              // "All" clicked: Turn ON all number chips
               this.dom.chips.forEach(c => {
                 if (c.dataset.val !== 'all') c.setAttribute('aria-pressed', 'true');
               });
             } else {
-              // Number chip clicked: Toggle self
               const isPressed = chip.getAttribute('aria-pressed') === 'true';
               chip.setAttribute('aria-pressed', !isPressed);
             }
-            
-            // Recalculate UI state for "All" button
             this.updateAllChipUI();
             
-            this.initSession();
+            // NEW: Recalculate pending problems count immediately
+            this.updatePendingCount();
           });
         });
 
         this.dom.input.addEventListener('input', () => {
           this.dom.input.value = this.dom.input.value.replace(/[^0-9]/g, '');
-          
           if (!this.state.currentProblem) return;
-
           const userStr = this.dom.input.value;
           const correctStr = String(this.state.currentProblem.correct);
           const userVal = parseInt(userStr);
-
           if (userVal === this.state.currentProblem.correct) {
             this.checkAnswer();
           } 
@@ -991,7 +1009,6 @@
         });
         
         this.dom.downloadBtn.addEventListener('click', () => this.downloadLog());
-        
         window.addEventListener('resize', () => this.handleResize());
       }
     }
