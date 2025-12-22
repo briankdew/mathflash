@@ -865,11 +865,18 @@
         // --- NEW LOGGING LOGIC ---
         const timerStatus = this.state.isTimerRunning ? "ON" : "OFF";
         const opText = this.dom.opSelect.value === 'addsub' ? 'Addition / Subtraction' : 'Multiplication / Division';
+        
+        // Determine Level based on Missing Value setting
+        const missingVal = this.dom.missingSelect.value;
+        let levelText = "Easy";
+        if (missingVal === 'operand') levelText = "Moderate";
+        else if (missingVal === 'random') levelText = "Difficult";
 
         const startMsg = `
             <div class="session-start-msg">Session started (Timer ${timerStatus})</div>
             <table class="stats-table" style="margin-top: 0.25rem;">
                 <tr><td>Operation:</td><td>${opText}</td></tr>
+                <tr><td>Level:</td><td>${levelText}</td></tr>
             </table>
         `;
         this.appendLogHTML(startMsg);
@@ -910,6 +917,8 @@
         const c = this.state.stats.correctFirst;
         const m = this.state.stats.missedFirst;
         
+        // Percent Completed: (Completed / Selected) * 100
+        const pctCompleted = total > 0 ? (100 * (n / total)).toFixed(0) : 0;
         // Calculate Accuracy, Completion Rate, and Calculation Speed
         const accuracy = n > 0 ? (100 * (c / n)).toFixed(0) : 0;
         // Completion Rate: (Completed / seconds) * 60 => prob/min
@@ -934,16 +943,21 @@
         const reportHTML = `
           ${interruptMsg}
           
-          <div style="font-weight: bold; margin: 1rem 0 0.5rem 0; text-transform: uppercase;">SESSION SUMMARY</div>
+          <div style="font-weight: bold; margin: 1rem 0 0.5rem 0; text-transform: uppercase;">SESSION DATE/TIME</div>
           
           <table class="stats-table">
             <tr><td>Session date:</td><td>${dateStr}</td></tr>
             <tr><td>Session start time:</td><td>${startTimeStr}</td></tr>
             ${rowEndTime}
             ${rowLength}
-            <tr style="height: 10px;"></tr>
+          </table>
+
+          <div style="font-weight: bold; margin: 1rem 0 0.5rem 0; text-transform: uppercase;">SESSION PERFORMANCE</div>
+
+          <table class="stats-table">
             <tr><td>Problems selected:</td><td>${total}</td></tr>
             <tr><td>Problems completed:</td><td>${n}</td></tr>
+            <tr><td>Percent completed:</td><td>${pctCompleted} %</td></tr>
             <tr style="height: 10px;"></tr>
             <tr><td>Correct (first try):</td><td>${c}</td></tr>
             <tr><td>Missed (first try):</td><td>${m}</td></tr>
