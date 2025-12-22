@@ -888,8 +888,8 @@
 
         // Calculate Metrics
         const sessionEndObj = new Date();
-        const endTime = Date.now();
-        const elapsedSec = (endTime - this.state.timerStart) / 1000;
+        // Round duration to nearest second
+        const elapsedSec = Math.round((Date.now() - this.state.timerStart) / 1000);
         
         // Format: "X m Y s"
         const min = Math.floor(elapsedSec / 60);
@@ -910,10 +910,12 @@
         const c = this.state.stats.correctFirst;
         const m = this.state.stats.missedFirst;
         
-        // Calculate Accuracy, Speed, and Efficiency (Always calculated)
+        // Calculate Accuracy, Completion Rate, and Calculation Speed
         const accuracy = n > 0 ? (100 * (c / n)).toFixed(0) : 0;
-        const speedVal = elapsedSec > 0 ? (c / elapsedSec).toFixed(2) : '0.00';
-        const efficiencyVal = c > 0 ? (elapsedSec / c).toFixed(2) : '0.00';
+        // Completion Rate: (Completed / seconds) * 60 => prob/min
+        const rateVal = elapsedSec > 0 ? ((n / elapsedSec) * 60).toFixed(1) : '0.0';
+        // Calculation Speed: seconds / Completed => sec/prob
+        const calcSpeedVal = n > 0 ? (elapsedSec / n).toFixed(1) : '0.0';
 
         // Detect if session was interrupted
         let interruptMsg = "";
@@ -925,12 +927,15 @@
         // If Timer was OFF: return empty string. If ON: return the table row.
         const rowEndTime = timerWasActive ? `<tr><td>Session end time:</td><td>${endTimeStr}</td></tr>` : '';
         const rowLength  = timerWasActive ? `<tr><td>Session length:</td><td>${timeStr}</td></tr>` : '';
-        const rowSpeed   = timerWasActive ? `<tr><td>Speed:</td><td>${speedVal} prob/sec</td></tr>` : '';
-        const rowEff     = timerWasActive ? `<tr><td>Efficiency:</td><td>${efficiencyVal} sec/prob</td></tr>` : '';
+        const rowRate      = timerWasActive ? `<tr><td>Completion rate:</td><td>${rateVal} prob/min</td></tr>` : '';
+        const rowCalcSpeed = timerWasActive ? `<tr><td>Calculation speed:</td><td>${calcSpeedVal} sec/prob</td></tr>` : '';
 
         // Generate HTML Block
         const reportHTML = `
           ${interruptMsg}
+          
+          <div style="font-weight: bold; margin: 1rem 0 0.5rem 0; text-transform: uppercase;">SESSION SUMMARY</div>
+          
           <table class="stats-table">
             <tr><td>Session date:</td><td>${dateStr}</td></tr>
             <tr><td>Session start time:</td><td>${startTimeStr}</td></tr>
@@ -944,9 +949,12 @@
             <tr><td>Missed (first try):</td><td>${m}</td></tr>
             <tr style="height: 10px;"></tr>
             <tr><td>Accuracy:</td><td>${accuracy} %</td></tr>
-            ${rowSpeed}
-            ${rowEff}
+            ${rowRate}
+            ${rowCalcSpeed}
           </table>
+
+          <div style="font-weight: bold; margin: 1.5rem 0 0.5rem 0; text-transform: uppercase;">SESSION DETAILS</div>
+
           <hr style="border: 0; border-top: 1px dashed var(--palette-beige-02); margin: 1rem 0;">
         `;
 
