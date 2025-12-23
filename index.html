@@ -576,16 +576,16 @@
       <div class="control-group">
         <label class="control-label">Problem Set</label>
         <div class="chip-grid" id="problemSetGrid">
-          <button type="button" class="chip" data-val="1">1</button>
-          <button type="button" class="chip" data-val="2">2</button>
-          <button type="button" class="chip" data-val="3">3</button>
-          <button type="button" class="chip" data-val="4">4</button>
-          <button type="button" class="chip" data-val="5">5</button>
-          <button type="button" class="chip" data-val="6">6</button>
-          <button type="button" class="chip" data-val="7">7</button>
-          <button type="button" class="chip" data-val="8">8</button>
-          <button type="button" class="chip" data-val="9">9</button>
-          <button type="button" class="chip" data-val="all" id="chipAll">All</button>
+          <button type="button" class="chip" data-val="1" aria-pressed="true">1</button>
+          <button type="button" class="chip" data-val="2" aria-pressed="true">2</button>
+          <button type="button" class="chip" data-val="3" aria-pressed="true">3</button>
+          <button type="button" class="chip" data-val="4" aria-pressed="true">4</button>
+          <button type="button" class="chip" data-val="5" aria-pressed="true">5</button>
+          <button type="button" class="chip" data-val="6" aria-pressed="true">6</button>
+          <button type="button" class="chip" data-val="7" aria-pressed="true">7</button>
+          <button type="button" class="chip" data-val="8" aria-pressed="true">8</button>
+          <button type="button" class="chip" data-val="9" aria-pressed="true">9</button>
+          <button type="button" class="chip" data-val="all" id="chipAll" aria-pressed="false" disabled>All</button>
         </div>
       </div>
 
@@ -720,11 +720,13 @@
           .filter(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true')
           .map(c => parseInt(c.dataset.val));
         
-        if (activeChips.length > 0 && activeChips.length < 9) {
-          pool = pool.filter(p => activeChips.includes(p.a));
+        // Validation: If no chips selected, return empty array
+        if (activeChips.length === 0) {
+            return [];
         }
         
-        return pool;
+        // Filter the pool
+        return pool.filter(p => activeChips.includes(p.a));
       }
 
       shuffle(array) {
@@ -823,9 +825,8 @@
         this.toggleControls(false); 
       }
 
-      // 2. Start Session Action
+      /// 2. Start Session Action
       startSession() {
-        this.state.isSessionActive = true;
         this.dom.sessionBtn.textContent = "Reset Session";
         
         // Reset Card Colors to Theme defaults
@@ -835,6 +836,21 @@
 
         // Prepare Pool using the helper
         let pool = this.getFilteredPool();
+
+        // --- VALIDATION CHECK ---
+        if (pool.length === 0) {
+            this.appendLogHTML(`
+                <div class="session-start-msg" style="color: #b00020; font-weight: bold;">
+                    Session not started! ... No Problem Set selected.
+                </div>
+            `);
+            // Reset button text back since we didn't actually start
+            this.dom.sessionBtn.textContent = "Start Session";
+            return;
+        }
+        // ------------------------
+
+        this.state.isSessionActive = true; // Only set active after validation passes
 
         if (this.dom.orderSelect.value === 'random') this.shuffle(pool);
 
@@ -847,6 +863,7 @@
           correctFirst: 0,
           missedFirst: 0
         };
+        this.state.missedProblems = []; // Reset missed tracking
 
         // Timer Logic
         // Always track start time for stats, even if visual timer isn't used
@@ -895,6 +912,7 @@
 
         // Calculate Metrics
         const sessionEndObj = new Date();
+        const endTime = Date.now();
         // Round duration to nearest second
         const elapsedSec = Math.round((Date.now() - this.state.timerStart) / 1000);
         
@@ -919,6 +937,7 @@
         
         // Percent Completed: (Completed / Selected) * 100
         const pctCompleted = total > 0 ? (100 * (n / total)).toFixed(0) : 0;
+
         // Calculate Accuracy, Completion Rate, and Calculation Speed
         const accuracy = n > 0 ? (100 * (c / n)).toFixed(0) : 0;
         // Completion Rate: (Completed / seconds) * 60 => prob/min
@@ -932,12 +951,77 @@
             interruptMsg = `<div style="margin-bottom: 1rem; font-weight: bold;">[SESSION RESET BY USER]</div>`;
         }
 
+        // Determine Target Speed string based on Operation
+        const isAddSub = this.dom.opSelect.value === 'addsub';
+        const targetSpeedStr = isAddSub ? "2.0-3.0 sec/prob" : "2.0-4.0 sec/prob";
+
         // Conditionally build rows based on Timer State
-        // If Timer was OFF: return empty string. If ON: return the table row.
-        const rowEndTime = timerWasActive ? `<tr><td>Session end time:</td><td>${endTimeStr}</td></tr>` : '';
-        const rowLength  = timerWasActive ? `<tr><td>Session length:</td><td>${timeStr}</td></tr>` : '';
+        const rowEndTime   = timerWasActive ? `<tr><td>Session end time:</td><td>${endTimeStr}</td></tr>` : '';
+        const rowLength    = timerWasActive ? `<tr><td>Session length:</td><td>${timeStr}</td></tr>` : '';
         const rowRate      = timerWasActive ? `<tr><td>Completion rate:</td><td>${rateVal} prob/min</td></tr>` : '';
         const rowCalcSpeed = timerWasActive ? `<tr><td>Calculation speed:</td><td>${calcSpeedVal} sec/prob</td></tr>` : '';
+        const rowTarget    = timerWasActive ? `<tr><td>Target speed:</td><td style="font-weight: normal;">${targetSpeedStr}</td></tr>` : '';
+
+        // Define General Assessment Section (Conditional)
+        const assessmentSection = timerWasActive ? `
+          <div style="font-weight: bold; margin: 1rem 0 0.5rem 0; text-transform: uppercase;">GENERAL ASSESSMENT</div>
+          <table class="stats-table">
+            <tr><td>Calculation time:</td><td>[Placeholder]</td></tr>
+            <tr><td>Age-level performance:</td><td>[Placeholder]</td></tr>
+            <tr><td>Educational equivalent:</td><td>[Placeholder]</td></tr>
+          </table>
+        ` : '';
+
+        // --- RETRIEVE SETTINGS FOR DISPLAY ---
+        const pOrderText = this.dom.orderSelect.options[this.dom.orderSelect.selectedIndex].text;
+        const oOrderText = this.dom.operandOrderSelect.options[this.dom.operandOrderSelect.selectedIndex].text;
+        const missingText = this.dom.missingSelect.options[this.dom.missingSelect.selectedIndex].text;
+        
+        // Get active chips (excluding 'all'), map to values, join with commas
+        const setValText = Array.from(this.dom.chips)
+            .filter(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true')
+            .map(c => c.dataset.val)
+            .join(',');
+
+        // --- BUILD MISSED PROBLEMS HTML ---
+        let missedHTML = '';
+        if (this.state.missedProblems.length > 0) {
+            // 1. Sort by Operand A, then Operand B
+            this.state.missedProblems.sort((x, y) => {
+                if (x.a !== y.a) return x.a - y.a;
+                return x.b - y.b;
+            });
+
+            // 2. Build Rows
+            let rows = '';
+            this.state.missedProblems.forEach(item => {
+                const problemStr = `${item.a} ${item.op} ${item.b} = ${item.res}`;
+                
+                // Format guesses: take first 3, join with commas (no space)
+                let guessDisplay = item.guesses.slice(0, 3).join(',');
+                
+                // Add "(Guessing!)" if more than 3 attempts
+                if (item.guesses.length > 3) {
+                    guessDisplay += ' (Guessing!)';
+                }
+                
+                rows += `
+                    <tr>
+                        <td style="width: 50%; border-bottom: 0;">${problemStr}</td>
+                        <td style="border-bottom: 0; font-weight: normal;">${guessDisplay}</td>
+                    </tr>`;
+            });
+
+            missedHTML = `
+                <table class="stats-table" style="margin-top: 1rem;">
+                    <tr>
+                        <td style="font-weight: bold;">Missed Problem(s)</td>
+                        <td style="font-weight: bold;">Answer(s)</td>
+                    </tr>
+                    ${rows}
+                </table>
+            `;
+        }
 
         // Generate HTML Block
         const reportHTML = `
@@ -965,9 +1049,22 @@
             <tr><td>Accuracy:</td><td>${accuracy} %</td></tr>
             ${rowRate}
             ${rowCalcSpeed}
+            ${rowTarget}
           </table>
 
+          ${assessmentSection}
+
           <div style="font-weight: bold; margin: 1.5rem 0 0.5rem 0; text-transform: uppercase;">SESSION DETAILS</div>
+          
+          <div style="font-weight: bold; margin-bottom: 0;">Settings</div>
+          <table class="stats-table" style="margin-top: 0;">
+            <tr><td>Problem order:</td><td style="font-weight: normal;">${pOrderText}</td></tr>
+            <tr><td>Operand order:</td><td style="font-weight: normal;">${oOrderText}</td></tr>
+            <tr><td>Missing value:</td><td style="font-weight: normal;">${missingText}</td></tr>
+            <tr><td>Problem set:</td><td style="font-weight: normal;">${setValText}</td></tr>
+          </table>
+
+          ${missedHTML}
 
           <hr style="border: 0; border-top: 1px dashed var(--palette-beige-02); margin: 1rem 0;">
         `;
@@ -1074,9 +1171,31 @@
           }
 
           const p = this.state.currentProblem;
-          const opSymbol = (this.dom.opSelect.value === 'addsub') ? '+' : '×'; 
-          // Optional: You can uncomment this if you still want per-mistake logging
-          // this.updateLog(`Incorrect: ${userVal} (Problem: ${p.left} ${opSymbol} ${p.right})`);
+          
+          // --- CAPTURE MISSED PROBLEM LOGIC ---
+          const wrongAnswerVal = this.dom.input.value.trim();
+          
+          // 1. Determine Standard Form (A + B = C) regardless of display order
+          // Since p.result is always the Sum or Product in our logic:
+          const stdA = Math.min(p.left, p.right);
+          const stdB = Math.max(p.left, p.right);
+          const stdRes = p.result;
+          const isAdd = this.dom.opSelect.value === 'addsub';
+          const opSym = isAdd ? '+' : '×';
+
+          // 2. Find if this problem is already tracked
+          let missedEntry = this.state.missedProblems.find(m => m.a === stdA && m.b === stdB);
+          
+          if (!missedEntry) {
+              missedEntry = { a: stdA, b: stdB, res: stdRes, op: opSym, guesses: [] };
+              this.state.missedProblems.push(missedEntry);
+          }
+          
+          // 3. Store the guess (if not empty)
+          if (wrongAnswerVal !== "") {
+              missedEntry.guesses.push(wrongAnswerVal);
+          }
+          // ------------------------------------
 
           this.dom.input.classList.add('error');
           setTimeout(() => this.dom.input.classList.remove('error'), 400);
