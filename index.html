@@ -208,14 +208,12 @@
       color: var(--color-text-main);
     }
 
-    /* Sidebar Headers */
-    .panel-settings h3 {
-      margin-top: 1.5rem;
+    /* Sidebar Headers (Unified) */
+    .panel-settings h3,
+    .panel-data h3 {
+      /* This controls the vertical position of BOTH headers */
+      margin-top: 1.875rem;       
       margin-bottom: 1rem;
-    }
-    /* First header needs no top margin */
-    .panel-settings h3:first-of-type {
-      margin-top: 0;
     }
 
     /* =========================================
@@ -381,7 +379,7 @@
     /* Removed .answer-label as per request */
     /* .answer-label { margin-top: 1rem; font-weight: 700; font-size: 1.2rem; } */
     
-    .remaining-counter { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted); font-weight: 600; }
+    .remaining-counter { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted); font-weight: 400; }
 
     /* NEW: Controls centered under input */
     .session-controls-centered {
@@ -634,8 +632,8 @@
       <div class="answer-section">
         <input type="text" id="answerInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="go">
         <div class="control-group session-controls-centered">
-          <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
-          <div class="remaining-counter" style="text-align: center; margin-top: 0.5rem;">
+          <button id="sessionToggleBtn" class="btn btn-primary" style="width: 80%;">Start Session</button>
+          <div class="remaining-counter" style="text-align: center; margin-top: 0.75rem;">
             Problems Remaining: <span id="countDisplay">0</span>
           </div>
         </div>
