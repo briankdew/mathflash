@@ -133,7 +133,7 @@
     /* INCREASED SIDEBAR WIDTH TO 18.0rem TO ACCOMMODATE DATA LABELS */
     @media (min-width: 768px) {
       .app-layout {
-        grid-template-columns: 1fr 18.0rem; 
+        grid-template-columns: 1fr 24.0rem; 
         grid-template-areas: 
           "header header"
           "practice practice"
@@ -144,7 +144,8 @@
 
     @media (min-width: 1100px) {
       .app-layout {
-        grid-template-columns: 18.0rem 1fr 18.0rem;
+        /* Both sidebars must be 24.0rem to keep the center 1fr track centered */
+        grid-template-columns: 24.0rem 1fr 24.0rem;
         grid-template-areas: 
           "header header header"
           "settings practice data";
@@ -399,14 +400,14 @@
     .btn-outline { background-color: white; border: 1px solid var(--palette-beige-01); color: var(--color-text-main); }
 
     .chip-grid {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 0.5rem;
+      display: grid; grid-template-columns: repeat(5, 40px); gap: 8px; margin-top: 0.5rem;
     }
     
     /* REFACTORED CHIP TO BE A "MINI CARD" */
     .chip {
       aspect-ratio: 1.4 / 1;
       width: 100%;
-      max-width: 60px;    /* Limit maximum size */
+      max-width: 40px;    /* Limit maximum size */
       margin: 0 auto;     /* Center in the grid cell */
       border: none;
       border-radius: 5px;
@@ -538,15 +539,16 @@
     </header>
 
     <aside class="panel-settings">
-      <h3>Operation</h3>
-      <div class="control-group" style="margin-top: -0.5rem;">
+      <h3>Settings</h3>
+      
+      <div class="control-group">
+        <label class="control-label" for="operationSelect">Operation</label>
         <select id="operationSelect" class="select-input">
           <option value="addsub">Addition / Subtraction</option>
           <option value="multdiv">Multiplication / Division</option>
         </select>
       </div>
 
-      <h3>Settings</h3>
       <div class="control-group">
         <label class="control-label" for="problemOrder">Problem Order</label>
         <select id="problemOrder" class="select-input">
@@ -568,7 +570,7 @@
         <label class="control-label" for="missingValue">Missing Value</label>
         <select id="missingValue" class="select-input">
           <option value="random">Random</option>
-          <option value="result">Result Only</option>
+          <option value="result" selected>Result Only</option>
           <option value="operand">Operand Only</option>
         </select>
       </div>
@@ -589,7 +591,7 @@
         </div>
       </div>
 
-      <div class="control-group" style="display: flex; align-items: center; justify-content: space-between;">
+      <div class="control-group" style="display: flex; align-items: center; justify-content: start; gap: 1rem;">
         <label class="control-label" style="margin:0;">Session Timer</label>
         <label class="toggle-switch">
           <input type="checkbox" id="timerToggle" checked>
