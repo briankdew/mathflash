@@ -668,7 +668,8 @@
             completed: 0,
             correctFirst: 0,
             missedFirst: 0
-          }
+          },
+          missedProblems: [] // Track missed problems
         };
 
         this.dom = {
@@ -825,7 +826,7 @@
         this.toggleControls(false); 
       }
 
-      /// 2. Start Session Action
+      // 2. Start Session Action
       startSession() {
         this.dom.sessionBtn.textContent = "Reset Session";
         
@@ -962,13 +963,54 @@
         const rowCalcSpeed = timerWasActive ? `<tr><td>Calculation speed:</td><td>${calcSpeedVal} sec/prob</td></tr>` : '';
         const rowTarget    = timerWasActive ? `<tr><td>Target speed:</td><td style="font-weight: normal;">${targetSpeedStr}</td></tr>` : '';
 
+        // --- GENERAL ASSESSMENT LOGIC ---
+        let calcTime = "Very slow";
+        let agePerf = "Well below";
+        let eduEquiv = "1st";
+        
+        // Only calculate if we have a valid speed and timer was active
+        if (timerWasActive && n > 0) {
+            const speed = parseFloat(calcSpeedVal); // calcSpeedVal is a string like "7.7"
+            const mode = this.dom.opSelect.value; // 'addsub' or 'multdiv'
+            
+            if (speed <= 0.9) {
+                calcTime = "Exceptional";
+                agePerf = "Well above";
+                eduEquiv = "Professional";
+            } else if (speed <= 1.4) {
+                calcTime = "Advanced";
+                agePerf = "Above";
+                eduEquiv = "College";
+            } else if (speed <= 1.9) {
+                calcTime = "Proficient";
+                agePerf = "On target";
+                eduEquiv = "4th - 12th";
+            } else {
+                 // Split logic for Moderate and Slow
+                 const limitModerate = (mode === 'addsub') ? 3.0 : 4.0;
+                 const limitSlow = (mode === 'addsub') ? 6.2 : 13.2;
+                 
+                 if (speed <= limitModerate) {
+                    calcTime = "Moderate (Fluent)";
+                    agePerf = "Acceptable";
+                    eduEquiv = "3rd";
+                 } else if (speed <= limitSlow) {
+                    calcTime = "Slow";
+                    agePerf = "Below";
+                    eduEquiv = "2nd";
+                 } else {
+                    // Default is Very Slow / Well below / 1st
+                 }
+            }
+        }
+        
         // Define General Assessment Section (Conditional)
         const assessmentSection = timerWasActive ? `
           <div style="font-weight: bold; margin: 1rem 0 0.5rem 0; text-transform: uppercase;">GENERAL ASSESSMENT</div>
           <table class="stats-table">
-            <tr><td>Calculation time:</td><td>[Placeholder]</td></tr>
-            <tr><td>Age-level performance:</td><td>[Placeholder]</td></tr>
-            <tr><td>Educational equivalent:</td><td>[Placeholder]</td></tr>
+            <tr><td>Calculation time:</td><td>${calcTime}</td></tr>
+            <tr><td>Age-level performance:</td><td>${agePerf}</td></tr>
+            <tr><td>Educational equivalent:</td><td>${eduEquiv}</td></tr>
           </table>
         ` : '';
 
