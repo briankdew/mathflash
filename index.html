@@ -117,7 +117,7 @@
       width: 100%;
       max-width: 1920px;
       margin: 0 auto;
-      padding: var(--spacing-sm);
+      padding: var(--spacing-sm) 2rem;
       gap: var(--spacing-md);
       
       grid-template-columns: 1fr;
@@ -144,8 +144,8 @@
 
     @media (min-width: 1100px) {
       .app-layout {
-        /* Both sidebars must be 24.0rem to keep the center 1fr track centered */
-        grid-template-columns: 24.0rem 1fr 24.0rem;
+        /* Both sidebars must be the same width to keep the center 1fr track centered */
+        grid-template-columns: 19.0rem 1fr 19.0rem;
         grid-template-areas: 
           "header header header"
           "settings practice data";
@@ -490,6 +490,7 @@
     .stats-table td:first-child {
         white-space: nowrap;
         padding-right: 10px;
+        width: 65%;  /* Forces consistent alignment across all sections */
     }
     .stats-table td:nth-child(2) {
         text-align: left;
