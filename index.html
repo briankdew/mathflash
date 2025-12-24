@@ -514,9 +514,36 @@
         margin-bottom: 0.5rem;
         display: block;
     }
+
+    /* =========================================
+       6. SESSION SHIELD (LOCKDOWN)
+       ========================================= */
+    .session-shield {
+      display: none;             /* Hidden by default */
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 999;              /* High z-index to cover everything */
+      background: transparent;   /* Invisible */
+      cursor: default;
+    }
+
+    /* When active, show the shield */
+    body.session-active .session-shield {
+      display: block;
+    }
+
+    /* Lift the active elements ABOVE the shield */
+    body.session-active #answerInput,
+    body.session-active .session-controls-centered {
+      position: relative;
+      z-index: 1000;            /* Higher than the shield */
+    }
   </style>
 </head>
 <body>
+
+  <div id="sessionShield" class="session-shield"></div>
 
   <svg style="display: none;">
     <defs>
@@ -854,6 +881,11 @@
       // 1. Initial / Reset State
       initIdleState() {
         this.state.isSessionActive = false;
+
+        // Deactivate Shield & Enable Sidebar Tabbing
+        document.body.classList.remove('session-active');
+        document.querySelector('.panel-settings').inert = false;
+        document.querySelector('.panel-data').inert = false;
         
         // UI Visuals
         this.dom.sessionBtn.textContent = "Start Session";
@@ -877,9 +909,6 @@
         // Ensure Theme is applied (for Logo/etc)
         this.applyTheme(this.dom.opSelect.value);
         this.updateAllChipUI();
-
-        // UNLOCK Controls
-        this.toggleControls(false); 
       }
 
       // 2. Start Session Action
@@ -928,9 +957,11 @@
         this.state.timerStart = Date.now();
         this.state.isTimerRunning = this.dom.timerToggle.checked;
 
-        // LOCK Controls
-        this.toggleControls(true);
-
+        // Activate Shield & Disable Sidebar Tabbing
+        document.body.classList.add('session-active');
+        document.querySelector('.panel-settings').inert = true;
+        document.querySelector('.panel-data').inert = true;
+        
         // Enable Input
         this.dom.input.disabled = false;
         this.dom.input.value = '';
@@ -1199,7 +1230,7 @@
         else if (missingVal === 'random') levelText = "Difficult";
         
         const opText = this.dom.opSelect.value === 'addsub' ? 'Addition / Subtraction' : 'Multiplication / Division';
-        
+                
         const cloudPayload = {
             'Log Timestamp': new Date().toLocaleString(),
             'Timer On': timerWasActive ? 'Y' : 'N',
@@ -1210,17 +1241,14 @@
             'Session start time': startTimeStr,
             'Session end time': endTimeStr,
             'Session length': timeStr,
-            'Problems selected': total,
-            'Problems completed': n,
-            'Percent completed (%)': pctCompleted,
-            
-            // [Updated] Converting to String forces the script to accept "0" as text
+            'Problems selected': String(total),        // ← Convert to String
+            'Problems completed': String(n),           // ← Convert to String
+            'Percent completed (%)': String(pctCompleted), // ← Convert to String
             'Correct (first try)': String(c),
             'Missed (first try)': String(m),
-            
-            'Accuracy (%)': accuracy,
-            'Completion rate (prob/min)': rateVal,
-            'Calculation speed (sec/prob)': calcSpeedVal,
+            'Accuracy (%)': String(accuracy),          // ← Convert to String
+            'Completion rate (prob/min)': rateVal,     // Already string
+            'Calculation speed (sec/prob)': calcSpeedVal, // Already string
             'Target speed (sec/prob)': targetSpeedStr,
             'Calculation time': calcTime,
             'Age-level performance': agePerf,
@@ -1258,29 +1286,6 @@
           });
       }
 
-      toggleControls(shouldDisable) {
-        // Disable/Enable Sidebar Inputs
-        this.dom.opSelect.disabled = shouldDisable;
-        this.dom.orderSelect.disabled = shouldDisable;
-        this.dom.operandOrderSelect.disabled = shouldDisable;
-        this.dom.missingSelect.disabled = shouldDisable;
-        this.dom.timerToggle.disabled = shouldDisable;
-        
-        // Disable/Enable Chips
-        this.dom.chips.forEach(chip => {
-          chip.disabled = shouldDisable;
-        });
-        
-        this.dom.customChips.forEach(chip => {
-            chip.disabled = shouldDisable;
-        });
-        
-        // NOTE: If we are UNLOCKING (shouldDisable = false), 
-        // we must re-run the All Chip Logic to ensure it sets itself correctly
-        if (!shouldDisable) {
-            this.updateAllChipUI();
-        }
-      }
 
       // --- GAMEPLAY LOOP ---
 
@@ -1334,8 +1339,7 @@
         this.dom.cardResult.textContent = show('result', p.result);
         
         this.dom.input.value = '';
-        this.dom.input.focus({ preventScroll: true });
-      }
+        }
 
       checkAnswer() {
         const userVal = parseInt(this.dom.input.value);
@@ -1543,6 +1547,12 @@
         });
         
         this.dom.downloadBtn.addEventListener('click', () => this.downloadLog());
+        
+        // Shield Click: If user clicks the background, focus the input
+        document.getElementById('sessionShield').addEventListener('click', () => {
+             this.dom.input.focus();
+        });
+
         window.addEventListener('resize', () => this.handleResize());
       }
     }
