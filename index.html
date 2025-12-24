@@ -1574,9 +1574,10 @@
         this.dom.input.addEventListener('focus', () => {
           document.body.classList.add('keyboard-open');
           
-          // Wait 300ms for keyboard to stabilize, then force scroll to top
+          // TEST MODE: Jump down 200px instantly
           setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            console.log("Attempting scroll..."); // Optional: Check console if connected
+            window.scrollTo({ top: 200, behavior: 'auto' }); 
           }, 300);
         });
         
