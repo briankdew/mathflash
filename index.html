@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zane's MathFlash Practice</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500&family=Nunito:wght@400;700&family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500&family=Nunito:wght@400;700&family=Archivo:wght@400;600;700&family=Libre+Baskerville:ital@1&display=swap" rel="stylesheet">
 
   <style>
     /* =========================================
@@ -117,7 +117,6 @@
       width: 100%;
       max-width: 1920px;
       margin: 0 auto;
-      /* UPDATED: Doubled side padding to 2rem */
       padding: var(--spacing-sm) 2rem;
       gap: var(--spacing-md);
       
@@ -131,7 +130,6 @@
 
     header { grid-area: header; text-align: center; margin-bottom: 1rem; }
 
-    /* INCREASED SIDEBAR WIDTH TO 24.0rem */
     @media (min-width: 768px) {
       .app-layout {
         grid-template-columns: 1fr 24.0rem; 
@@ -204,7 +202,7 @@
       color: var(--color-text-main);
     }
 
-    /* UPDATED: Sidebar Headers (Unified Alignment) */
+    /* Sidebar Headers */
     .panel-settings h3,
     .panel-data h3 {
       margin-top: 0;       
@@ -375,7 +373,7 @@
     .btn-primary { background-color: var(--theme-btn-bg); color: white; box-shadow: var(--shadow-card); }
     .btn-outline { background-color: white; border: 1px solid var(--palette-beige-01); color: var(--color-text-main); }
 
-    /* UPDATED: Chip Grid with fixed columns (50px) */
+    /* Chip Grid for 1-9 */
     .chip-grid {
       display: grid; 
       grid-template-columns: repeat(5, 50px); 
@@ -383,7 +381,7 @@
       margin-top: 0.5rem;
     }
     
-    /* UPDATED: Chips reduced to 50px max width */
+    /* Standard Chips (1-9) */
     .chip {
       aspect-ratio: 1.4 / 1;
       width: 100%;
@@ -417,6 +415,48 @@
 
     #chipAll[aria-pressed="true"] {
       background-color: var(--palette-beige-02);
+    }
+
+    /* NEW: Custom Problem Set Chips */
+    .chip-grid-wide {
+      display: grid;
+      /* UPDATED: Columns fixed to 70px to force correct height */
+      grid-template-columns: repeat(2, 70px);
+      gap: 8px;
+      margin-top: 0.5rem;
+    }
+
+    .chip-wide {
+      /* Result card ratio: 290/150 = ~1.93 */
+      /* Height Calc: 70px / 1.93 = ~36px (Matches standard 50/1.4 = ~35.7px) */
+      aspect-ratio: 1.93 / 1;
+      width: 100%;
+      max-width: 70px;
+      margin: 0 auto;
+      border: none;
+      border-radius: 8px; /* Slightly adjusted for smaller size */
+      display: flex; justify-content: center; align-items: center;
+      padding: 0;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 1.3rem; /* Reduced size to fit text */
+      
+      /* Standard deselected state matches normal chips (Beige 03) */
+      background-color: var(--palette-beige-01);
+      color: var(--palette-beige-03); 
+      
+      box-shadow: none;
+      text-shadow: none;
+      cursor: pointer;
+    }
+
+    /* Selected state for Custom Chips */
+    .chip-wide[aria-pressed="true"] {
+      background-color: var(--palette-beige-01);
+      /* FORCE BLUE COLOR (Palette Blue 07) */
+      color: var(--palette-blue-07);
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.5);
+      text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
     }
 
     .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
@@ -458,7 +498,6 @@
         padding: 2px 0;
         vertical-align: top;
     }
-    /* UPDATED: First column forced to 65% width for alignment */
     .stats-table td:first-child {
         white-space: nowrap;
         padding-right: 10px;
@@ -561,6 +600,18 @@
         </div>
       </div>
 
+      <div class="control-group">
+        <label class="control-label">Custom Problem Sets</label>
+        <div class="chip-grid-wide" id="customSetGrid">
+          <button type="button" class="chip-wide" data-custom="10s" aria-pressed="false">10's</button>
+          <button type="button" class="chip-wide" data-custom="doubles" aria-pressed="false">
+            <span style="font-family: 'Libre Baskerville', serif; font-style: italic;">n</span>
+            &nbsp;+&nbsp;
+            <span style="font-family: 'Libre Baskerville', serif; font-style: italic;">n</span>
+          </button>
+        </div>
+      </div>
+
       <div class="control-group" style="display: flex; align-items: center; justify-content: start; gap: 1rem;">
         <label class="control-label" style="margin:0;">Session Timer</label>
         <label class="toggle-switch">
@@ -637,6 +688,9 @@
           isTimerRunning: false,
           isSessionActive: false,
           
+          // New state to track if a custom set is active
+          activeCustomSet: null, // null, '10s', or 'doubles'
+
           // Stats Tracking
           currentProblemFirstTry: true,
           stats: {
@@ -657,6 +711,8 @@
           sessionBtn: document.getElementById('sessionToggleBtn'),
           
           chips: document.querySelectorAll('.chip'),
+          customChips: document.querySelectorAll('.chip-wide'), // Select custom chips
+
           cardLeft: document.getElementById('cardLeft'),
           cardRight: document.getElementById('cardRight'),
           cardResult: document.getElementById('cardResult'),
@@ -686,6 +742,28 @@
       // NEW: Centralized logic to generate the specific pool based on current selections
       getFilteredPool() {
         let pool = [];
+
+        // BRANCH A: Custom Set is active (ignores 1-9 chips)
+        if (this.state.activeCustomSet === '10s') {
+            // Generate all pairs (1-9) where sum is 10
+            for (let a = 1; a <= 9; a++) {
+                for (let b = 1; b <= 9; b++) {
+                    if (a + b === 10) {
+                        pool.push({ a: a, b: b, sum: 10, product: a * b });
+                    }
+                }
+            }
+            return pool;
+        } 
+        else if (this.state.activeCustomSet === 'doubles') {
+            // Generate doubles (1+1, 2+2, ... 9+9)
+            for (let a = 1; a <= 9; a++) {
+                pool.push({ a: a, b: a, sum: a + a, product: a * a });
+            }
+            return pool;
+        }
+
+        // BRANCH B: Standard Logic (uses 1-9 chips)
         for (let a = 1; a <= 9; a++) {
           for (let b = a; b <= 9; b++) {
             pool.push({ a: a, b: b, sum: a + b, product: a * b });
@@ -718,7 +796,10 @@
         const allAreSelected = numberChips.every(c => c.getAttribute('aria-pressed') === 'true');
         const allChip = document.getElementById('chipAll');
 
-        if (allAreSelected) {
+        // Note: If a custom set is active, number chips will be deselected, so allAreSelected is false.
+        // We only disable the 'All' chip if manually all are selected.
+
+        if (allAreSelected && !this.state.activeCustomSet) {
           allChip.setAttribute('aria-pressed', 'false');
           allChip.disabled = true;
         } else {
@@ -996,11 +1077,16 @@
         const oOrderText = this.dom.operandOrderSelect.options[this.dom.operandOrderSelect.selectedIndex].text;
         const missingText = this.dom.missingSelect.options[this.dom.missingSelect.selectedIndex].text;
         
-        // Get active chips (excluding 'all'), map to values, join with commas
-        const setValText = Array.from(this.dom.chips)
-            .filter(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true')
-            .map(c => c.dataset.val)
-            .join(',');
+        // Get active chips
+        let setValText = "";
+        if (this.state.activeCustomSet) {
+             setValText = (this.state.activeCustomSet === '10s') ? "10's" : "n+n";
+        } else {
+             setValText = Array.from(this.dom.chips)
+                .filter(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true')
+                .map(c => c.dataset.val)
+                .join(',');
+        }
 
         // --- BUILD MISSED PROBLEMS HTML ---
         let missedHTML = '';
@@ -1185,6 +1271,10 @@
           chip.disabled = shouldDisable;
         });
         
+        this.dom.customChips.forEach(chip => {
+            chip.disabled = shouldDisable;
+        });
+        
         // NOTE: If we are UNLOCKING (shouldDisable = false), 
         // we must re-run the All Chip Logic to ensure it sets itself correctly
         if (!shouldDisable) {
@@ -1345,19 +1435,28 @@
 
       bindEvents() {
         // SETTINGS CHANGE EVENTS: Just apply visuals, don't start session
-        const visualTriggers = [this.dom.opSelect];
-        visualTriggers.forEach(el => el.addEventListener('change', () => {
+        // UPDATED: Listen for change on OpSelect to handle Custom Set logic
+        this.dom.opSelect.addEventListener('change', () => {
             if (!this.state.isSessionActive) {
                 this.applyTheme(this.dom.opSelect.value);
-            }
-        }));
-        
-        // WATCH FOR CHIP/FILTER CHANGES to update Pending Count
-        const filterTriggers = [this.dom.chips]; 
-        // Note: chips are handled in their own click listener, but we also want to catch select/toggle changes
-        // that affect the pool size? Currently only chips affect pool size.
-        // If "Problem Order" or other selects affected size, we'd add them here.
 
+                // If switching to Multiplication, deselect Addition-specific custom sets
+                if (this.dom.opSelect.value === 'multdiv') {
+                    if (this.state.activeCustomSet === '10s' || this.state.activeCustomSet === 'doubles') {
+                        this.state.activeCustomSet = null;
+                        this.dom.customChips.forEach(c => c.setAttribute('aria-pressed', 'false'));
+                        
+                        // Reactivate standard chips (Default to All)
+                        this.dom.chips.forEach(c => {
+                            if (c.dataset.val !== 'all') c.setAttribute('aria-pressed', 'true');
+                        });
+                        this.updateAllChipUI();
+                    }
+                }
+                this.updatePendingCount();
+            }
+        });
+        
         // BUTTON TOGGLE EVENT
         this.dom.sessionBtn.addEventListener('click', () => {
             if (this.state.isSessionActive) {
@@ -1367,8 +1466,18 @@
             }
         });
         
+        // STANDARD CHIP CLICK (1-9 & All)
         this.dom.chips.forEach(chip => {
           chip.addEventListener('click', () => {
+            // When a 1-9 chip is clicked, we must deactivate any Custom Set
+            if (this.state.activeCustomSet) {
+                this.state.activeCustomSet = null;
+                // Visually deselect custom chips
+                this.dom.customChips.forEach(cc => cc.setAttribute('aria-pressed', 'false'));
+                // Note: 1-9 chips were visually "off" but their pressed state might have remained or needs reset.
+                // It's cleaner to let the standard logic below proceed.
+            }
+
             if (chip.dataset.val === 'all') {
               this.dom.chips.forEach(c => {
                 if (c.dataset.val !== 'all') c.setAttribute('aria-pressed', 'true');
@@ -1378,10 +1487,41 @@
               chip.setAttribute('aria-pressed', !isPressed);
             }
             this.updateAllChipUI();
-            
-            // NEW: Recalculate pending problems count immediately
             this.updatePendingCount();
           });
+        });
+
+        // NEW: CUSTOM CHIP CLICK (10's, Doubles)
+        this.dom.customChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                const newVal = chip.dataset.custom;
+                
+                // If clicking the one already active, do nothing (or could toggle off, but "exclusive" usually implies radio behavior or just always one on)
+                // Let's assume clicking behaves like a toggle on, but clicking another switches.
+                
+                // 1. Force Operation to Add/Sub
+                this.dom.opSelect.value = 'addsub';
+                this.applyTheme('addsub');
+
+                // 2. Set Active State
+                this.state.activeCustomSet = newVal;
+
+                // 3. Update Visuals for Custom Chips (Exclusive)
+                this.dom.customChips.forEach(c => {
+                    c.setAttribute('aria-pressed', c.dataset.custom === newVal ? 'true' : 'false');
+                });
+
+                // 4. Deselect all Standard 1-9 Chips
+                this.dom.chips.forEach(c => {
+                    if (c.dataset.val !== 'all') {
+                        c.setAttribute('aria-pressed', 'false');
+                    }
+                });
+                
+                // 5. Update UI
+                this.updateAllChipUI();
+                this.updatePendingCount();
+            });
         });
 
         this.dom.input.addEventListener('input', () => {
