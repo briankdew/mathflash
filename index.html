@@ -539,6 +539,28 @@
       position: relative;
       z-index: 1000;            /* Higher than the shield */
     }
+
+    /* =========================================
+       7. MOBILE KEYBOARD OPTIMIZATIONS
+       ========================================= */
+    @media (max-width: 768px) {
+      /* Hide the header to save space */
+      body.keyboard-open header {
+        display: none;
+      }
+      
+      /* Remove layout padding */
+      body.keyboard-open .app-layout {
+        padding-top: 0.5rem;
+        gap: 0;
+      }
+
+      /* Pull the problem area to the very top */
+      body.keyboard-open #problemArea {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1548,6 +1570,15 @@
         this.dom.input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') this.checkAnswer();
         });
+
+        // Toggle mobile layout when keyboard opens/closes
+        this.dom.input.addEventListener('focus', () => {
+          document.body.classList.add('keyboard-open');
+        });
+        
+        this.dom.input.addEventListener('blur', () => {
+          document.body.classList.remove('keyboard-open');
+        });  
         
         this.dom.downloadBtn.addEventListener('click', () => this.downloadLog());
         
