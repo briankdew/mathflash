@@ -560,8 +560,7 @@
         margin-top: 0;
         margin-bottom: 0.5rem;
       }
-    }
-  </style>
+    }  </style>
 </head>
 <body>
 
@@ -1571,6 +1570,20 @@
           if (e.key === 'Enter') this.checkAnswer();
         });
 
+        // Toggle mobile layout & Force Scroll to Top
+        this.dom.input.addEventListener('focus', () => {
+          document.body.classList.add('keyboard-open');
+          
+          // Wait 300ms for keyboard to stabilize, then force scroll to top
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 300);
+        });
+        
+        this.dom.input.addEventListener('blur', () => {
+          document.body.classList.remove('keyboard-open');
+        });
+        
         // Toggle mobile layout when keyboard opens/closes
         this.dom.input.addEventListener('focus', () => {
           document.body.classList.add('keyboard-open');
