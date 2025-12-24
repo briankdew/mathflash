@@ -117,6 +117,7 @@
       width: 100%;
       max-width: 1920px;
       margin: 0 auto;
+      /* UPDATED: Doubled side padding to 2rem */
       padding: var(--spacing-sm) 2rem;
       gap: var(--spacing-md);
       
@@ -130,7 +131,7 @@
 
     header { grid-area: header; text-align: center; margin-bottom: 1rem; }
 
-    /* INCREASED SIDEBAR WIDTH TO 18.0rem TO ACCOMMODATE DATA LABELS */
+    /* INCREASED SIDEBAR WIDTH TO 24.0rem */
     @media (min-width: 768px) {
       .app-layout {
         grid-template-columns: 1fr 24.0rem; 
@@ -144,8 +145,7 @@
 
     @media (min-width: 1100px) {
       .app-layout {
-        /* Both sidebars must be the same width to keep the center 1fr track centered */
-        grid-template-columns: 19.0rem 1fr 19.0rem;
+        grid-template-columns: 24.0rem 1fr 24.0rem;
         grid-template-areas: 
           "header header header"
           "settings practice data";
@@ -162,9 +162,8 @@
     
     .logo {
       font-family: 'Fredoka', sans-serif;
-      /* Logic: Min 40px | Ideal 10% of width | Max 80px (Matches 60pt) */
       font-size: clamp(40px, 10vw, 80px);
-      font-weight: 500; /* Medium weight */
+      font-weight: 500; 
       line-height: 1;
     }
     
@@ -173,9 +172,8 @@
     
     .tagline {
       font-family: 'Fredoka', sans-serif;
-      /* Logic: Min 16px | Ideal 3% of width | Max 24px (Matches 18pt) */
       font-size: clamp(16px, 3vw, 24px);
-      font-weight: 400; /* Normal weight */
+      font-weight: 400; 
       color: var(--theme-tagline);
       margin-top: 0.25rem;
     }
@@ -187,7 +185,6 @@
       margin-bottom: 0.35rem; text-align: left;
     }
 
-    /* Standard Selectors (Settings) - 50% Width */
     .select-input {
       width: 50%;
       width: fit-content;
@@ -202,17 +199,15 @@
       background-size: 1em;
     }
     
-    
     select option {
       background-color: var(--color-white);
       color: var(--color-text-main);
     }
 
-    /* Sidebar Headers (Unified) */
+    /* UPDATED: Sidebar Headers (Unified Alignment) */
     .panel-settings h3,
     .panel-data h3 {
-      /* This controls the vertical position of BOTH headers */
-      margin-top: 1.875rem;       
+      margin-top: 0;       
       margin-bottom: 1rem;
     }
 
@@ -228,11 +223,9 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      /* Ensure overflow doesn't hide the constellation */
       overflow: visible;
     }
 
-    /* Operation Display Text */
     #operationDisplay {
       position: absolute;
       top: -13.5rem; 
@@ -248,7 +241,6 @@
     .constellation-anchor {
       position: relative;
       width: 0px; height: 0px;
-      /* Smooth transition for resizing */
       transition: transform 0.1s linear;
     }
 
@@ -260,15 +252,12 @@
       display: flex; justify-content: center; align-items: center;
       font-family: 'Nunito', sans-serif; font-weight: 700;
       text-shadow: var(--shadow-card);
-      
-      /* Target: 96px Cap Height. Nunito Ratio ~0.72. 96/0.72 ≈ 133px */
       font-size: 133px;
       line-height: 1; padding-top: 0.052em;
       transform: translate(-50%, -50%);
       z-index: 2; 
     }
 
-    /* Operand Cards use Beige 01 and Theme Operand Text Color */
     #cardLeft, #cardRight {
       background-color: var(--color-card-operand-bg);
       color: var(--theme-text-operand);
@@ -277,7 +266,6 @@
     #cardLeft { left: -145px; top: -85px; width: 210px; height: 150px; }
     #cardRight { left: 145px; top: -85px; width: 210px; height: 150px; }
     
-    /* Result Card uses Beige 02 and Theme Result Text Color */
     #cardResult { 
       left: 0px; top: 85px; width: 290px; height: 150px;
       background-color: var(--color-card-result-bg); 
@@ -293,12 +281,10 @@
       z-index: -1; pointer-events: none;
     }
 
-    /* Large: Beige 00 Stroke */
     #ellipseLarge { 
       width: 409px; height: 281px; left: 0px; top: 0px; 
       border: 16px solid var(--color-ellipse-large-stroke);
     }
-    /* Small: Beige 01 Stroke */
     #ellipseSmall { 
       width: 227px; height: 182px; left: 0px; top: 41.5px; 
       border: 16px solid var(--color-ellipse-small-stroke);
@@ -314,17 +300,15 @@
       z-index: 3; box-shadow: none;
     }
 
-    /* Main Operator: Beige 01 Background, Icon matches Background */
     #circleMain {
       left: 0px; top: -41.5px; 
       background-color: var(--color-operator-circle-bg);
-      color: var(--color-operator-circle-bg); /* Same color = Ghost Effect */
+      color: var(--color-operator-circle-bg); 
     }
 
-    /* Inverses: Beige 00 Background, Icon matches Background */
     .inverse-circle {
       background-color: var(--color-inverse-circle-bg);
-      color: var(--color-inverse-circle-bg); /* Same color = Ghost Effect */
+      color: var(--color-inverse-circle-bg); 
     }
     #circleInvLeft { left: -186.5px; top: 41.5px; }
     #circleInvRight { left: 186.5px; top: 41.5px; }
@@ -335,7 +319,6 @@
       height: 70%;
       fill: currentColor; 
       display: block;
-      /* The Shadow is the only thing visible since Fill matches Background */
       filter: drop-shadow(0px 3px 5px rgba(0, 0, 0, 0.5));
     }
     
@@ -376,18 +359,13 @@
       40%, 60% { transform: translate3d(4px, 0, 0); }
     }
     
-    /* Removed .answer-label as per request */
-    /* .answer-label { margin-top: 1rem; font-weight: 700; font-size: 1.2rem; } */
-    
-    .remaining-counter { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted); font-weight: 400; }
+    .remaining-counter { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted); font-weight: 600; }
 
-    /* NEW: Controls centered under input */
     .session-controls-centered {
-      width: clamp(180px, 50vw, 290px); /* Matches input width exactly */
+      width: clamp(180px, 50vw, 290px); 
       margin-top: 1rem;
     }
 
-    /* -- Buttons & Chips (Restored Mini-Card Intent) -- */
     .btn {
       font-family: 'Archivo', sans-serif; cursor: pointer; border: none;
       border-radius: var(--border-radius-pill); padding: 0.5rem 1.2rem;
@@ -397,16 +375,20 @@
     .btn-primary { background-color: var(--theme-btn-bg); color: white; box-shadow: var(--shadow-card); }
     .btn-outline { background-color: white; border: 1px solid var(--palette-beige-01); color: var(--color-text-main); }
 
+    /* UPDATED: Chip Grid with fixed columns (50px) */
     .chip-grid {
-      display: grid; grid-template-columns: repeat(5, 40px); gap: 8px; margin-top: 0.5rem;
+      display: grid; 
+      grid-template-columns: repeat(5, 50px); 
+      gap: 8px; 
+      margin-top: 0.5rem;
     }
     
-    /* REFACTORED CHIP TO BE A "MINI CARD" */
+    /* UPDATED: Chips reduced to 50px max width */
     .chip {
       aspect-ratio: 1.4 / 1;
       width: 100%;
-      max-width: 40px;    /* Limit maximum size */
-      margin: 0 auto;     /* Center in the grid cell */
+      max-width: 50px;    
+      margin: 0 auto;     
       border: none;
       border-radius: 5px;
       display: flex; justify-content: center; align-items: center;
@@ -414,8 +396,6 @@
       font-family: 'Nunito', sans-serif; 
       font-weight: 700;
       font-size: 1.5rem; 
-      
-      /* Base State (Unselected): Beige 01 Bg, Beige 03 Text, No Shadow */
       background-color: var(--palette-beige-01);
       color: var(--palette-beige-03);
       box-shadow: none; 
@@ -423,15 +403,11 @@
       cursor: pointer;
     }
     
-    /* Style for disabled state (Non-selectable) */
     .chip:disabled {
       cursor: default;
-      /* Visual style is already handled by the unpressed class settings, 
-         but pointer-events ensures no clicking */
       pointer-events: none;
     }
     
-    /* Selected State: Pops up with Theme color & Shadows */
     .chip[aria-pressed="true"] {
       color: var(--theme-text-operand);
       background-color: var(--palette-beige-01);
@@ -439,15 +415,12 @@
       text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
     }
 
-    /* SPECIFIC OVERRIDE FOR "ALL" CHIP when active/selectable */
     #chipAll[aria-pressed="true"] {
       background-color: var(--palette-beige-02);
     }
 
-    /* TOGGLE SWITCH STYLE - FIXED INPUT VISIBILITY */
     .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
     
-    /* Enforce position: absolute to ensure it doesn't take up flow space and is truly hidden */
     .toggle-switch input { 
       position: absolute; 
       opacity: 0; 
@@ -467,14 +440,12 @@
     input:checked + .slider { background-color: var(--theme-btn-bg); }
     input:checked + .slider:before { transform: translateX(22px); }
 
-    /* UPDATED: Height increased to 340px to accommodate data */
     .log-box {
       width: 100%; height: 340px; background: white; border: 1px solid var(--palette-beige-01);
       border-radius: 8px; padding: 0.5rem; font-size: 0.85rem; overflow-y: auto;
       margin-bottom: 0.5rem; font-family: monospace;
     }
     
-    /* Style for summary table inside log */
     .stats-table {
         width: 100%;
         margin-top: 5px;
@@ -487,17 +458,17 @@
         padding: 2px 0;
         vertical-align: top;
     }
+    /* UPDATED: First column forced to 65% width for alignment */
     .stats-table td:first-child {
         white-space: nowrap;
         padding-right: 10px;
-        width: 65%;  /* Forces consistent alignment across all sections */
+        width: 65%;
     }
     .stats-table td:nth-child(2) {
         text-align: left;
         font-weight: bold;
     }
 
-    /* NEW: Style for the "Session Started" message to match table font */
     .session-start-msg {
         font-family: monospace;
         font-size: 0.9em;
@@ -518,7 +489,7 @@
          <path d="m3.8342886 0c-1.1947422 0 -2.1347907 0.32598013 -2.820147 0.97793704c-0.6760938 0.65195686 -1.0141416 1.5702088 -1.0141416 2.7547522c0 1.1845434 0.33804774 2.102792 1.0141416 2.7547524c0.6853564 0.64277315 1.6254048 0.9641633 2.820147 0.9641633l35.508846 0c1.250309 0 2.2042503 -0.32139015 2.861824 -0.9641633c0.6575699 -0.6519604 0.9863548 -1.570209 0.9863548 -2.7547524c0 -1.1845434 -0.32878494 -2.1027951 -0.9863548 -2.7547522c-0.6575737 -0.6519569 -1.611515 -0.97793704 -2.861824 -0.97793704z" fill-rule="evenodd"/>
       </symbol>
 
-      <symbol id="icon-times" viewBox="-2.65 -2.45 43.7 42.7"> /* 38.4 37.8 */
+      <symbol id="icon-times" viewBox="-2.65 -2.45 43.7 42.7">
          <path d="m3.7250946 0c-0.608165 0 -1.1753755 0.15159208 -1.7016313 0.4547796c-0.6760938 0.3948489 -1.1993718 0.91825175 -1.5698355 1.5702088c-0.37046212 0.6519568 -0.5140169 1.3865564 -0.43066284 2.2038019c0.0833541 0.81724167 0.4954932 1.5931625 1.2364191 2.3277655l12.628145 12.520349l-12.378083 12.272421c-0.9076341 0.899889 -1.3336656 1.8456821 -1.2780962 2.8373966c0.05556941 0.9825287 0.4260315 1.8273201 1.111388 2.5343704c0.6853665 0.70705414 1.5235289 1.0881271 2.5145154 1.1432228c0.057706118 0.0031814575 0.11525798 0.0047683716 0.17265725 0.0047683716c0.9375081 0 1.8338971 -0.42398834 2.689167 -1.2719536l12.461437 -12.355064l12.461437 12.355064c0.74092484 0.73460007 1.5096359 1.143219 2.3061295 1.2258644c0.14629745 0.01517868 0.29009247 0.022766113 0.43138504 0.022766113c0.6279831 0 1.2065887 -0.1499176 1.7358208 -0.4497528c0.6575737 -0.36729813 1.185482 -0.8861084 1.5837288 -1.5564346c0.39824677 -0.6795082 0.54180145 -1.4141121 0.43066406 -2.203804c-0.111141205 -0.78969574 -0.5371704 -1.5518494 -1.2780952 -2.2864437l-12.378086 -12.272421l12.628147 -12.520349c0.9724655 -0.9641633 1.4123878 -1.9237366 1.3197708 -2.8787162c-0.083351135 -0.96416306 -0.4815979 -1.7951789 -1.1947403 -2.4930506c-0.7038803 -0.707052 -1.5698357 -1.0881271 -2.5978699 -1.1432222c-0.067276 -0.0042437725 -0.13433075 -0.006365657 -0.20116425 -0.006365657c-0.9452133 0 -1.8459892 0.42451835 -2.7023354 1.2735517l-12.544792 12.437706l-12.544792 -12.437706c-0.74092484 -0.7345995 -1.5235271 -1.1569959 -2.347807 -1.267186c-0.19135046 -0.027712297 -0.37895823 -0.041566763 -0.5628216 -0.041566763z" fill-rule="evenodd"/>
       </symbol>
       
@@ -633,8 +604,8 @@
       <div class="answer-section">
         <input type="text" id="answerInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="go">
         <div class="control-group session-controls-centered">
-          <button id="sessionToggleBtn" class="btn btn-primary" style="width: 80%;">Start Session</button>
-          <div class="remaining-counter" style="text-align: center; margin-top: 0.75rem;">
+          <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
+          <div class="remaining-counter" style="text-align: center; margin-top: 0.5rem;">
             Problems Remaining: <span id="countDisplay">0</span>
           </div>
         </div>
@@ -654,6 +625,9 @@
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
         
+        // This is your Google Script Web App URL
+        this.CLOUD_URL = "https://script.google.com/macros/s/AKfycbx0p3pa5-BJP1QHPXPp9kwzB3IZu2ooGsfUpmblUjJKZJZYkNORuTRyye3eeLAkl3U9/exec";
+
         this.state = {
           queue: [],
           currentProblem: null,
@@ -949,8 +923,10 @@
 
         // Detect if session was interrupted
         let interruptMsg = "";
+        let sessionResetVal = "N";
         if (n < total) {
             interruptMsg = `<div style="margin-bottom: 1rem; font-weight: bold;">[SESSION RESET BY USER]</div>`;
+            sessionResetVal = "Y";
         }
 
         // Determine Target Speed string based on Operation
@@ -1028,6 +1004,9 @@
 
         // --- BUILD MISSED PROBLEMS HTML ---
         let missedHTML = '';
+        let missedProbsCloudStr = "";
+        let answersCloudStr = "";
+
         if (this.state.missedProblems.length > 0) {
             // 1. Sort by Operand A, then Operand B
             this.state.missedProblems.sort((x, y) => {
@@ -1035,8 +1014,13 @@
                 return x.b - y.b;
             });
 
-            // 2. Build Rows
+            // 2. Build Rows for HTML and strings for Cloud
             let rows = '';
+            
+            // Temporary arrays to join later for the cloud payload
+            let cloudMissedArr = [];
+            let cloudAnswersArr = [];
+
             this.state.missedProblems.forEach(item => {
                 const problemStr = `${item.a} ${item.op} ${item.b} = ${item.res}`;
                 
@@ -1053,7 +1037,15 @@
                         <td style="width: 50%; border-bottom: 0;">${problemStr}</td>
                         <td style="border-bottom: 0; font-weight: normal;">${guessDisplay}</td>
                     </tr>`;
+
+                // Add to Cloud Arrays
+                cloudMissedArr.push(problemStr);
+                cloudAnswersArr.push(guessDisplay);
             });
+
+            // Join with newline for Cloud cell
+            missedProbsCloudStr = cloudMissedArr.join('\n');
+            answersCloudStr = cloudAnswersArr.join('\n');
 
             missedHTML = `
                 <table class="stats-table" style="margin-top: 1rem;">
@@ -1114,8 +1106,67 @@
 
         this.appendLogHTML(reportHTML);
 
+        // --- PREPARE DATA FOR CLOUD SAVE ---
+        const missingVal = this.dom.missingSelect.value;
+        let levelText = "Easy";
+        if (missingVal === 'operand') levelText = "Moderate";
+        else if (missingVal === 'random') levelText = "Difficult";
+        
+        const opText = this.dom.opSelect.value === 'addsub' ? 'Addition / Subtraction' : 'Multiplication / Division';
+        
+        const cloudPayload = {
+            'Log Timestamp': new Date().toLocaleString(),
+            'Timer On': timerWasActive ? 'Y' : 'N',
+            'Operation': opText,
+            'Level': levelText,
+            'Session Reset': sessionResetVal,
+            'Session date': dateStr,
+            'Session start time': startTimeStr,
+            'Session end time': endTimeStr,
+            'Session length': timeStr,
+            'Problems selected': total,
+            'Problems completed': n,
+            'Percent completed (%)': pctCompleted,
+            'Correct (first try)': c,
+            'Missed (first try)': m,
+            'Accuracy (%)': accuracy,
+            'Completion rate (prob/min)': rateVal,
+            'Calculation speed (sec/prob)': calcSpeedVal,
+            'Target speed (sec/prob)': targetSpeedStr,
+            'Calculation time': calcTime,
+            'Age-level performance': agePerf,
+            'Educational equivalent': eduEquiv,
+            'Problem order': pOrderText,
+            'Operand order': oOrderText,
+            'Missing value': missingText,
+            'Problem set': setValText,
+            'Missed Problem(s)': missedProbsCloudStr,
+            'Answer(s)': answersCloudStr
+        };
+
+        // Fire and Forget cloud save
+        this.saveLogToCloud(cloudPayload);
+
         this.state.isTimerRunning = false;
         this.initIdleState();
+      }
+      
+      // NEW: Cloud Save Method
+      saveLogToCloud(dataObj) {
+          fetch(this.CLOUD_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dataObj)
+          })
+          .then(() => {
+              console.log("Log saved to cloud successfully.");
+          })
+          .catch(err => {
+              console.error("Error saving log to cloud:", err);
+          });
       }
 
       toggleControls(shouldDisable) {
