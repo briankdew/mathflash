@@ -626,7 +626,7 @@
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
         
         // This is your Google Script Web App URL
-        this.CLOUD_URL = "https://script.google.com/macros/s/AKfycbx0p3pa5-BJP1QHPXPp9kwzB3IZu2ooGsfUpmblUjJKZJZYkNORuTRyye3eeLAkl3U9/exec";
+        this.CLOUD_URL = "https://script.google.com/macros/s/AKfycbxwUWpSyAiioDtMZ-p4_YbvO7k3HDBajJ2LNX-SPS--ngNY1JbQidw3IXMx2Ta868ya-g/exec";
 
         this.state = {
           queue: [],
@@ -1127,8 +1127,11 @@
             'Problems selected': total,
             'Problems completed': n,
             'Percent completed (%)': pctCompleted,
-            'Correct (first try)': c,
-            'Missed (first try)': m,
+            
+            // [Updated] Converting to String forces the script to accept "0" as text
+            'Correct (first try)': String(c),
+            'Missed (first try)': String(m),
+            
             'Accuracy (%)': accuracy,
             'Completion rate (prob/min)': rateVal,
             'Calculation speed (sec/prob)': calcSpeedVal,
