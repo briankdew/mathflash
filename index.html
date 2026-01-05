@@ -1569,21 +1569,6 @@
         this.dom.input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') this.checkAnswer();
         });
-
-        // Toggle mobile layout & Force Scroll to Top
-        this.dom.input.addEventListener('focus', () => {
-          document.body.classList.add('keyboard-open');
-          
-          // TEST MODE: Jump down 200px instantly
-          setTimeout(() => {
-            console.log("Attempting scroll..."); // Optional: Check console if connected
-            window.scrollTo({ top: 200, behavior: 'auto' }); 
-          }, 300);
-        });
-        
-        this.dom.input.addEventListener('blur', () => {
-          document.body.classList.remove('keyboard-open');
-        });
         
         // Toggle mobile layout when keyboard opens/closes
         this.dom.input.addEventListener('focus', () => {
