@@ -644,7 +644,7 @@
           <button type="button" class="chip" data-val="7" aria-pressed="true">7</button>
           <button type="button" class="chip" data-val="8" aria-pressed="true">8</button>
           <button type="button" class="chip" data-val="9" aria-pressed="true">9</button>
-          <button type="button" class="chip" data-val="all" id="chipAll" aria-pressed="false" disabled>All</button>
+          <button type="button" class="chip" data-val="all" id="chipAll" aria-pressed="true">Clr</button>
         </div>
       </div>
 
@@ -840,20 +840,20 @@
       }
 
       updateAllChipUI() {
-        const numberChips = Array.from(this.dom.chips).filter(c => c.dataset.val !== 'all');
-        const allAreSelected = numberChips.every(c => c.getAttribute('aria-pressed') === 'true');
         const allChip = document.getElementById('chipAll');
-
-        // Note: If a custom set is active, number chips will be deselected, so allAreSelected is false.
-        // We only disable the 'All' chip if manually all are selected.
-
-        if (allAreSelected && !this.state.activeCustomSet) {
-          allChip.setAttribute('aria-pressed', 'false');
-          allChip.disabled = true;
-        } else {
-          allChip.setAttribute('aria-pressed', 'true');
-          allChip.disabled = false;
-        }
+        const numberChips = Array.from(this.dom.chips).filter(c => c.dataset.val !== 'all');
+      
+        // Helper is always available and always styled as "on"
+        allChip.disabled = false;
+        allChip.setAttribute('aria-pressed', 'true');
+      
+        // Only normalize label when we are in a pure bulk state
+        const allOn = numberChips.every(c => c.getAttribute('aria-pressed') === 'true');
+        const allOff = numberChips.every(c => c.getAttribute('aria-pressed') === 'false');
+      
+        if (allOn) allChip.textContent = 'Clr';
+        else if (allOff) allChip.textContent = 'All';
+        // mixed state: leave label unchanged (per spec)
       }
       
       // NEW: Updates the text display based on current selections (Live Count)
@@ -1494,30 +1494,48 @@
             }
         });
         
-        // STANDARD CHIP CLICK (1-9 & All)
+        // STANDARD CHIP CLICK (1-9 & All/Clr helper)
         this.dom.chips.forEach(chip => {
           chip.addEventListener('click', () => {
-            // When a 1-9 chip is clicked, we must deactivate any Custom Set
+            // Any standard-chip interaction exits Custom Set mode
             if (this.state.activeCustomSet) {
-                this.state.activeCustomSet = null;
-                // Visually deselect custom chips
-                this.dom.customChips.forEach(cc => cc.setAttribute('aria-pressed', 'false'));
-                // Note: 1-9 chips were visually "off" but their pressed state might have remained or needs reset.
-                // It's cleaner to let the standard logic below proceed.
+              this.state.activeCustomSet = null;
+              this.dom.customChips.forEach(cc => cc.setAttribute('aria-pressed', 'false'));
             }
 
             if (chip.dataset.val === 'all') {
-              this.dom.chips.forEach(c => {
-                if (c.dataset.val !== 'all') c.setAttribute('aria-pressed', 'true');
-              });
+              // All/Clr helper: label indicates the ACTION that will happen when clicked
+              const label = (chip.textContent || '').trim().toLowerCase();
+
+              if (label === 'clr') {
+                // Clear all (turn OFF 1–9)
+                this.dom.chips.forEach(c => {
+                  if (c.dataset.val !== 'all') c.setAttribute('aria-pressed', 'false');
+                });
+                chip.textContent = 'All';
+              } else {
+                // All on (turn ON 1–9)
+                this.dom.chips.forEach(c => {
+                  if (c.dataset.val !== 'all') c.setAttribute('aria-pressed', 'true');
+                });
+                chip.textContent = 'Clr';
+              }
+
+              // Helper is always high-visibility and always available
+              chip.setAttribute('aria-pressed', 'true');
+              chip.disabled = false;
+
             } else {
+              // Normal 1–9 toggle remains intact
               const isPressed = chip.getAttribute('aria-pressed') === 'true';
-              chip.setAttribute('aria-pressed', !isPressed);
+              chip.setAttribute('aria-pressed', isPressed ? 'false' : 'true');
             }
-            this.updateAllChipUI();
+
+            // IMPORTANT: Do NOT call updateAllChipUI() here (helper label must not track partial manual selections)
             this.updatePendingCount();
           });
         });
+
 
         // NEW: CUSTOM CHIP CLICK (10's, Doubles)
         this.dom.customChips.forEach(chip => {
