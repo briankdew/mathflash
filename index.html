@@ -820,7 +820,7 @@
 
         const activeChips = Array.from(this.dom.chips)
           .filter(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true')
-          .map(c => parseInt(c.dataset.val));
+          .map(c => parseInt(c.dataset.val, 10));
         
         // Validation: If no chips selected, return empty array
         if (activeChips.length === 0) {
@@ -1024,7 +1024,6 @@
 
         // Calculate Metrics
         const sessionEndObj = new Date();
-        const endTime = Date.now();
         // Round duration to nearest second
         const elapsedSec = Math.round((Date.now() - this.state.timerStart) / 1000);
         
@@ -1366,7 +1365,7 @@
         }
 
       checkAnswer() {
-        const userVal = parseInt(this.dom.input.value);
+        const userVal = parseInt(this.dom.input.value, 10);
         if (isNaN(userVal)) return;
 
         if (userVal === this.state.currentProblem.correct) {
@@ -1575,7 +1574,7 @@
           if (!this.state.currentProblem) return;
           const userStr = this.dom.input.value;
           const correctStr = String(this.state.currentProblem.correct);
-          const userVal = parseInt(userStr);
+          const userVal = parseInt(userStr, 10);
           if (userVal === this.state.currentProblem.correct) {
             this.checkAnswer();
           } 
