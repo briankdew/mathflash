@@ -59,6 +59,19 @@
       --palette-green-09: oklch(0.24 0.0867 136.6); /* #072700 */
       --palette-green-10: oklch(0.16 0.09 136.6);   /* #001300 */
 
+      /* Red Scale */
+      --palette-red-00: oklch(0.9600 0.0195 18.00);
+      --palette-red-01: oklch(0.9200 0.0407 18.00);
+      --palette-red-02: oklch(0.8800 0.0619 18.00);
+      --palette-red-03: oklch(0.8000 0.1043 18.00);
+      --palette-red-04: oklch(0.7200 0.1467 18.00);
+      --palette-red-05: oklch(0.6400 0.1891 18.00);
+      --palette-red-06: oklch(0.5600 0.2188 18.00);
+      --palette-red-07: oklch(0.4800 0.1875 18.00);
+      --palette-red-08: oklch(0.4000 0.1563 18.00);
+      --palette-red-09: oklch(0.3200 0.1250 18.00);
+      --palette-red-10: oklch(0.2400 0.0938 18.00);
+      --palette-red-11: oklch(0.1600 0.0625 18.00);
 
       /* --- SEMANTIC MAPPINGS --- */
       
@@ -940,27 +953,33 @@
       startSession() {
         this.dom.sessionBtn.textContent = "Reset Session";
         
-        // Reset Card Colors to Theme defaults
-        this.dom.cardLeft.style.color = '';
-        this.dom.cardRight.style.color = '';
-        this.dom.cardResult.style.color = '';
-
         // Prepare Pool using the helper
         let pool = this.getFilteredPool();
 
         // --- VALIDATION CHECK ---
         if (pool.length === 0) {
-            this.appendLogHTML(`
-                <div class="session-start-msg" style="color: #b00020; font-weight: bold;">
-                    Session not started! ... No Problem Set selected.
-                </div>
-            `);
-            // Reset button text back since we didn't actually start
-            this.dom.sessionBtn.textContent = "Start Session";
-            return;
+          // Intentional error-state coloring
+          this.dom.cardLeft.style.color = 'var(--palette-red-07)';
+          this.dom.cardRight.style.color = 'var(--palette-red-07)';
+          this.dom.cardResult.style.color = 'var(--palette-red-08)';
+
+          this.appendLogHTML(`
+                  <div class="session-start-msg" style="color: var(--palette-red-07); font-weight: bold;">
+                      Session not started! ... No Problem Set selected.
+                  </div>
+              `);
+
+          // Reset button text back since we didn't actually start
+          this.dom.sessionBtn.textContent = "Start Session";
+          return;
         }
         // ------------------------
 
+        // Reset Card Colors to Theme defaults (only after validation passes)
+        this.dom.cardLeft.style.color = '';
+        this.dom.cardRight.style.color = '';
+        this.dom.cardResult.style.color = '';
+        
         this.state.isSessionActive = true; // Only set active after validation passes
 
         if (this.dom.orderSelect.value === 'random') this.shuffle(pool);
