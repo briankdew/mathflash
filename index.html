@@ -1414,6 +1414,10 @@
         this.saveLogToCloud(cloudPayload);
 
         this.state.isTimerRunning = false;
+
+        // iOS Safari: restore document positioning BEFORE measuring/layout reset
+        if (this.isIOSSafari()) this.unlockScroll();
+
         this.initIdleState();
       }
       
@@ -1771,10 +1775,26 @@
         
         // Shield Click: If user clicks the background, focus the input
         document.getElementById('sessionShield').addEventListener('click', () => {
-             this.dom.input.focus();
+             if (this.isIOSSafari()) this.focusInputLocked();
+             else this.dom.input.focus();
         });
 
         window.addEventListener('resize', () => this.handleResize());
+
+        // iOS Safari: respond to keyboard/viewport changes and keep kiosk focus
+        if (this.isIOSSafari() && window.visualViewport) {
+          const vv = window.visualViewport;
+
+          const onVVChange = () => {
+            this.handleResize();
+            if (this.state.isSessionActive && document.activeElement !== this.dom.input) {
+              this.focusInputLocked();
+            }
+          };
+
+          vv.addEventListener('resize', onVVChange);
+          vv.addEventListener('scroll', onVVChange);
+        }
       }
     }
 
