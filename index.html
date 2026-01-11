@@ -167,6 +167,15 @@
     .panel-practice { grid-area: practice; text-align: center; }
     .panel-data     { grid-area: data; }
 
+    /* Practice column scales as ONE object (constellation + answer + start button) */
+    #practiceStack {
+      transform-origin: top center;
+      will-change: transform;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
     /* =========================================
        4. COMPONENT STYLES
        ========================================= */
@@ -696,6 +705,7 @@
 
     <section class="panel-practice">
       
+      <div id="practiceStack">
       <div id="problemArea">
         <div class="constellation-anchor">
           <div id="operationDisplay"></div>
@@ -733,6 +743,8 @@
             Problems Remaining: <span id="countDisplay">0</span>
           </div>
         </div>
+      </div>
+
       </div>
     </section>
 
@@ -1482,13 +1494,32 @@
       }
 
       handleResize() {
-        const container = document.getElementById('problemArea');
-        const anchor = document.querySelector('.constellation-anchor');
-        const requiredWidth = 540; 
-        const availableWidth = container.clientWidth;
-        const scale = Math.min(1, availableWidth / requiredWidth);
-        anchor.style.transform = `scale(${scale})`;
-        container.style.height = `${350 * scale}px`;
+        const practice = document.getElementById('practiceStack');
+        if (!practice) return;
+
+        // Use visualViewport when available (iOS keyboard correctness)
+        const vv = window.visualViewport;
+        const vpW = vv ? vv.width : window.innerWidth;
+        const vpH = vv ? vv.height : window.innerHeight;
+
+        const rect = practice.getBoundingClientRect();
+
+        // Available space inside the visible viewport from the practice top down.
+        // Small top gap so the operand tops don't kiss the edge.
+        const TOP_GAP = 8;
+        const availableH = Math.max(0, vpH - rect.top - TOP_GAP);
+
+        // "Natural" size of the practice object (transform doesn't affect scroll sizes)
+        // scrollWidth/scrollHeight are stable for our fit calculations.
+        const requiredW = practice.scrollWidth;
+        const requiredH = practice.scrollHeight;
+
+        const widthScale = requiredW ? (rect.width / requiredW) : 1;
+        const heightScale = requiredH ? (availableH / requiredH) : 1;
+
+        const uiScale = Math.min(1, widthScale, heightScale);
+
+        practice.style.transform = `scale(${uiScale})`;
       }
 
       bindEvents() {
