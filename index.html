@@ -556,12 +556,19 @@
       display: block;
     }
 
+    /* Lift the ENTIRE practice stack above the shield (transforms create a stacking context) */
+    body.session-active #practiceStack {
+      position: relative;
+      z-index: 1000;            /* Higher than the shield */
+    }
+
     /* Lift the active elements ABOVE the shield */
     body.session-active #answerInput,
     body.session-active .session-controls-centered {
       position: relative;
-      z-index: 1000;            /* Higher than the shield */
+      z-index: 1001;            /* Higher than the shield */
     }
+
 
     /* =========================================
        7. MOBILE KEYBOARD OPTIMIZATIONS
