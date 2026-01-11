@@ -577,21 +577,17 @@
     }  </style>
 </head>
 <body>
-<div id="viewportDebug"
-     style="
-       position: fixed;
-       top: 6px;
-       right: 6px;
-       z-index: 9999;
-       background: rgba(0,0,0,0.7);
-       color: #fff;
-       font: 12px monospace;
-       padding: 4px 6px;
-       border-radius: 4px;
-       pointer-events: none;
-     ">
-  —
-</div>
+  <div id="viewportDebug"
+       style="
+         position: fixed;
+         top: 6px;
+         right: 6px;
+         z-index: 9999;
+         display: none;
+         pointer-events: none;
+         font: 12px monospace;
+       ">
+  </div>
 
   <div id="sessionShield" class="session-shield"></div>
 
@@ -1645,23 +1641,58 @@
     document.addEventListener('DOMContentLoaded', () => new MathSession());
 
 
-// TEMP: Visual viewport size display (iPhone diagnostics)
-(function () {
-    const dbg = document.getElementById('viewportDebug');
-    if (!dbg || !window.visualViewport) return;
-
-    function update() {
-        dbg.textContent =
-            Math.round(window.visualViewport.width) +
-            ' × ' +
-            Math.round(window.visualViewport.height);
-    }
-
-    window.visualViewport.addEventListener('resize', update);
-    window.addEventListener('orientationchange', update);
-
-    update();
-})();
+    // DEBUG overlay (enabled via ?debug=1)
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('debug') !== '1') return;
+    
+        const dbg = document.getElementById('viewportDebug');
+        if (!dbg || !window.visualViewport) return;
+    
+        dbg.style.display = 'block';
+    
+        function box(label, value) {
+            return `
+                <div style="
+                    background: rgba(0,0,0,0.7);
+                    color: #fff;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    margin-bottom: 4px;
+                    white-space: nowrap;
+                ">
+                    ${label}: ${value}
+                </div>
+            `;
+        }
+    
+        function update() {
+            const vv = window.visualViewport;
+            const ans = document.getElementById('answerInput');
+    
+            let html = '';
+    
+            html += box(
+                'vp prt',
+                Math.round(vv.width) + ' × ' + Math.round(vv.height)
+            );
+    
+            if (ans) {
+                const r = ans.getBoundingClientRect();
+                html += box(
+                    'ans bx',
+                    Math.round(r.width) + ' × ' + Math.round(r.height)
+                );
+            }
+    
+            dbg.innerHTML = html;
+        }
+    
+        window.visualViewport.addEventListener('resize', update);
+        window.addEventListener('orientationchange', update);
+    
+        update();
+    })();
 
 </script>
 </body>
