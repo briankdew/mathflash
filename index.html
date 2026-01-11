@@ -779,6 +779,10 @@
           sessionStartObj: null,
           isTimerRunning: false,
           isSessionActive: false,
+
+          // iOS scroll-lock (session kiosk mode)
+          scrollLockY: 0,
+          scrollLockActive: false,
           
           // New state to track if a custom set is active
           activeCustomSet: null, // null, '10s', or 'doubles'
@@ -830,6 +834,69 @@
       }
 
       // --- LOGIC HELPERS ---
+
+      isIOSSafari() {
+        const ua = navigator.userAgent || '';
+        const isIOS = /iP(hone|od|ad)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+        return isIOS && isSafari;
+      }
+
+      lockScroll() {
+        if (!this.isIOSSafari()) return;
+        if (this.state.scrollLockActive) return;
+
+        const y = window.scrollY || window.pageYOffset || 0;
+        this.state.scrollLockY = y;
+
+        const b = document.body;
+        b.style.position = 'fixed';
+        b.style.top = `-${y}px`;
+        b.style.left = '0';
+        b.style.right = '0';
+        b.style.width = '100%';
+
+        this.state.scrollLockActive = true;
+      }
+
+      unlockScroll() {
+        if (!this.state.scrollLockActive) return;
+
+        const b = document.body;
+        b.style.position = '';
+        b.style.top = '';
+        b.style.left = '';
+        b.style.right = '';
+        b.style.width = '';
+
+        window.scrollTo(0, this.state.scrollLockY || 0);
+        this.state.scrollLockActive = false;
+      }
+
+      focusInputLocked() {
+        if (!this.isIOSSafari()) return;
+        if (!this.state.isSessionActive) return;
+
+        const y = this.state.scrollLockActive ? (this.state.scrollLockY || 0) : (window.scrollY || 0);
+
+        try {
+          this.dom.input.focus({ preventScroll: true });
+        } catch (e) {
+          this.dom.input.focus();
+        }
+
+        const restore = () => {
+          if (!this.state.scrollLockActive) {
+            window.scrollTo(0, y);
+          }
+        };
+
+        restore();
+        requestAnimationFrame(() => {
+          restore();
+          requestAnimationFrame(restore);
+        });
+      }
       
       // NEW: Centralized logic to generate the specific pool based on current selections
       getFilteredPool() {
