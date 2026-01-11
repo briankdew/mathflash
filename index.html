@@ -1520,13 +1520,20 @@
       
         // We cap at 1 (no upscaling); width is handled by layout, height is the limiter on iPhone+keyboard
         const uiScale = Math.min(1, heightScale);
-      
-        // Expose scale for debug overlay (and future CSS if needed)
+        
+        // Expose scale for debug overlay
         practice.style.setProperty('--uiScale', uiScale.toFixed(3));
-      
-        // Apply shift + scale as a single transform (one-object behavior)
+        
         practice.style.transformOrigin = 'top center';
-        practice.style.transform = `translateY(-${shiftUp}px) scale(${uiScale})`;
+        
+        // Only translate upward when we actually need to scale down
+        if (uiScale < 1) {
+          practice.style.transform =
+            `translateY(-${shiftUp}px) scale(${uiScale})`;
+        } else {
+          practice.style.transform = 'none';
+        }
+
       }
 
       bindEvents() {
