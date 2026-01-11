@@ -1081,6 +1081,9 @@
         this.dom.cardLeft.style.color = '';
         this.dom.cardRight.style.color = '';
         this.dom.cardResult.style.color = '';
+
+        // iOS Safari: lock scroll only after validation passes
+        if (this.isIOSSafari()) this.lockScroll();
         
         this.state.isSessionActive = true; // Only set active after validation passes
 
@@ -1111,7 +1114,8 @@
         // Enable Input
         this.dom.input.disabled = false;
         this.dom.input.value = '';
-        this.dom.input.focus();
+        if (this.isIOSSafari()) this.focusInputLocked();
+        else this.dom.input.focus();
 
         // --- NEW LOGGING LOGIC ---
         const timerStatus = this.state.isTimerRunning ? "ON" : "OFF";
