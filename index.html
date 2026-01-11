@@ -781,6 +781,7 @@
           isSessionActive: false,
 
           // iOS scroll-lock (session kiosk mode)
+          scrollLockX: 0,
           scrollLockY: 0,
           scrollLockActive: false,
           
@@ -846,13 +847,15 @@
         if (!this.isIOSSafari()) return;
         if (this.state.scrollLockActive) return;
 
+        const x = window.scrollX || window.pageXOffset || 0;
         const y = window.scrollY || window.pageYOffset || 0;
+        this.state.scrollLockX = x;
         this.state.scrollLockY = y;
 
         const b = document.body;
         b.style.position = 'fixed';
         b.style.top = `-${y}px`;
-        b.style.left = '0';
+        b.style.left = `-${x}px`;
         b.style.right = '0';
         b.style.width = '100%';
 
@@ -869,7 +872,7 @@
         b.style.right = '';
         b.style.width = '';
 
-        window.scrollTo(0, this.state.scrollLockY || 0);
+        window.scrollTo(this.state.scrollLockX || 0, this.state.scrollLockY || 0);
         this.state.scrollLockActive = false;
       }
 
@@ -877,7 +880,9 @@
         if (!this.isIOSSafari()) return;
         if (!this.state.isSessionActive) return;
 
+        const x = this.state.scrollLockActive ? (this.state.scrollLockX || 0) : (window.scrollX || 0);
         const y = this.state.scrollLockActive ? (this.state.scrollLockY || 0) : (window.scrollY || 0);
+
 
         try {
           this.dom.input.focus({ preventScroll: true });
@@ -887,7 +892,7 @@
 
         const restore = () => {
           if (!this.state.scrollLockActive) {
-            window.scrollTo(0, y);
+            window.scrollTo(x, y);
           }
         };
 
