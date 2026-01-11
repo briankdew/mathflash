@@ -1587,12 +1587,25 @@
         const TOP_GAP = 8;
       
         // If the practice stack starts too low, shift it up BEFORE scaling
-        const rect0 = practice.getBoundingClientRect();
-        const shiftUp = Math.max(0, rect0.top - TOP_GAP);
+        const stackRect = practice.getBoundingClientRect();
+
+        let contentTop = stackRect.top;
+        let contentBottom = stackRect.bottom;
+
+        // iOS Safari: include absolutely-positioned operationDisplay in bounds
+        if (this.isIOSSafari()) {
+          const op = this.dom.operationDisplay;
+          if (op && op.offsetParent !== null) {
+            const opRect = op.getBoundingClientRect();
+            contentTop = Math.min(contentTop, opRect.top);
+            contentBottom = Math.max(contentBottom, opRect.bottom);
+          }
+        }
+
+        const shiftUp = Math.max(0, contentTop - TOP_GAP);
       
-        // Measure required height AFTER shift decision (still unscaled)
-        // We'll fit the whole object into the remaining visible height.
-        const requiredH = practice.scrollHeight;
+        // Measure required height from bounds (includes abs-pos opDisplay on iOS Safari)
+        const requiredH = contentBottom - contentTop;
         const availableH = Math.max(0, vpH - TOP_GAP);
       
         const heightScale = requiredH ? (availableH / requiredH) : 1;
@@ -1612,7 +1625,6 @@
         } else {
           practice.style.transform = 'none';
         }
-
       }
 
       bindEvents() {
