@@ -1496,30 +1496,37 @@
       handleResize() {
         const practice = document.getElementById('practiceStack');
         if (!practice) return;
-
+      
         // Use visualViewport when available (iOS keyboard correctness)
         const vv = window.visualViewport;
-        const vpW = vv ? vv.width : window.innerWidth;
         const vpH = vv ? vv.height : window.innerHeight;
-
-        const rect = practice.getBoundingClientRect();
-
-        // Available space inside the visible viewport from the practice top down.
-        // Small top gap so the operand tops don't kiss the edge.
+      
+        // Reset transform so we measure the natural layout position/size
+        practice.style.transform = 'none';
+      
+        // Desired top gap (operand tops + a small gap)
         const TOP_GAP = 8;
-        const availableH = Math.max(0, vpH - rect.top - TOP_GAP);
-
-        // "Natural" size of the practice object (transform doesn't affect scroll sizes)
-        // scrollWidth/scrollHeight are stable for our fit calculations.
-        const requiredW = practice.scrollWidth;
+      
+        // If the practice stack starts too low, shift it up BEFORE scaling
+        const rect0 = practice.getBoundingClientRect();
+        const shiftUp = Math.max(0, rect0.top - TOP_GAP);
+      
+        // Measure required height AFTER shift decision (still unscaled)
+        // We'll fit the whole object into the remaining visible height.
         const requiredH = practice.scrollHeight;
-
-        const widthScale = requiredW ? (rect.width / requiredW) : 1;
+        const availableH = Math.max(0, vpH - TOP_GAP);
+      
         const heightScale = requiredH ? (availableH / requiredH) : 1;
-
-        const uiScale = Math.min(1, widthScale, heightScale);
-
-        practice.style.transform = `scale(${uiScale})`;
+      
+        // We cap at 1 (no upscaling); width is handled by layout, height is the limiter on iPhone+keyboard
+        const uiScale = Math.min(1, heightScale);
+      
+        // Expose scale for debug overlay (and future CSS if needed)
+        practice.style.setProperty('--uiScale', uiScale.toFixed(3));
+      
+        // Apply shift + scale as a single transform (one-object behavior)
+        practice.style.transformOrigin = 'top center';
+        practice.style.transform = `translateY(-${shiftUp}px) scale(${uiScale})`;
       }
 
       bindEvents() {
@@ -1700,14 +1707,14 @@
         function update() {
             const vv = window.visualViewport;
             const ans = document.getElementById('answerInput');
-    
+        
             let html = '';
-    
+        
             html += box(
-                'vp prt',
+                'vw prt',
                 Math.round(vv.width) + ' × ' + Math.round(vv.height)
             );
-    
+        
             if (ans) {
                 const r = ans.getBoundingClientRect();
                 html += box(
@@ -1715,7 +1722,16 @@
                     Math.round(r.width) + ' × ' + Math.round(r.height)
                 );
             }
-    
+        
+            // uiScale (read from CSS variable if present; otherwise show "—")
+            const ps = document.getElementById('practiceStack');
+            let scaleText = '—';
+            if (ps) {
+                const s = getComputedStyle(ps).getPropertyValue('--uiScale').trim();
+                if (s) scaleText = s;
+            }
+            html += box('uiScale', scaleText);
+        
             dbg.innerHTML = html;
         }
     
