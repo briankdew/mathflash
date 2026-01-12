@@ -769,7 +769,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260112.1302'; // manually maintained
+    const APP_VERSION = '20260112.1354'; // manually maintained
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -1619,8 +1619,6 @@
             contentBottom = Math.max(contentBottom, opRect.bottom);
           }
         }
-
-        const shiftUp = Math.max(0, contentTop - TOP_GAP);
       
         // Measure required height from bounds (includes abs-pos opDisplay on iOS Safari)
         const requiredH = contentBottom - contentTop;
@@ -1635,11 +1633,19 @@
         practice.style.setProperty('--uiScale', uiScale.toFixed(3));
         
         practice.style.transformOrigin = 'top center';
-        
-        // Only translate upward when we actually need to scale down
-        if (uiScale < 1) {
-          practice.style.transform =
-            `translateY(-${shiftUp}px) scale(${uiScale})`;
+
+        // Signed translate to keep contentTop at TOP_GAP during session on iOS Safari
+        let deltaY = 0;
+        if (this.isIOSSafari() && this.state.isSessionActive) {
+          deltaY = TOP_GAP - contentTop;
+        } else {
+          const shiftUp = Math.max(0, contentTop - TOP_GAP);
+          deltaY = (uiScale < 1) ? -shiftUp : 0;
+        }
+
+        // Apply transform whenever deltaY !== 0 OR scaling is active
+        if (deltaY !== 0 || uiScale < 1) {
+          practice.style.transform = `translateY(${deltaY}px) scale(${uiScale})`;
         } else {
           practice.style.transform = 'none';
         }
