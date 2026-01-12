@@ -769,6 +769,7 @@
   </div>
 
   <script>
+    const APP_VERSION = '20260112.1302'; // manually maintained
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -1852,6 +1853,8 @@
         
             let html = '';
         
+            html += box('app ver', APP_VERSION);
+
             html += box(
                 'vw prt',
                 Math.round(vv.width) + ' × ' + Math.round(vv.height)
