@@ -176,6 +176,11 @@
       align-items: center;
     }
 
+    /* iPhone Safari (idle only): prevent operationDisplay from intruding into header */
+    body.ios-safari:not(.session-active) #practiceStack {
+      padding-top: 6rem;
+    }
+
     /* =========================================
        4. COMPONENT STYLES
        ========================================= */
@@ -830,6 +835,10 @@
         };
 
         this.bindEvents();
+
+        // iOS Safari marker (used for idle-only layout nudge)
+        if (this.isIOSSafari()) document.body.classList.add('ios-safari');
+
         // Initialize UI but DO NOT Start Session
         this.initIdleState();
       }
