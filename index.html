@@ -564,7 +564,7 @@
     /* Lift the ENTIRE practice stack above the shield (transforms create a stacking context) */
     body.session-active #practiceStack {
       position: relative;
-      z-index: 1000;            /* Higher than the shield */
+      z-index: 10000;           /* Higher than the shield (iOS hit-testing reliability) */
     }
 
     /* Lift the active elements ABOVE the shield */
@@ -769,7 +769,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260112.1354'; // manually maintained
+    const APP_VERSION = '20260112.1432'; // manually maintained
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
