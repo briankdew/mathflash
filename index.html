@@ -1781,19 +1781,30 @@
 
         window.addEventListener('resize', () => this.handleResize());
 
-        // iOS Safari: respond to keyboard/viewport changes and keep kiosk focus
+        // iOS Safari: respond to keyboard/viewport changes and keep kiosk focus (throttled)
         if (this.isIOSSafari() && window.visualViewport) {
           const vv = window.visualViewport;
 
-          const onVVChange = () => {
-            this.handleResize();
-            if (this.state.isSessionActive && document.activeElement !== this.dom.input) {
-              this.focusInputLocked();
-            }
-          };
+          // Ensure listeners are registered only once
+          if (!vv.__mathflashVVBound) {
+            vv.__mathflashVVBound = true;
 
-          vv.addEventListener('resize', onVVChange);
-          vv.addEventListener('scroll', onVVChange);
+            let rafId = 0;
+
+            const runThrottled = () => {
+              if (rafId) return;
+              rafId = requestAnimationFrame(() => {
+                rafId = 0;
+                this.handleResize();
+                if (this.state.isSessionActive && document.activeElement !== this.dom.input) {
+                  this.focusInputLocked();
+                }
+              });
+            };
+
+            vv.addEventListener('resize', runThrottled);
+            vv.addEventListener('scroll', runThrottled);
+          }
         }
       }
     }
