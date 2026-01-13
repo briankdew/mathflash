@@ -898,6 +898,7 @@
         // iOS Safari marker (used for idle-only layout nudge)
         if (this.isIOSSafari()) document.body.classList.add('ios-safari');
 
+        this.loadPracticeCyclesState();
         // Initialize UI but DO NOT Start Session
         this.initIdleState();
       }
