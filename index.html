@@ -949,6 +949,86 @@
         if (!this.isIOSSafari()) return;
         if (!this.state.isSessionActive) return;
 
+      // --- PRACTICE CYCLES (UI + state only) ---
+
+      loadPracticeCyclesState() {
+        try {
+          const raw = localStorage.getItem('mathflash.practiceCycles.v1');
+          if (!raw) {
+            // default: regular baseline (since 1–9 are selected by default)
+            this.state.practiceCycles = 1;
+            this.state.practiceCyclesMode = 'regular';
+            this.state.practiceCyclesUserOverride = false;
+            if (this.dom.practiceCyclesSelect) this.dom.practiceCyclesSelect.value = '1';
+            return;
+          }
+          const obj = JSON.parse(raw) || {};
+          const v = parseInt(obj.practiceCycles, 10);
+          const mode = obj.practiceCyclesMode;
+          const ov = !!obj.practiceCyclesUserOverride;
+
+          if (v >= 1 && v <= 5) this.state.practiceCycles = v;
+          if (mode === 'custom' || mode === 'regular' || mode === 'none') this.state.practiceCyclesMode = mode;
+          this.state.practiceCyclesUserOverride = ov;
+
+          if (this.dom.practiceCyclesSelect) this.dom.practiceCyclesSelect.value = String(this.state.practiceCycles);
+        } catch (e) {
+          // fail closed to defaults
+          this.state.practiceCycles = 1;
+          this.state.practiceCyclesMode = 'regular';
+          this.state.practiceCyclesUserOverride = false;
+          if (this.dom.practiceCyclesSelect) this.dom.practiceCyclesSelect.value = '1';
+        }
+      }
+
+      savePracticeCyclesState() {
+        try {
+          localStorage.setItem(
+            'mathflash.practiceCycles.v1',
+            JSON.stringify({
+              practiceCycles: this.state.practiceCycles,
+              practiceCyclesMode: this.state.practiceCyclesMode,
+              practiceCyclesUserOverride: this.state.practiceCyclesUserOverride
+            })
+          );
+        } catch (e) {}
+      }
+
+      updatePracticeCyclesUI() {
+        const el = this.dom.practiceCyclesSelect;
+        if (!el) return;
+        const active = this.state.practiceCyclesMode !== 'none';
+        el.classList.toggle('pc-active', active);
+        el.classList.toggle('pc-inactive', !active);
+      }
+
+      updatePracticeCyclesModeFromSelection() {
+        const hasCustom = !!this.state.activeCustomSet;
+
+        const hasRegular = Array.from(this.dom.chips)
+          .some(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true');
+
+        const newMode = hasCustom ? 'custom' : (hasRegular ? 'regular' : 'none');
+        const prevMode = this.state.practiceCyclesMode || 'none';
+
+        if (newMode !== prevMode) {
+          this.state.practiceCyclesMode = newMode;
+          this.state.practiceCyclesUserOverride = false;
+
+          if (newMode === 'custom') this.state.practiceCycles = 2;
+          else if (newMode === 'regular') this.state.practiceCycles = 1;
+          // newMode === 'none' => keep current practiceCycles as-is
+        }
+
+        if (this.dom.practiceCyclesSelect) {
+          this.dom.practiceCyclesSelect.value = String(this.state.practiceCycles);
+        }
+
+        this.updatePracticeCyclesUI();
+        this.savePracticeCyclesState();
+      }
+
+        
         const x = this.state.scrollLockActive ? (this.state.scrollLockX || 0) : (window.scrollX || 0);
         const y = this.state.scrollLockActive ? (this.state.scrollLockY || 0) : (window.scrollY || 0);
 
