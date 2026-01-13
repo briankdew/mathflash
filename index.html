@@ -487,6 +487,47 @@
       text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
     }
 
+    /* Practice Cycles (matches chip size; style switches by state class) */
+    .practice-cycles-select {
+      width: 50px;
+      aspect-ratio: 1.4 / 1;
+      max-width: 50px;
+      border-radius: 5px;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 1.5rem;
+      text-align: center;
+      text-align-last: center;
+      line-height: 1;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .practice-cycles-select.pc-inactive {
+      background-color: var(--palette-beige-01);
+      color: var(--palette-beige-03);
+      box-shadow: none;
+    }
+
+    .practice-cycles-select.pc-active {
+      background-color: var(--color-white);
+      color: var(--theme-text-operand);
+      box-shadow: var(--shadow-card);
+      border: 2px solid transparent;
+    }
+
+    .practice-cycles-select.pc-active:focus {
+      border-color: var(--theme-text-operand);
+      outline: none;
+    }
+
     .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
     
     .toggle-switch input { 
@@ -706,6 +747,17 @@
         </div>
       </div>
 
+      <div class="control-group">
+        <label class="control-label">Practice Cycles</label>
+        <select id="practiceCyclesSelect" class="practice-cycles-select pc-inactive" aria-label="Practice Cycles">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+
       <div class="control-group" style="display: flex; align-items: center; justify-content: start; gap: 1rem;">
         <label class="control-label" style="margin:0;">Session Timer</label>
         <label class="toggle-switch">
@@ -794,6 +846,11 @@
           // New state to track if a custom set is active
           activeCustomSet: null, // null, '10s', or 'doubles'
 
+          // Practice Cycles (UI + state only in Step 1)
+          practiceCycles: 1,
+          practiceCyclesMode: 'regular', // 'custom' | 'regular' | 'none'
+          practiceCyclesUserOverride: false,
+
           // Stats Tracking
           currentProblemFirstTry: true,
           stats: {
@@ -810,6 +867,7 @@
           operandOrderSelect: document.getElementById('operandOrder'),
           missingSelect: document.getElementById('missingValue'),
           timerToggle: document.getElementById('timerToggle'),
+          practiceCyclesSelect: document.getElementById('practiceCyclesSelect'),
           
           sessionBtn: document.getElementById('sessionToggleBtn'),
           
@@ -840,6 +898,7 @@
         // iOS Safari marker (used for idle-only layout nudge)
         if (this.isIOSSafari()) document.body.classList.add('ios-safari');
 
+        this.loadPracticeCyclesState();
         // Initialize UI but DO NOT Start Session
         this.initIdleState();
       }
@@ -912,9 +971,89 @@
           requestAnimationFrame(restore);
         });
       }
+
+      // --- PRACTICE CYCLES (UI + state only) ---
+
+      loadPracticeCyclesState() {
+        try {
+          const raw = localStorage.getItem('mathflash.practiceCycles.v1');
+          if (!raw) {
+            // default: regular baseline (since 1–9 are selected by default)
+            this.state.practiceCycles = 1;
+            this.state.practiceCyclesMode = 'regular';
+            this.state.practiceCyclesUserOverride = false;
+            if (this.dom.practiceCyclesSelect) this.dom.practiceCyclesSelect.value = '1';
+            return;
+          }
+          const obj = JSON.parse(raw) || {};
+          const v = parseInt(obj.practiceCycles, 10);
+          const mode = obj.practiceCyclesMode;
+          const ov = !!obj.practiceCyclesUserOverride;
+
+          if (v >= 1 && v <= 5) this.state.practiceCycles = v;
+          if (mode === 'custom' || mode === 'regular' || mode === 'none') this.state.practiceCyclesMode = mode;
+          this.state.practiceCyclesUserOverride = ov;
+
+          if (this.dom.practiceCyclesSelect) this.dom.practiceCyclesSelect.value = String(this.state.practiceCycles);
+        } catch (e) {
+          // fail closed to defaults
+          this.state.practiceCycles = 1;
+          this.state.practiceCyclesMode = 'regular';
+          this.state.practiceCyclesUserOverride = false;
+          if (this.dom.practiceCyclesSelect) this.dom.practiceCyclesSelect.value = '1';
+        }
+      }
+
+      savePracticeCyclesState() {
+        try {
+          localStorage.setItem(
+            'mathflash.practiceCycles.v1',
+            JSON.stringify({
+              practiceCycles: this.state.practiceCycles,
+              practiceCyclesMode: this.state.practiceCyclesMode,
+              practiceCyclesUserOverride: this.state.practiceCyclesUserOverride
+            })
+          );
+        } catch (e) {}
+      }
+
+      updatePracticeCyclesUI() {
+        const el = this.dom.practiceCyclesSelect;
+        if (!el) return;
+        const active = this.state.practiceCyclesMode !== 'none';
+        el.classList.toggle('pc-active', active);
+        el.classList.toggle('pc-inactive', !active);
+      }
+
+      updatePracticeCyclesModeFromSelection() {
+        const hasCustom = !!this.state.activeCustomSet;
+
+        const hasRegular = Array.from(this.dom.chips)
+          .some(c => c.dataset.val !== 'all' && c.getAttribute('aria-pressed') === 'true');
+
+        const newMode = hasCustom ? 'custom' : (hasRegular ? 'regular' : 'none');
+        const prevMode = this.state.practiceCyclesMode || 'none';
+
+        if (newMode !== prevMode) {
+          this.state.practiceCyclesMode = newMode;
+          this.state.practiceCyclesUserOverride = false;
+
+          if (newMode === 'custom') this.state.practiceCycles = 2;
+          else if (newMode === 'regular') this.state.practiceCycles = 1;
+          // newMode === 'none' => keep current practiceCycles as-is
+        }
+
+        if (this.dom.practiceCyclesSelect) {
+          this.dom.practiceCyclesSelect.value = String(this.state.practiceCycles);
+        }
+
+        this.updatePracticeCyclesUI();
+        this.savePracticeCyclesState();
+      }
       
       // NEW: Centralized logic to generate the specific pool based on current selections
       getFilteredPool() {
+
         let pool = [];
 
         // BRANCH A: Custom Set is active (ignores 1-9 chips)
@@ -1056,6 +1195,7 @@
         // Ensure Theme is applied (for Logo/etc)
         this.applyTheme(this.dom.opSelect.value);
         this.updateAllChipUI();
+        this.updatePracticeCyclesModeFromSelection();
         
         // Force layout to fit screen immediately
         this.handleResize();
@@ -1678,6 +1818,22 @@
                 this.updatePendingCount();
             }
         });
+
+        // Practice Cycles: user override
+        this.dom.practiceCyclesSelect.addEventListener('change', () => {
+          const v = parseInt(this.dom.practiceCyclesSelect.value, 10);
+          if (!(v >= 1 && v <= 5)) {
+            this.dom.practiceCyclesSelect.value = String(this.state.practiceCycles);
+            return;
+          }
+          this.state.practiceCycles = v;
+          this.state.practiceCyclesUserOverride = true;
+          this.updatePracticeCyclesUI();
+          this.savePracticeCyclesState();
+        });
+
+        // Ensure mode defaults stay aligned when Operation changes can force chip state changes
+        this.updatePracticeCyclesModeFromSelection();
         
         // BUTTON TOGGLE EVENT (iOS: ensure first intentional tap triggers reset)
         let suppressSessionBtnClick = false;
@@ -1747,9 +1903,9 @@
 
             // IMPORTANT: Do NOT call updateAllChipUI() here (helper label must not track partial manual selections)
             this.updatePendingCount();
+            this.updatePracticeCyclesModeFromSelection();
           });
         });
-
 
         // NEW: CUSTOM CHIP CLICK (10's, Doubles)
         this.dom.customChips.forEach(chip => {
@@ -1781,6 +1937,7 @@
                 // 5. Update UI
                 this.updateAllChipUI();
                 this.updatePendingCount();
+                this.updatePracticeCyclesModeFromSelection();
             });
         });
 
