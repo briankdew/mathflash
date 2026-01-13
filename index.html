@@ -519,7 +519,7 @@
     .practice-cycles-select.pc-active {
       background-color: var(--color-white);
       color: var(--theme-text-operand);
-      box-shadow: var(--shadow-card);
+      box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
       border: 2px solid transparent;
     }
 
@@ -1124,7 +1124,8 @@
       // NEW: Updates the text display based on current selections (Live Count)
       updatePendingCount() {
           const pool = this.getFilteredPool();
-          this.dom.countDisplay.textContent = pool.length;
+          const cycles = (this.state.practiceCycles >= 1 && this.state.practiceCycles <= 5) ? this.state.practiceCycles : 1;
+          this.dom.countDisplay.textContent = pool.length * cycles;
       }
 
       applyTheme(mode) {
@@ -1177,11 +1178,14 @@
         this.dom.sessionBtn.textContent = "Start Session";
         this.dom.input.disabled = true; 
         this.dom.input.value = '';
-        
-        // Update the count immediately based on default selections
-        this.updatePendingCount();
-        
+                
         // Reset Cards to Dashes
+        this.updateAllChipUI();
+        this.updatePracticeCyclesModeFromSelection();
+        
+        // Update the count immediately based on default selections (after cycles mode defaulting)
+        this.updatePendingCount();
+
         this.dom.cardLeft.textContent = "--";
         this.dom.cardRight.textContent = "--";
         this.dom.cardResult.textContent = "---";
@@ -1240,7 +1244,9 @@
         if (this.dom.orderSelect.value === 'random') this.shuffle(pool);
 
         this.state.queue = pool;
-        this.state.totalProblems = pool.length;
+        const baseProblemCount = pool.length;
+        const cycles = (this.state.practiceCycles >= 1 && this.state.practiceCycles <= 5) ? this.state.practiceCycles : 1;
+        this.state.totalProblems = baseProblemCount * cycles;
         
         // Stats Reset
         this.state.stats = {
@@ -1604,7 +1610,7 @@
         const p = this.state.queue.shift();
         this.state.currentProblem = this.configureProblemDisplay(p);
         this.renderProblem();
-        this.dom.countDisplay.textContent = this.state.queue.length + 1;
+        this.dom.countDisplay.textContent = Math.max(0, this.state.totalProblems - this.state.stats.completed);
       }
 
       configureProblemDisplay(p) {
@@ -1830,6 +1836,7 @@
           this.state.practiceCyclesUserOverride = true;
           this.updatePracticeCyclesUI();
           this.savePracticeCyclesState();
+          this.updatePendingCount();
         });
 
         // Ensure mode defaults stay aligned when Operation changes can force chip state changes
@@ -1902,8 +1909,8 @@
             }
 
             // IMPORTANT: Do NOT call updateAllChipUI() here (helper label must not track partial manual selections)
-            this.updatePendingCount();
             this.updatePracticeCyclesModeFromSelection();
+            this.updatePendingCount();
           });
         });
 
@@ -1936,8 +1943,8 @@
                 
                 // 5. Update UI
                 this.updateAllChipUI();
-                this.updatePendingCount();
                 this.updatePracticeCyclesModeFromSelection();
+                this.updatePendingCount();
             });
         });
 
