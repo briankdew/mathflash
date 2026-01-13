@@ -846,6 +846,11 @@
           // New state to track if a custom set is active
           activeCustomSet: null, // null, '10s', or 'doubles'
 
+          // Practice Cycles (UI + state only in Step 1)
+          practiceCycles: 1,
+          practiceCyclesMode: 'regular', // 'custom' | 'regular' | 'none'
+          practiceCyclesUserOverride: false,
+
           // Stats Tracking
           currentProblemFirstTry: true,
           stats: {
