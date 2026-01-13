@@ -1816,6 +1816,22 @@
                 this.updatePendingCount();
             }
         });
+
+        // Practice Cycles: user override
+        this.dom.practiceCyclesSelect.addEventListener('change', () => {
+          const v = parseInt(this.dom.practiceCyclesSelect.value, 10);
+          if (!(v >= 1 && v <= 5)) {
+            this.dom.practiceCyclesSelect.value = String(this.state.practiceCycles);
+            return;
+          }
+          this.state.practiceCycles = v;
+          this.state.practiceCyclesUserOverride = true;
+          this.updatePracticeCyclesUI();
+          this.savePracticeCyclesState();
+        });
+
+        // Ensure mode defaults stay aligned when Operation changes can force chip state changes
+        this.updatePracticeCyclesModeFromSelection();
         
         // BUTTON TOGGLE EVENT (iOS: ensure first intentional tap triggers reset)
         let suppressSessionBtnClick = false;
