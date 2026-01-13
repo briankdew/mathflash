@@ -1901,9 +1901,9 @@
 
             // IMPORTANT: Do NOT call updateAllChipUI() here (helper label must not track partial manual selections)
             this.updatePendingCount();
+            this.updatePracticeCyclesModeFromSelection();
           });
         });
-
 
         // NEW: CUSTOM CHIP CLICK (10's, Doubles)
         this.dom.customChips.forEach(chip => {
