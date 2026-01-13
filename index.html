@@ -949,6 +949,29 @@
         if (!this.isIOSSafari()) return;
         if (!this.state.isSessionActive) return;
 
+        const x = this.state.scrollLockActive ? (this.state.scrollLockX || 0) : (window.scrollX || 0);
+        const y = this.state.scrollLockActive ? (this.state.scrollLockY || 0) : (window.scrollY || 0);
+
+
+        try {
+          this.dom.input.focus({ preventScroll: true });
+        } catch (e) {
+          this.dom.input.focus();
+        }
+
+        const restore = () => {
+          if (!this.state.scrollLockActive) {
+            window.scrollTo(x, y);
+          }
+        };
+
+        restore();
+        requestAnimationFrame(() => {
+          restore();
+          requestAnimationFrame(restore);
+        });
+      }
+
       // --- PRACTICE CYCLES (UI + state only) ---
 
       loadPracticeCyclesState() {
@@ -1027,32 +1050,10 @@
         this.updatePracticeCyclesUI();
         this.savePracticeCyclesState();
       }
-        
-        const x = this.state.scrollLockActive ? (this.state.scrollLockX || 0) : (window.scrollX || 0);
-        const y = this.state.scrollLockActive ? (this.state.scrollLockY || 0) : (window.scrollY || 0);
-
-
-        try {
-          this.dom.input.focus({ preventScroll: true });
-        } catch (e) {
-          this.dom.input.focus();
-        }
-
-        const restore = () => {
-          if (!this.state.scrollLockActive) {
-            window.scrollTo(x, y);
-          }
-        };
-
-        restore();
-        requestAnimationFrame(() => {
-          restore();
-          requestAnimationFrame(restore);
-        });
-      }
       
       // NEW: Centralized logic to generate the specific pool based on current selections
       getFilteredPool() {
+
         let pool = [];
 
         // BRANCH A: Custom Set is active (ignores 1-9 chips)
