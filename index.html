@@ -487,6 +487,47 @@
       text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
     }
 
+    /* Practice Cycles (matches chip size; style switches by state class) */
+    .practice-cycles-select {
+      width: 50px;
+      aspect-ratio: 1.4 / 1;
+      max-width: 50px;
+      border-radius: 5px;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 1.5rem;
+      text-align: center;
+      text-align-last: center;
+      line-height: 1;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .practice-cycles-select.pc-inactive {
+      background-color: var(--palette-beige-01);
+      color: var(--palette-beige-03);
+      box-shadow: none;
+    }
+
+    .practice-cycles-select.pc-active {
+      background-color: var(--color-white);
+      color: var(--theme-text-operand);
+      box-shadow: var(--shadow-card);
+      border: 2px solid transparent;
+    }
+
+    .practice-cycles-select.pc-active:focus {
+      border-color: var(--theme-text-operand);
+      outline: none;
+    }
+
     .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
     
     .toggle-switch input { 
