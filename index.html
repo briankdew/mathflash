@@ -822,7 +822,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260112.1446'; // manually maintained
+    const APP_VERSION = '20260119.1326'; // manually maintained
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -851,6 +851,11 @@
           practiceCycles: 1,
           practiceCyclesMode: 'regular', // 'custom' | 'regular' | 'none'
           practiceCyclesUserOverride: false,
+
+          // Practice Cycles (session execution)
+          cyclesTotal: 1,
+          cyclesRemaining: 0,
+          cycleIndex: 1,
 
           // Stats Tracking
           currentProblemFirstTry: true,
@@ -1126,7 +1131,33 @@
       updatePendingCount() {
           const pool = this.getFilteredPool();
           const cycles = (this.state.practiceCycles >= 1 && this.state.practiceCycles <= 5) ? this.state.practiceCycles : 1;
-          this.dom.countDisplay.textContent = pool.length * cycles;
+          const total = pool.length * cycles;
+          this.dom.countDisplay.textContent = total;
+
+          // Idle-only: show current cycles/total in Session Results
+          if (!this.state.isSessionActive) {
+            this.updateSessionMeta(cycles, total);
+          }
+      }
+
+            updateSessionMeta(cycles, totalProblems) {
+        const box = this.dom.logBox;
+        if (!box) return;
+
+        let el = box.querySelector('#sessionMeta');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'sessionMeta';
+          el.style.marginBottom = '0.5rem';
+          box.prepend(el);
+        }
+
+        el.innerHTML = `
+          <table class="stats-table" style="margin-top: 0; margin-bottom: 0.5rem;">
+            <tr><td>Practice cycles:</td><td>${cycles}</td></tr>
+            <tr><td>Total problems:</td><td>${totalProblems}</td></tr>
+          </table>
+        `;
       }
 
       applyTheme(mode) {
@@ -1247,7 +1278,16 @@
         this.state.queue = pool;
         const baseProblemCount = pool.length;
         const cycles = (this.state.practiceCycles >= 1 && this.state.practiceCycles <= 5) ? this.state.practiceCycles : 1;
+
+        // Practice Cycles session state
+        this.state.cyclesTotal = cycles;
+        this.state.cycleIndex = 1;
+        this.state.cyclesRemaining = Math.max(0, cycles - 1);
+
         this.state.totalProblems = baseProblemCount * cycles;
+
+        // Freeze session meta (source of truth for this session)
+        this.updateSessionMeta(cycles, this.state.totalProblems);
         
         // Stats Reset
         this.state.stats = {
@@ -1289,6 +1329,8 @@
             <table class="stats-table" style="margin-top: 0.25rem;">
                 <tr><td>Operation:</td><td>${opText}</td></tr>
                 <tr><td>Level:</td><td>${levelText}</td></tr>
+                <tr><td>Practice cycles:</td><td>${cycles}</td></tr>
+                <tr><td>Total problems:</td><td>${this.state.totalProblems}</td></tr>
             </table>
         `;
         this.appendLogHTML(startMsg);
@@ -1601,8 +1643,25 @@
 
       nextProblem() {
         if (this.state.queue.length === 0) {
-          this.resetSession(); // Use reset logic to end it
-          return;
+          // Practice Cycles: regenerate a fresh base queue for the next cycle (no super-set)
+          if (this.state.cyclesRemaining > 0) {
+            this.state.cyclesRemaining--;
+            this.state.cycleIndex++;
+
+            let pool = this.getFilteredPool();
+            if (this.dom.orderSelect.value === 'random') this.shuffle(pool);
+
+            // Safety: if pool is unexpectedly empty, end session to avoid infinite loop
+            if (pool.length === 0) {
+              this.resetSession();
+              return;
+            }
+
+            this.state.queue = pool;
+          } else {
+            this.resetSession(); // Use reset logic to end it
+            return;
+          }
         }
         
         // Reset flag for the new problem
@@ -1824,6 +1883,14 @@
                 }
                 this.updatePendingCount();
             }
+        });
+
+        // Idle-only: keep Session Results meta in sync when non-count settings change
+        [this.dom.orderSelect, this.dom.operandOrderSelect, this.dom.missingSelect].forEach(sel => {
+          if (!sel) return;
+          sel.addEventListener('change', () => {
+            if (!this.state.isSessionActive) this.updatePendingCount();
+          });
         });
 
         // Practice Cycles: user override
