@@ -1,0 +1,60 @@
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+
+  try {
+    var doc = SpreadsheetApp.openById('1S1CDIQ4-2cWZWu30gv3nrKr07YvJ4Rg3wSCiasLIyzQ');
+    var sheet = doc.getSheetByName('session log');
+
+    if (!sheet) throw new Error("Sheet tab not found: 'session log'");
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var nextRow = sheet.getLastRow() + 1;
+    var newRow = [];
+
+    // Accept BOTH formats:
+    // A) form POST: payload=<json>  (e.parameter.payload)
+    // B) raw JSON POST: e.postData.contents is JSON
+    var data;
+    if (e && e.parameter && e.parameter.payload) {
+      data = JSON.parse(e.parameter.payload);
+    } else if (e && e.postData && e.postData.contents) {
+      var raw = e.postData.contents;
+
+      // If someone posts "payload=...." in the raw body, decode it.
+      if (typeof raw === 'string' && raw.indexOf('payload=') === 0) {
+        raw = decodeURIComponent(raw.slice('payload='.length));
+      }
+
+      // If it's form-encoded but not starting at char 0 (rare), try to extract payload=
+      if (typeof raw === 'string' && raw.indexOf('payload=') !== -1 && raw.trim()[0] !== '{') {
+        var parts = raw.split('payload=');
+        raw = decodeURIComponent(parts[1] || '');
+      }
+
+      data = JSON.parse(raw);
+    } else {
+      throw new Error('No payload received (missing e.parameter.payload and e.postData.contents)');
+    }
+
+    for (var i = 0; i < headers.length; i++) {
+      var headerName = headers[i];
+      var value = data[headerName];
+      newRow.push((value !== undefined && value !== null) ? value : '');
+    }
+
+    sheet.getRange(nextRow, 1, 1, newRow.length).setValues([newRow]);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ result: 'success', row: nextRow }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ result: 'error', message: String(err), stack: err && err.stack ? String(err.stack) : '' }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
+}

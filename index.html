@@ -822,7 +822,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260120.1129'; // manually maintained
+    const APP_VERSION = '20260120.1155'; // manually maintained
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -1586,7 +1586,6 @@
             'Correct (first try)': String(c),
             'Missed (first try)': String(m),
             'Accuracy (%)': String(accuracy),          // ← Convert to String
-            'Calculation speed (sec/prob)': calcSpeedVal, // Already string
             'Target speed (sec/prob)': targetSpeedStr,
             'Calculation time': calcTime,
             'Age-level performance': agePerf,
@@ -1611,23 +1610,96 @@
       }
       
       // NEW: Cloud Save Method
-      saveLogToCloud(dataObj) {
-          fetch(this.CLOUD_URL, {
+      // Diagnostic: use a simple form POST (no JSON header) to avoid preflight / parsing issues in no-cors.
+      /* saveLogToCloud(dataObj) {
+          const params = new URLSearchParams(window.location.search);
+          const dbgEnabled = params.get('debug') === '1';
+
+          // Optional trace id (query param only) for debugging delivery without changing payload schema.
+          let url = this.CLOUD_URL;
+          let debugId = '';
+          const jsonStr = JSON.stringify(dataObj);
+
+          if (dbgEnabled) {
+              debugId = 'mf-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
+              url += (url.includes('?') ? '&' : '?') + 'debugId=' + encodeURIComponent(debugId);
+
+              window.__mathflashCloudDebug = {
+                  id: debugId,
+                  phase: 'sending',
+                  at: new Date().toLocaleTimeString(),
+                  bytes: jsonStr.length
+              };
+          }
+
+          fetch(url, {
             method: 'POST',
-            mode: 'no-cors', 
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(dataObj)
+            // mode: 'no-cors',
+            // No headers: URLSearchParams will use a simple form content-type
+            body: new URLSearchParams({ payload: jsonStr })
           })
           .then(() => {
-              console.log("Log saved to cloud successfully.");
+              if (dbgEnabled && window.__mathflashCloudDebug) {
+                  window.__mathflashCloudDebug.phase = 'resolved';
+              }
+              console.log("Cloud log POST completed (no-cors; response opaque).");
           })
           .catch(err => {
+              if (dbgEnabled && window.__mathflashCloudDebug) {
+                  window.__mathflashCloudDebug.phase = 'error';
+                  window.__mathflashCloudDebug.error = String(err);
+              }
               console.error("Error saving log to cloud:", err);
           });
-      }
+      } */
 
+      saveLogToCloud(dataObj) {
+    const params = new URLSearchParams(window.location.search);
+    const dbgEnabled = params.get('debug') === '1';
+
+    let url = this.CLOUD_URL;
+    let debugId = '';
+    const jsonStr = JSON.stringify(dataObj);
+
+    if (dbgEnabled) {
+        debugId = 'mf-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
+        url += (url.includes('?') ? '&' : '?') + 'debugId=' + encodeURIComponent(debugId);
+
+        window.__mathflashCloudDebug = {
+            id: debugId,
+            phase: 'sending',
+            at: new Date().toLocaleTimeString(),
+            bytes: jsonStr.length
+        };
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ payload: JSON.stringify(dataObj) })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Response body:', text);
+        if (dbgEnabled && window.__mathflashCloudDebug) {
+            window.__mathflashCloudDebug.phase = 'success';
+            window.__mathflashCloudDebug.response = text;
+        }
+    })
+    .catch(err => {
+        console.error('Fetch error:', err);
+        if (dbgEnabled && window.__mathflashCloudDebug) {
+            window.__mathflashCloudDebug.phase = 'error';
+            window.__mathflashCloudDebug.error = String(err);
+        }
+    });
+}
 
       // --- GAMEPLAY LOOP ---
 
@@ -2130,6 +2202,16 @@
                 if (s) scaleText = s;
             }
             html += box('uiScale', scaleText);
+
+            // Cloud debug status (only populated when ?debug=1 and a cloud save was attempted)
+            html += box('online', navigator.onLine ? 'Y' : 'N');
+            if (window.__mathflashCloudDebug) {
+                html += box('cloud id', window.__mathflashCloudDebug.id || '—');
+                html += box('cloud', window.__mathflashCloudDebug.phase || '—');
+                html += box('cloud bytes', window.__mathflashCloudDebug.bytes != null ? String(window.__mathflashCloudDebug.bytes) : '—');
+            } else {
+                html += box('cloud', '—');
+            }
         
             dbg.innerHTML = html;
         }
