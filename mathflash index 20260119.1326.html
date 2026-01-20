@@ -822,7 +822,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260120.1129'; // manually maintained
+    const APP_VERSION = '20260119.1326'; // manually maintained
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -850,7 +850,6 @@
           // Practice Cycles (UI + state only in Step 1)
           practiceCycles: 1,
           practiceCyclesMode: 'regular', // 'custom' | 'regular' | 'none'
-          practiceCyclesLastNonNoneMode: 'regular', // 'custom' | 'regular'
           practiceCyclesUserOverride: false,
 
           // Practice Cycles (session execution)
@@ -1041,31 +1040,14 @@
         const newMode = hasCustom ? 'custom' : (hasRegular ? 'regular' : 'none');
         const prevMode = this.state.practiceCyclesMode || 'none';
 
-        const prevEffectiveMode =
-          (prevMode === 'none')
-            ? (this.state.practiceCyclesLastNonNoneMode || 'regular')
-            : prevMode;
-
-        // 'none' is availability only — do NOT reset cycles or override
-        if (newMode === 'none') {
-          this.state.practiceCyclesMode = 'none';
-          if (this.dom.practiceCyclesSelect) {
-            this.dom.practiceCyclesSelect.value = String(this.state.practiceCycles);
-          }
-          this.updatePracticeCyclesUI();
-          this.savePracticeCyclesState();
-          return;
-        }
-
-        // True mode switch only when regular <-> custom
-        if (newMode !== prevEffectiveMode) {
+        if (newMode !== prevMode) {
+          this.state.practiceCyclesMode = newMode;
           this.state.practiceCyclesUserOverride = false;
+
           if (newMode === 'custom') this.state.practiceCycles = 2;
           else if (newMode === 'regular') this.state.practiceCycles = 1;
+          // newMode === 'none' => keep current practiceCycles as-is
         }
-
-        this.state.practiceCyclesLastNonNoneMode = newMode;
-        this.state.practiceCyclesMode = newMode;
 
         if (this.dom.practiceCyclesSelect) {
           this.dom.practiceCyclesSelect.value = String(this.state.practiceCycles);
@@ -1151,6 +1133,31 @@
           const cycles = (this.state.practiceCycles >= 1 && this.state.practiceCycles <= 5) ? this.state.practiceCycles : 1;
           const total = pool.length * cycles;
           this.dom.countDisplay.textContent = total;
+
+          // Idle-only: show current cycles/total in Session Results
+          if (!this.state.isSessionActive) {
+            this.updateSessionMeta(cycles, total);
+          }
+      }
+
+            updateSessionMeta(cycles, totalProblems) {
+        const box = this.dom.logBox;
+        if (!box) return;
+
+        let el = box.querySelector('#sessionMeta');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'sessionMeta';
+          el.style.marginBottom = '0.5rem';
+          box.prepend(el);
+        }
+
+        el.innerHTML = `
+          <table class="stats-table" style="margin-top: 0; margin-bottom: 0.5rem;">
+            <tr><td>Practice cycles:</td><td>${cycles}</td></tr>
+            <tr><td>Total problems:</td><td>${totalProblems}</td></tr>
+          </table>
+        `;
       }
 
       applyTheme(mode) {
@@ -1278,6 +1285,9 @@
         this.state.cyclesRemaining = Math.max(0, cycles - 1);
 
         this.state.totalProblems = baseProblemCount * cycles;
+
+        // Freeze session meta (source of truth for this session)
+        this.updateSessionMeta(cycles, this.state.totalProblems);
         
         // Stats Reset
         this.state.stats = {
@@ -1319,6 +1329,8 @@
             <table class="stats-table" style="margin-top: 0.25rem;">
                 <tr><td>Operation:</td><td>${opText}</td></tr>
                 <tr><td>Level:</td><td>${levelText}</td></tr>
+                <tr><td>Practice cycles:</td><td>${cycles}</td></tr>
+                <tr><td>Total problems:</td><td>${this.state.totalProblems}</td></tr>
             </table>
         `;
         this.appendLogHTML(startMsg);
@@ -1362,8 +1374,10 @@
         // Percent Completed: (Completed / Selected) * 100
         const pctCompleted = total > 0 ? (100 * (n / total)).toFixed(0) : 0;
 
-        // Calculate Accuracy and Calculation Speed
+        // Calculate Accuracy, Completion Rate, and Calculation Speed
         const accuracy = n > 0 ? (100 * (c / n)).toFixed(0) : 0;
+        // Completion Rate: (Completed / seconds) * 60 => prob/min
+        const rateVal = elapsedSec > 0 ? ((n / elapsedSec) * 60).toFixed(1) : '0.0';
         // Calculation Speed: seconds / Completed => sec/prob
         const calcSpeedVal = n > 0 ? (elapsedSec / n).toFixed(1) : '0.0';
 
@@ -1382,7 +1396,7 @@
         // Conditionally build rows based on Timer State
         const rowEndTime   = timerWasActive ? `<tr><td>Session end time:</td><td>${endTimeStr}</td></tr>` : '';
         const rowLength    = timerWasActive ? `<tr><td>Session length:</td><td>${timeStr}</td></tr>` : '';
-        // (Completion rate removed)
+        const rowRate      = timerWasActive ? `<tr><td>Completion rate:</td><td>${rateVal} prob/min</td></tr>` : '';
         const rowCalcSpeed = timerWasActive ? `<tr><td>Calculation speed:</td><td>${calcSpeedVal} sec/prob</td></tr>` : '';
         const rowTarget    = timerWasActive ? `<tr><td>Target speed:</td><td style="font-weight: normal;">${targetSpeedStr}</td></tr>` : '';
 
@@ -1510,8 +1524,6 @@
         }
 
         // Generate HTML Block
-        const cyclesUsed = (this.state.cyclesTotal >= 1 && this.state.cyclesTotal <= 5) ? this.state.cyclesTotal : 1;
-        const baseSelected = Math.round(total / cyclesUsed);
         const reportHTML = `
           ${interruptMsg}
           
@@ -1527,9 +1539,7 @@
           <div style="font-weight: bold; margin: 1rem 0 0.5rem 0; text-transform: uppercase;">SESSION PERFORMANCE</div>
 
           <table class="stats-table">
-            <tr><td>Problems selected:</td><td>${baseSelected}</td></tr>
-            <tr><td>Practice cycles:</td><td>${cyclesUsed}</td></tr>
-            <tr><td>Total problems:</td><td>${total}</td></tr>
+            <tr><td>Problems selected:</td><td>${total}</td></tr>
             <tr><td>Problems completed:</td><td>${n}</td></tr>
             <tr><td>Percent completed:</td><td>${pctCompleted} %</td></tr>
             <tr style="height: 10px;"></tr>
@@ -1537,6 +1547,7 @@
             <tr><td>Missed (first try):</td><td>${m}</td></tr>
             <tr style="height: 10px;"></tr>
             <tr><td>Accuracy:</td><td>${accuracy} %</td></tr>
+            ${rowRate}
             ${rowCalcSpeed}
             ${rowTarget}
           </table>
@@ -1578,14 +1589,13 @@
             'Session start time': startTimeStr,
             'Session end time': endTimeStr,
             'Session length': timeStr,
-            'Problems selected': String(baseSelected),        // ← Convert to String
-            'Practice cycles': String(cyclesUsed),
-            'Total problems': String(total),
+            'Problems selected': String(total),        // ← Convert to String
             'Problems completed': String(n),           // ← Convert to String
             'Percent completed (%)': String(pctCompleted), // ← Convert to String
             'Correct (first try)': String(c),
             'Missed (first try)': String(m),
             'Accuracy (%)': String(accuracy),          // ← Convert to String
+            'Completion rate (prob/min)': rateVal,     // Already string
             'Calculation speed (sec/prob)': calcSpeedVal, // Already string
             'Target speed (sec/prob)': targetSpeedStr,
             'Calculation time': calcTime,
@@ -1871,8 +1881,6 @@
                         this.updateAllChipUI();
                     }
                 }
-                // Practice Cycles: Operation change can implicitly switch selection mode (custom -> regular)
-                this.updatePracticeCyclesModeFromSelection();
                 this.updatePendingCount();
             }
         });
