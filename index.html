@@ -836,6 +836,7 @@
           totalProblems: 0,
           timerStart: 0,
           sessionStartObj: null,
+          sessionId: '',
           isTimerRunning: false,
           isSessionActive: false,
 
@@ -977,6 +978,23 @@
           restore();
           requestAnimationFrame(restore);
         });
+      }
+
+      // Generate a unique Session ID (crypto.randomUUID preferred; safe fallbacks)
+      generateSessionId() {
+        try {
+          if (crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+        } catch (e) {}
+
+        try {
+          if (crypto && typeof crypto.getRandomValues === 'function') {
+            const bytes = new Uint8Array(16);
+            crypto.getRandomValues(bytes);
+            return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+          }
+        } catch (e) {}
+
+        return 'mf-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
       }
 
       // --- PRACTICE CYCLES (UI + state only) ---
@@ -1265,6 +1283,7 @@
         if (this.isIOSSafari()) this.lockScroll();
         
         this.state.isSessionActive = true; // Only set active after validation passes
+        this.state.sessionId = this.generateSessionId();
 
         if (this.dom.orderSelect.value === 'random') this.shuffle(pool);
 
@@ -1570,10 +1589,11 @@
                 
         const cloudPayload = {
             'Log Timestamp': new Date().toLocaleString(),
-            'Timer On': timerWasActive ? 'Y' : 'N',
+            'Session ID': this.state.sessionId,
+            'Timer on': timerWasActive ? 'Y' : 'N',
             'Operation': opText,
             'Level': levelText,
-            'Session Reset': sessionResetVal,
+            'Session reset': sessionResetVal,
             'Session date': dateStr,
             'Session start time': startTimeStr,
             'Session end time': endTimeStr,
@@ -1595,7 +1615,7 @@
             'Operand order': oOrderText,
             'Missing value': missingText,
             'Problem set': setValText,
-            'Missed Problem(s)': missedProbsCloudStr,
+            'Missed problem(s)': missedProbsCloudStr,
             'Answer(s)': answersCloudStr
         };
 
