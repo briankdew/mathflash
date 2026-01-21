@@ -822,7 +822,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260120.1155'; // manually maintained
+    const APP_VERSION = '20260121.1303';
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -1587,6 +1587,7 @@
             'Missed (first try)': String(m),
             'Accuracy (%)': String(accuracy),          // ← Convert to String
             'Target speed (sec/prob)': targetSpeedStr,
+            'Calculation speed (sec/prob)': timerWasActive ? String(calcSpeedVal) : '',
             'Calculation time': calcTime,
             'Age-level performance': agePerf,
             'Educational equivalent': eduEquiv,
@@ -1675,21 +1676,14 @@
 
     fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        mode: 'no-cors',
+        // No headers: keep it a simple request to avoid preflight.
         body: new URLSearchParams({ payload: JSON.stringify(dataObj) })
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-        return response.text();
-    })
-    .then(text => {
-        console.log('Response body:', text);
+    .then(() => {
+        console.log('Cloud log POST sent (no-cors; response opaque).');
         if (dbgEnabled && window.__mathflashCloudDebug) {
-            window.__mathflashCloudDebug.phase = 'success';
-            window.__mathflashCloudDebug.response = text;
+            window.__mathflashCloudDebug.phase = 'sent';
         }
     })
     .catch(err => {
