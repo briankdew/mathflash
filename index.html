@@ -850,7 +850,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260122.2259';
+    const APP_VERSION = '20260122.2329';
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -866,6 +866,7 @@
           sessionStartObj: null,
           sessionId: '',
           sessionUser: '',
+          hasRenderedFirstProblem: false,
           isTimerRunning: false,
           isSessionActive: false,
 
@@ -1355,7 +1356,7 @@
           correctFirst: 0,
           missedFirst: 0
         };
-        this.state.missedProblems = []; // Reset missed tracking
+        this.state.hasRenderedFirstProblem = false;
 
         // Timer Logic
         // Always track start time for stats, even if visual timer isn't used
@@ -1754,16 +1755,22 @@
         const p = this.state.queue.shift();
         this.state.currentProblem = this.configureProblemDisplay(p);
 
-        // Operand blink: brief "blank beat" before showing the next problem (even if identical)
-        const BLINK_MS = 70;
-        this.dom.cardLeftVal.classList.add('operand-blink-off');
-        this.dom.cardRightVal.classList.add('operand-blink-off');
-
-        setTimeout(() => {
+        if (!this.state.hasRenderedFirstProblem) {
+          // First problem: render immediately (no blink delay)
           this.renderProblem();
-          this.dom.cardLeftVal.classList.remove('operand-blink-off');
-          this.dom.cardRightVal.classList.remove('operand-blink-off');
-        }, BLINK_MS);
+          this.state.hasRenderedFirstProblem = true;
+        } else {
+          // Operand blink: brief "blank beat" before showing the next problem (even if identical)
+          const BLINK_MS = 70;
+          this.dom.cardLeftVal.classList.add('operand-blink-off');
+          this.dom.cardRightVal.classList.add('operand-blink-off');
+
+          setTimeout(() => {
+            this.renderProblem();
+            this.dom.cardLeftVal.classList.remove('operand-blink-off');
+            this.dom.cardRightVal.classList.remove('operand-blink-off');
+          }, BLINK_MS);
+        }
 
         this.dom.countDisplay.textContent = Math.max(0, this.state.totalProblems - this.state.stats.completed);
       }
