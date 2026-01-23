@@ -839,7 +839,7 @@
         <div class="control-group session-controls-centered">
           <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
           <div class="remaining-counter" style="text-align: center; margin-top: 0.5rem;">
-            <span id="countLabel">Problems Remaining</span>: <span id="countDisplay">0</span>
+            <span id="countLabel">Problems selected</span>: <span id="countDisplay">0</span>
           </div>
         </div>
       </div>
@@ -856,7 +856,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260123.0914';
+    const APP_VERSION = '20260123.1116';
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -935,6 +935,7 @@
           
           input: document.getElementById('answerInput'),
           countDisplay: document.getElementById('countDisplay'),
+          countLabel: document.getElementById('countLabel'),
           logBox: document.getElementById('sessionLog'),
           downloadBtn: document.getElementById('downloadBtn'),
           userBadge: document.getElementById('userBadge')
@@ -1229,6 +1230,12 @@
           this.dom.countDisplay.textContent = total;
       }
 
+      updateCountLabel() {
+        this.dom.countLabel.textContent = this.state.isSessionActive 
+          ? 'Problems remaining' 
+          : 'Problems selected';
+      }
+
       applyTheme(mode) {
         const root = document.documentElement;
         const opDisplay = this.dom.operationDisplay;
@@ -1282,6 +1289,7 @@
                 
         // Reset Cards to Dashes
         this.updateAllChipUI();
+        this.updateCountLabel();
         this.updatePracticeCyclesModeFromSelection();
         
         // Update the count immediately based on default selections (after cycles mode defaulting)
@@ -1290,9 +1298,6 @@
         this.dom.cardLeftVal.textContent = "--";
         this.dom.cardRightVal.textContent = "--";
         this.dom.cardResult.textContent = "---";
-        // Update count label for idle state
-        const lbl = document.getElementById('countLabel');
-        if (lbl) lbl.textContent = 'Problems selected';
         
         // Card Colors (Done state)
         const beige02 = 'var(--palette-beige-02)';
@@ -1343,9 +1348,7 @@
         // iOS Safari: lock scroll only after validation passes
         if (this.isIOSSafari()) this.lockScroll();
         
-        // Update count label for active session
-        const lbl = document.getElementById('countLabel');
-        if (lbl) lbl.textContent = 'Problems remaining';
+        this.state.isSessionActive = true; // Only set active after validation passes
         this.state.sessionId = this.generateSessionId();
 
         if (this.dom.orderSelect.value === 'random') this.shuffle(pool);
@@ -1383,6 +1386,7 @@
         // Enable Input
         this.dom.input.disabled = false;
         this.dom.input.value = '';
+        this.updateCountLabel();
         if (this.isIOSSafari()) this.focusInputLocked();
         else this.dom.input.focus();
 
