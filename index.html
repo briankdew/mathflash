@@ -284,7 +284,13 @@
       z-index: 2; 
     }
 
-    /* Operand blink cue (very subtle): briefly hide operand VALUES only (no card shape blink) */
+    /* Operand value crossfade cue (subtle): fade operand VALUES only (no card/result fade) */
+    #cardLeftVal,
+    #cardRightVal {
+      transition: opacity 40ms linear;
+    }
+
+    /* "Off" state used to fade out/in the operand VALUES only */
     #cardLeftVal.operand-blink-off,
     #cardRightVal.operand-blink-off {
       opacity: 0;
@@ -1760,8 +1766,9 @@
           this.renderProblem();
           this.state.hasRenderedFirstProblem = true;
         } else {
-          // Operand blink: brief "blank beat" before showing the next problem (even if identical)
-          const BLINK_MS = 70;
+          // Operand crossfade: fade out -> render while hidden -> fade in (even if identical)
+          const FADE_OUT_MS = 40;
+
           this.dom.cardLeftVal.classList.add('operand-blink-off');
           this.dom.cardRightVal.classList.add('operand-blink-off');
 
@@ -1769,7 +1776,7 @@
             this.renderProblem();
             this.dom.cardLeftVal.classList.remove('operand-blink-off');
             this.dom.cardRightVal.classList.remove('operand-blink-off');
-          }, BLINK_MS);
+          }, FADE_OUT_MS);
         }
 
         this.dom.countDisplay.textContent = Math.max(0, this.state.totalProblems - this.state.stats.completed);
