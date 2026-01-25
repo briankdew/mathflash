@@ -284,18 +284,6 @@
       z-index: 2; 
     }
 
-    /* Operand value crossfade cue (subtle): fade operand VALUES only (no card/result fade) */
-    #cardLeftVal,
-    #cardRightVal {
-      transition: opacity 40ms linear;
-    }
-
-    /* "Off" state used to fade out/in the operand VALUES only */
-    #cardLeftVal.operand-blink-off,
-    #cardRightVal.operand-blink-off {
-      opacity: 0;
-    }
-
     #cardLeft, #cardRight {
       background-color: var(--color-card-operand-bg);
       color: var(--theme-text-operand);
@@ -362,41 +350,6 @@
     
     .d-none { display: none; }
 
-    /* --- HINT BOX --- */
-    .hint-box {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 250px;
-      height: 180px;
-      background-color: white;
-      border: 1px solid black;
-      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 5;
-      font-family: 'Nunito', sans-serif;
-      font-weight: 700;
-      font-size: 55px;
-      color: black;
-      text-align: center;
-      opacity: 0;
-    }
-
-    .hint-box.show {
-      display: flex;
-      opacity: 1;
-      transition: none;
-    }
-
-    .hint-box.fade-out {
-      opacity: 0;
-      transition: opacity 0.5s ease-out;
-    }
-
     /* --- INPUT AREA --- */
     .answer-section {
       margin-top: -1.0rem; 
@@ -424,24 +377,12 @@
       animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
       border-color: #b00020; color: #b00020;
     }
-    #answerInput.nudge {
-      animation: nudgePulse 1.0s ease-in-out both;
-    }
 
     @keyframes shake {
       10%, 90% { transform: translate3d(-1px, 0, 0); }
       20%, 80% { transform: translate3d(2px, 0, 0); }
       30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
       40%, 60% { transform: translate3d(4px, 0, 0); }
-    }
-
-    @keyframes nudgePulse {
-      0%   { box-shadow: var(--shadow-card); }
-      5%  { box-shadow: 0 0 0 5px rgba(226, 206, 62, 0.95), var(--shadow-card); }
-      25%  { box-shadow: var(--shadow-card); }
-      45%  { box-shadow: 0 0 0 5px rgba(2, 196, 56, 0.95), var(--shadow-card); }
-      85%  { box-shadow: var(--shadow-card); }
-      100% { box-shadow: var(--shadow-card); }
     }
     
     .remaining-counter { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted); font-weight: 600; }
@@ -644,27 +585,6 @@
         display: block;
     }
 
-    /* User mode badge (test only): subtle, top-center, non-interactive */
-    #userBadge {
-      position: fixed;
-      top: 6px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10001;
-      display: none;
-      pointer-events: none;
-
-      font: 16px monospace;
-      padding: 4px 10px 2px 10px;
-      border-radius: 999px;
-      background: color-mix(in oklch, var(--palette-red-08) 50%, transparent);
-      border: 0px solid var(--palette-red-05);
-      color: var(--color-white);
-      box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
-      backdrop-filter: blur(2px);
-      -webkit-backdrop-filter: blur(2px);
-    }
-
     /* =========================================
        6. SESSION SHIELD (LOCKDOWN)
        ========================================= */
@@ -733,7 +653,6 @@
   </div>
 
   <div id="sessionShield" class="session-shield"></div>
-  <div id="userBadge" aria-hidden="true"></div>
 
   <svg style="display: none;">
     <defs>
@@ -761,7 +680,7 @@
       <div class="logo">
         <span class="logo-math">math</span><span class="logo-flash">flash</span>
       </div>
-      <div class="tagline">let's put some math in your back pocket!</div>
+      <div class="tagline">let’s put some math in your back pocket!</div>
     </header>
 
     <aside class="panel-settings">
@@ -859,11 +778,9 @@
           <div class="geo-ellipse" id="ellipseLarge"></div>
           <div class="geo-ellipse" id="ellipseSmall"></div>
 
-          <div class="geo-card" id="cardLeft"><span id="cardLeftVal"></span></div>
-          <div class="geo-card" id="cardRight"><span id="cardRightVal"></span></div>
-          <div class="geo-card" id="cardResult">
-            <div class="hint-box" id="hintBox"></div>
-          </div>
+          <div class="geo-card" id="cardLeft"></div>
+          <div class="geo-card" id="cardRight"></div>
+          <div class="geo-card" id="cardResult"></div>
 
           <div class="geo-circle" id="circleMain">
             <svg class="icon-svg d-none" id="mainIconPlus"><use href="#icon-plus"></use></svg>
@@ -888,7 +805,7 @@
         <div class="control-group session-controls-centered">
           <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
           <div class="remaining-counter" style="text-align: center; margin-top: 0.5rem;">
-            <span id="countLabel">Problems Remaining</span>: <span id="countDisplay">0</span>
+            Problems Remaining: <span id="countDisplay">0</span>
           </div>
         </div>
       </div>
@@ -905,7 +822,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260125.1529-0000';
+    const APP_VERSION = '20260119.1326'; // manually maintained
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -919,9 +836,6 @@
           totalProblems: 0,
           timerStart: 0,
           sessionStartObj: null,
-          sessionId: '',
-          sessionUser: '',
-          hasRenderedFirstProblem: false,
           isTimerRunning: false,
           isSessionActive: false,
 
@@ -936,7 +850,6 @@
           // Practice Cycles (UI + state only in Step 1)
           practiceCycles: 1,
           practiceCyclesMode: 'regular', // 'custom' | 'regular' | 'none'
-          practiceCyclesLastNonNoneMode: 'regular', // 'custom' | 'regular'
           practiceCyclesUserOverride: false,
 
           // Practice Cycles (session execution)
@@ -946,7 +859,6 @@
 
           // Stats Tracking
           currentProblemFirstTry: true,
-          wrongAnswerCount: 0,
           stats: {
             completed: 0,
             correctFirst: 0,
@@ -969,11 +881,8 @@
           customChips: document.querySelectorAll('.chip-wide'), // Select custom chips
 
           cardLeft: document.getElementById('cardLeft'),
-          cardLeftVal: document.getElementById('cardLeftVal'),
           cardRight: document.getElementById('cardRight'),
-          cardRightVal: document.getElementById('cardRightVal'),
           cardResult: document.getElementById('cardResult'),
-          hintBox: document.getElementById('hintBox'),
           operationDisplay: document.getElementById('operationDisplay'),
           
           // Icon References
@@ -986,40 +895,16 @@
           
           input: document.getElementById('answerInput'),
           countDisplay: document.getElementById('countDisplay'),
-          countLabel: document.getElementById('countLabel'),
           logBox: document.getElementById('sessionLog'),
-          downloadBtn: document.getElementById('downloadBtn'),
-          userBadge: document.getElementById('userBadge')
+          downloadBtn: document.getElementById('downloadBtn')
         };
 
         this.bindEvents();
-
-        // Incomplete-answer nudge timer (2-digit answers)
-        this.nudgeTimerId = 0;
 
         // iOS Safari marker (used for idle-only layout nudge)
         if (this.isIOSSafari()) document.body.classList.add('ios-safari');
 
         this.loadPracticeCyclesState();
-
-        // User mode (test flag): ?test or ?test=1 => Test
-        try {
-          const params = new URLSearchParams(window.location.search);
-          this.state.sessionUser = params.has('test') ? 'Test' : '';
-        } catch (e) {
-          this.state.sessionUser = '';
-        }
-
-        // Show badge only in test mode (must not block interaction)
-        if (this.dom.userBadge) {
-          if (this.state.sessionUser === 'Test') {
-            this.dom.userBadge.textContent = 'user: test';
-            this.dom.userBadge.style.display = 'block';
-          } else {
-            this.dom.userBadge.style.display = 'none';
-          }
-        }
-
         // Initialize UI but DO NOT Start Session
         this.initIdleState();
       }
@@ -1093,23 +978,6 @@
         });
       }
 
-      // Generate a unique Session ID (crypto.randomUUID preferred; safe fallbacks)
-      generateSessionId() {
-        try {
-          if (crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
-        } catch (e) {}
-
-        try {
-          if (crypto && typeof crypto.getRandomValues === 'function') {
-            const bytes = new Uint8Array(16);
-            crypto.getRandomValues(bytes);
-            return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-          }
-        } catch (e) {}
-
-        return 'mf-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
-      }
-
       // --- PRACTICE CYCLES (UI + state only) ---
 
       loadPracticeCyclesState() {
@@ -1172,31 +1040,14 @@
         const newMode = hasCustom ? 'custom' : (hasRegular ? 'regular' : 'none');
         const prevMode = this.state.practiceCyclesMode || 'none';
 
-        const prevEffectiveMode =
-          (prevMode === 'none')
-            ? (this.state.practiceCyclesLastNonNoneMode || 'regular')
-            : prevMode;
-
-        // 'none' is availability only — do NOT reset cycles or override
-        if (newMode === 'none') {
-          this.state.practiceCyclesMode = 'none';
-          if (this.dom.practiceCyclesSelect) {
-            this.dom.practiceCyclesSelect.value = String(this.state.practiceCycles);
-          }
-          this.updatePracticeCyclesUI();
-          this.savePracticeCyclesState();
-          return;
-        }
-
-        // True mode switch only when regular <-> custom
-        if (newMode !== prevEffectiveMode) {
+        if (newMode !== prevMode) {
+          this.state.practiceCyclesMode = newMode;
           this.state.practiceCyclesUserOverride = false;
+
           if (newMode === 'custom') this.state.practiceCycles = 2;
           else if (newMode === 'regular') this.state.practiceCycles = 1;
+          // newMode === 'none' => keep current practiceCycles as-is
         }
-
-        this.state.practiceCyclesLastNonNoneMode = newMode;
-        this.state.practiceCyclesMode = newMode;
 
         if (this.dom.practiceCyclesSelect) {
           this.dom.practiceCyclesSelect.value = String(this.state.practiceCycles);
@@ -1276,18 +1127,37 @@
         // mixed state: leave label unchanged (per spec)
       }
       
-      updateCountLabel() {
-        this.dom.countLabel.textContent = this.state.isSessionActive 
-          ? 'Problems remaining' 
-          : 'Problems selected';
-      }
-
       // NEW: Updates the text display based on current selections (Live Count)
       updatePendingCount() {
           const pool = this.getFilteredPool();
           const cycles = (this.state.practiceCycles >= 1 && this.state.practiceCycles <= 5) ? this.state.practiceCycles : 1;
           const total = pool.length * cycles;
           this.dom.countDisplay.textContent = total;
+
+          // Idle-only: show current cycles/total in Session Results
+          if (!this.state.isSessionActive) {
+            this.updateSessionMeta(cycles, total);
+          }
+      }
+
+            updateSessionMeta(cycles, totalProblems) {
+        const box = this.dom.logBox;
+        if (!box) return;
+
+        let el = box.querySelector('#sessionMeta');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'sessionMeta';
+          el.style.marginBottom = '0.5rem';
+          box.prepend(el);
+        }
+
+        el.innerHTML = `
+          <table class="stats-table" style="margin-top: 0; margin-bottom: 0.5rem;">
+            <tr><td>Practice cycles:</td><td>${cycles}</td></tr>
+            <tr><td>Total problems:</td><td>${totalProblems}</td></tr>
+          </table>
+        `;
       }
 
       applyTheme(mode) {
@@ -1348,8 +1218,8 @@
         // Update the count immediately based on default selections (after cycles mode defaulting)
         this.updatePendingCount();
 
-        this.dom.cardLeftVal.textContent = "--";
-        this.dom.cardRightVal.textContent = "--";
+        this.dom.cardLeft.textContent = "--";
+        this.dom.cardRight.textContent = "--";
         this.dom.cardResult.textContent = "---";
         
         // Card Colors (Done state)
@@ -1402,7 +1272,6 @@
         if (this.isIOSSafari()) this.lockScroll();
         
         this.state.isSessionActive = true; // Only set active after validation passes
-        this.state.sessionId = this.generateSessionId();
 
         if (this.dom.orderSelect.value === 'random') this.shuffle(pool);
 
@@ -1416,6 +1285,9 @@
         this.state.cyclesRemaining = Math.max(0, cycles - 1);
 
         this.state.totalProblems = baseProblemCount * cycles;
+
+        // Freeze session meta (source of truth for this session)
+        this.updateSessionMeta(cycles, this.state.totalProblems);
         
         // Stats Reset
         this.state.stats = {
@@ -1423,7 +1295,7 @@
           correctFirst: 0,
           missedFirst: 0
         };
-        this.state.hasRenderedFirstProblem = false;
+        this.state.missedProblems = []; // Reset missed tracking
 
         // Timer Logic
         // Always track start time for stats, even if visual timer isn't used
@@ -1457,6 +1329,8 @@
             <table class="stats-table" style="margin-top: 0.25rem;">
                 <tr><td>Operation:</td><td>${opText}</td></tr>
                 <tr><td>Level:</td><td>${levelText}</td></tr>
+                <tr><td>Practice cycles:</td><td>${cycles}</td></tr>
+                <tr><td>Total problems:</td><td>${this.state.totalProblems}</td></tr>
             </table>
         `;
         this.appendLogHTML(startMsg);
@@ -1500,8 +1374,10 @@
         // Percent Completed: (Completed / Selected) * 100
         const pctCompleted = total > 0 ? (100 * (n / total)).toFixed(0) : 0;
 
-        // Calculate Accuracy and Calculation Speed
+        // Calculate Accuracy, Completion Rate, and Calculation Speed
         const accuracy = n > 0 ? (100 * (c / n)).toFixed(0) : 0;
+        // Completion Rate: (Completed / seconds) * 60 => prob/min
+        const rateVal = elapsedSec > 0 ? ((n / elapsedSec) * 60).toFixed(1) : '0.0';
         // Calculation Speed: seconds / Completed => sec/prob
         const calcSpeedVal = n > 0 ? (elapsedSec / n).toFixed(1) : '0.0';
 
@@ -1520,7 +1396,7 @@
         // Conditionally build rows based on Timer State
         const rowEndTime   = timerWasActive ? `<tr><td>Session end time:</td><td>${endTimeStr}</td></tr>` : '';
         const rowLength    = timerWasActive ? `<tr><td>Session length:</td><td>${timeStr}</td></tr>` : '';
-        // (Completion rate removed)
+        const rowRate      = timerWasActive ? `<tr><td>Completion rate:</td><td>${rateVal} prob/min</td></tr>` : '';
         const rowCalcSpeed = timerWasActive ? `<tr><td>Calculation speed:</td><td>${calcSpeedVal} sec/prob</td></tr>` : '';
         const rowTarget    = timerWasActive ? `<tr><td>Target speed:</td><td style="font-weight: normal;">${targetSpeedStr}</td></tr>` : '';
 
@@ -1648,8 +1524,6 @@
         }
 
         // Generate HTML Block
-        const cyclesUsed = (this.state.cyclesTotal >= 1 && this.state.cyclesTotal <= 5) ? this.state.cyclesTotal : 1;
-        const baseSelected = Math.round(total / cyclesUsed);
         const reportHTML = `
           ${interruptMsg}
           
@@ -1665,9 +1539,7 @@
           <div style="font-weight: bold; margin: 1rem 0 0.5rem 0; text-transform: uppercase;">SESSION PERFORMANCE</div>
 
           <table class="stats-table">
-            <tr><td>Problems selected:</td><td>${baseSelected}</td></tr>
-            <tr><td>Practice cycles:</td><td>${cyclesUsed}</td></tr>
-            <tr><td>Total problems:</td><td>${total}</td></tr>
+            <tr><td>Problems selected:</td><td>${total}</td></tr>
             <tr><td>Problems completed:</td><td>${n}</td></tr>
             <tr><td>Percent completed:</td><td>${pctCompleted} %</td></tr>
             <tr style="height: 10px;"></tr>
@@ -1675,6 +1547,7 @@
             <tr><td>Missed (first try):</td><td>${m}</td></tr>
             <tr style="height: 10px;"></tr>
             <tr><td>Accuracy:</td><td>${accuracy} %</td></tr>
+            ${rowRate}
             ${rowCalcSpeed}
             ${rowTarget}
           </table>
@@ -1708,26 +1581,23 @@
                 
         const cloudPayload = {
             'Log Timestamp': new Date().toLocaleString(),
-            'Session ID': this.state.sessionId,
-            'User': this.state.sessionUser,
-            'Timer on': timerWasActive ? 'Y' : 'N',
+            'Timer On': timerWasActive ? 'Y' : 'N',
             'Operation': opText,
             'Level': levelText,
-            'Session reset': sessionResetVal,
+            'Session Reset': sessionResetVal,
             'Session date': dateStr,
             'Session start time': startTimeStr,
             'Session end time': endTimeStr,
             'Session length': timeStr,
-            'Problems selected': String(baseSelected),        // ← Convert to String
-            'Practice cycles': String(cyclesUsed),
-            'Total problems': String(total),
+            'Problems selected': String(total),        // ← Convert to String
             'Problems completed': String(n),           // ← Convert to String
             'Percent completed (%)': String(pctCompleted), // ← Convert to String
             'Correct (first try)': String(c),
             'Missed (first try)': String(m),
             'Accuracy (%)': String(accuracy),          // ← Convert to String
+            'Completion rate (prob/min)': rateVal,     // Already string
+            'Calculation speed (sec/prob)': calcSpeedVal, // Already string
             'Target speed (sec/prob)': targetSpeedStr,
-            'Calculation speed (sec/prob)': timerWasActive ? String(calcSpeedVal) : '',
             'Calculation time': calcTime,
             'Age-level performance': agePerf,
             'Educational equivalent': eduEquiv,
@@ -1735,7 +1605,7 @@
             'Operand order': oOrderText,
             'Missing value': missingText,
             'Problem set': setValText,
-            'Missed problem(s)': missedProbsCloudStr,
+            'Missed Problem(s)': missedProbsCloudStr,
             'Answer(s)': answersCloudStr
         };
 
@@ -1750,46 +1620,24 @@
         this.initIdleState();
       }
       
+      // NEW: Cloud Save Method
       saveLogToCloud(dataObj) {
-    const params = new URLSearchParams(window.location.search);
-    const dbgEnabled = params.get('debug') === '1';
+          fetch(this.CLOUD_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dataObj)
+          })
+          .then(() => {
+              console.log("Log saved to cloud successfully.");
+          })
+          .catch(err => {
+              console.error("Error saving log to cloud:", err);
+          });
+      }
 
-    let url = this.CLOUD_URL;
-    let debugId = '';
-    const jsonStr = JSON.stringify(dataObj);
-
-    if (dbgEnabled) {
-        debugId = 'mf-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
-        url += (url.includes('?') ? '&' : '?') + 'debugId=' + encodeURIComponent(debugId);
-
-        window.__mathflashCloudDebug = {
-            id: debugId,
-            phase: 'sending',
-            at: new Date().toLocaleTimeString(),
-            bytes: jsonStr.length
-        };
-    }
-
-    fetch(url, {
-        method: 'POST',
-        mode: 'no-cors',
-        // No headers: keep it a simple request to avoid preflight.
-        body: new URLSearchParams({ payload: JSON.stringify(dataObj) })
-    })
-    .then(() => {
-        console.log('Cloud log POST sent (no-cors; response opaque).');
-        if (dbgEnabled && window.__mathflashCloudDebug) {
-            window.__mathflashCloudDebug.phase = 'sent';
-        }
-    })
-    .catch(err => {
-        console.error('Fetch error:', err);
-        if (dbgEnabled && window.__mathflashCloudDebug) {
-            window.__mathflashCloudDebug.phase = 'error';
-            window.__mathflashCloudDebug.error = String(err);
-        }
-    });
-}
 
       // --- GAMEPLAY LOOP ---
 
@@ -1818,29 +1666,10 @@
         
         // Reset flag for the new problem
         this.state.currentProblemFirstTry = true;
-        this.state.wrongAnswerCount = 0;
         
         const p = this.state.queue.shift();
         this.state.currentProblem = this.configureProblemDisplay(p);
-
-        if (!this.state.hasRenderedFirstProblem) {
-          // First problem: render immediately (no blink delay)
-          this.renderProblem();
-          this.state.hasRenderedFirstProblem = true;
-        } else {
-          // Operand crossfade: fade out -> render while hidden -> fade in (even if identical)
-          const FADE_OUT_MS = 40;
-
-          this.dom.cardLeftVal.classList.add('operand-blink-off');
-          this.dom.cardRightVal.classList.add('operand-blink-off');
-
-          setTimeout(() => {
-            this.renderProblem();
-            this.dom.cardLeftVal.classList.remove('operand-blink-off');
-            this.dom.cardRightVal.classList.remove('operand-blink-off');
-          }, FADE_OUT_MS);
-        }
-
+        this.renderProblem();
         this.dom.countDisplay.textContent = Math.max(0, this.state.totalProblems - this.state.stats.completed);
       }
 
@@ -1874,39 +1703,12 @@
         const p = this.state.currentProblem;
         const show = (slot, val) => (p.missing === slot ? '' : val);
 
-        this.dom.cardLeftVal.textContent = show('left', p.left);
-        this.dom.cardRightVal.textContent = show('right', p.right);
+        this.dom.cardLeft.textContent = show('left', p.left);
+        this.dom.cardRight.textContent = show('right', p.right);
         this.dom.cardResult.textContent = show('result', p.result);
-
-        // Operand blink cue is handled in nextProblem() (blink-off gap before rendering)
         
         this.dom.input.value = '';
         }
-
-      showHint() {
-        const p = this.state.currentProblem;
-        
-        // Build canonical form (a op b = c where a < b)
-        const stdA = Math.min(p.left, p.right);
-        const stdB = Math.max(p.left, p.right);
-        const isAdd = this.dom.opSelect.value === 'addsub';
-        const opSym = isAdd ? '+' : '×';
-        const hintText = `${stdA} ${opSym} ${stdB} = ${p.result}`;
-        
-        this.dom.hintBox.textContent = hintText;
-        this.dom.hintBox.classList.remove('fade-out');
-        this.dom.hintBox.classList.add('show');
-        
-        // Display for 1.5s, then fade out over 0.5s
-        setTimeout(() => {
-          this.dom.hintBox.classList.add('fade-out');
-          
-          // Remove after fade completes
-          setTimeout(() => {
-            this.dom.hintBox.classList.remove('show', 'fade-out');
-          }, 500);
-        }, 1500);
-      }
 
       checkAnswer() {
         const userVal = parseInt(this.dom.input.value, 10);
@@ -1926,14 +1728,6 @@
           if (this.state.currentProblemFirstTry) {
             this.state.stats.missedFirst++;
             this.state.currentProblemFirstTry = false;
-          }
-
-          // Increment wrong answer counter
-          this.state.wrongAnswerCount++;
-          
-          // Show hint after exactly 3 wrong answers
-          if (this.state.wrongAnswerCount === 3) {
-            this.showHint();
           }
 
           const p = this.state.currentProblem;
@@ -1964,23 +1758,15 @@
           // ------------------------------------
 
           this.dom.input.classList.add('error');
-          window.__mathflashDebugError = 'now';
-          if (window.__mathflashViewportDebugUpdate) window.__mathflashViewportDebugUpdate();
-
-          setTimeout(() => {
-            this.dom.input.classList.remove('error');
-            window.__mathflashDebugError = '―';
-            if (window.__mathflashViewportDebugUpdate) window.__mathflashViewportDebugUpdate();
-          }, 400);
-
+          setTimeout(() => this.dom.input.classList.remove('error'), 400);
           this.dom.input.select();
         }
       }
 
       fillMissingSlot() {
         const p = this.state.currentProblem;
-        this.dom.cardLeftVal.textContent = p.left;
-        this.dom.cardRightVal.textContent = p.right;
+        this.dom.cardLeft.textContent = p.left;
+        this.dom.cardRight.textContent = p.right;
         this.dom.cardResult.textContent = p.result;
       }
 
@@ -2095,8 +1881,6 @@
                         this.updateAllChipUI();
                     }
                 }
-                // Practice Cycles: Operation change can implicitly switch selection mode (custom -> regular)
-                this.updatePracticeCyclesModeFromSelection();
                 this.updatePendingCount();
             }
         });
@@ -2234,67 +2018,20 @@
 
         this.dom.input.addEventListener('input', () => {
           this.dom.input.value = this.dom.input.value.replace(/[^0-9]/g, '');
-
-          // Always cancel any pending "incomplete answer" nudge on new input
-          if (this.nudgeTimerId) {
-            clearTimeout(this.nudgeTimerId);
-            this.nudgeTimerId = 0;
-          }
-
-          // Also clear any active nudge class as typing continues
-          this.dom.input.classList.remove('nudge');
-
           if (!this.state.currentProblem) return;
-
           const userStr = this.dom.input.value;
           const correctStr = String(this.state.currentProblem.correct);
           const userVal = parseInt(userStr, 10);
-
-          // Gentle nudge: 2-digit correct answer, user paused at 1 digit (no penalty)
-          if (correctStr.length === 2 && userStr.length === 1) {
-            this.nudgeTimerId = setTimeout(() => {
-              if (!this.state.currentProblem) return;
-              const curCorrectStr = String(this.state.currentProblem.correct);
-              if (curCorrectStr.length !== 2) return;
-              if (this.dom.input.value.length !== 1) return;
-
-              // Trigger a yellow rim pulse (no "error" styling, no select())
-              this.dom.input.classList.remove('nudge');
-              void this.dom.input.offsetWidth; // allow re-trigger
-              this.dom.input.classList.add('nudge');
-
-              setTimeout(() => this.dom.input.classList.remove('nudge'), 1100);
-            }, 2100);
-          }
-
-          // Normal behavior (unchanged): only check when correct OR when user has entered full length
           if (userVal === this.state.currentProblem.correct) {
-            if (this.nudgeTimerId) {
-              clearTimeout(this.nudgeTimerId);
-              this.nudgeTimerId = 0;
-            }
-            this.dom.input.classList.remove('nudge');
             this.checkAnswer();
           } 
           else if (userStr.length >= correctStr.length) {
-            if (this.nudgeTimerId) {
-              clearTimeout(this.nudgeTimerId);
-              this.nudgeTimerId = 0;
-            }
-            this.dom.input.classList.remove('nudge');
-            this.checkAnswer();
+             this.checkAnswer();
           }
         });
 
         this.dom.input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            if (this.nudgeTimerId) {
-              clearTimeout(this.nudgeTimerId);
-              this.nudgeTimerId = 0;
-            }
-            this.dom.input.classList.remove('nudge');
-            this.checkAnswer();
-          }
+          if (e.key === 'Enter') this.checkAnswer();
         });
         
         // Toggle mobile layout when keyboard opens/closes
@@ -2401,26 +2138,10 @@
                 if (s) scaleText = s;
             }
             html += box('uiScale', scaleText);
-
-            // Cloud debug status (only populated when ?debug=1 and a cloud save was attempted)
-            html += box('online', navigator.onLine ? 'Y' : 'N');
-            if (window.__mathflashCloudDebug) {
-                html += box('cloud id', window.__mathflashCloudDebug.id || '—');
-                html += box('cloud', window.__mathflashCloudDebug.phase || '—');
-                html += box('cloud bytes', window.__mathflashCloudDebug.bytes != null ? String(window.__mathflashCloudDebug.bytes) : '—');
-            } else {
-                html += box('cloud', '—');
-            }
-
-            // Live error marker: "now" when error class applied, "―" when cleared
-            html += box('error', window.__mathflashDebugError || '―');
         
             dbg.innerHTML = html;
         }
-
-        // Expose update so other code can force-refresh the overlay.
-        window.__mathflashViewportDebugUpdate = update;
-
+    
         window.visualViewport.addEventListener('resize', update);
         window.addEventListener('orientationchange', update);
     

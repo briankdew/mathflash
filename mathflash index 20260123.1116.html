@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>mathflash™</title>
+  <title>mathflashâ„¢</title>
   <link rel="icon" type="image/png" href="mathflash favicon.png">
 
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500&family=Nunito:wght@400;700&family=Archivo:wght@400;600;700&family=Libre+Baskerville:ital@1&display=swap" rel="stylesheet">
@@ -362,41 +362,6 @@
     
     .d-none { display: none; }
 
-    /* --- HINT BOX --- */
-    .hint-box {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 250px;
-      height: 180px;
-      background-color: white;
-      border: 1px solid black;
-      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 5;
-      font-family: 'Nunito', sans-serif;
-      font-weight: 700;
-      font-size: 55px;
-      color: black;
-      text-align: center;
-      opacity: 0;
-    }
-
-    .hint-box.show {
-      display: flex;
-      opacity: 1;
-      transition: none;
-    }
-
-    .hint-box.fade-out {
-      opacity: 0;
-      transition: opacity 0.5s ease-out;
-    }
-
     /* --- INPUT AREA --- */
     .answer-section {
       margin-top: -1.0rem; 
@@ -424,24 +389,12 @@
       animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
       border-color: #b00020; color: #b00020;
     }
-    #answerInput.nudge {
-      animation: nudgePulse 1.0s ease-in-out both;
-    }
 
     @keyframes shake {
       10%, 90% { transform: translate3d(-1px, 0, 0); }
       20%, 80% { transform: translate3d(2px, 0, 0); }
       30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
       40%, 60% { transform: translate3d(4px, 0, 0); }
-    }
-
-    @keyframes nudgePulse {
-      0%   { box-shadow: var(--shadow-card); }
-      5%  { box-shadow: 0 0 0 5px rgba(226, 206, 62, 0.95), var(--shadow-card); }
-      25%  { box-shadow: var(--shadow-card); }
-      45%  { box-shadow: 0 0 0 5px rgba(2, 196, 56, 0.95), var(--shadow-card); }
-      85%  { box-shadow: var(--shadow-card); }
-      100% { box-shadow: var(--shadow-card); }
     }
     
     .remaining-counter { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted); font-weight: 600; }
@@ -761,7 +714,7 @@
       <div class="logo">
         <span class="logo-math">math</span><span class="logo-flash">flash</span>
       </div>
-      <div class="tagline">let's put some math in your back pocket!</div>
+      <div class="tagline">letâ€™s put some math in your back pocket!</div>
     </header>
 
     <aside class="panel-settings">
@@ -861,9 +814,7 @@
 
           <div class="geo-card" id="cardLeft"><span id="cardLeftVal"></span></div>
           <div class="geo-card" id="cardRight"><span id="cardRightVal"></span></div>
-          <div class="geo-card" id="cardResult">
-            <div class="hint-box" id="hintBox"></div>
-          </div>
+          <div class="geo-card" id="cardResult"></div>
 
           <div class="geo-circle" id="circleMain">
             <svg class="icon-svg d-none" id="mainIconPlus"><use href="#icon-plus"></use></svg>
@@ -888,7 +839,7 @@
         <div class="control-group session-controls-centered">
           <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
           <div class="remaining-counter" style="text-align: center; margin-top: 0.5rem;">
-            <span id="countLabel">Problems Remaining</span>: <span id="countDisplay">0</span>
+            <span id="countLabel">Problems selected</span>: <span id="countDisplay">0</span>
           </div>
         </div>
       </div>
@@ -905,7 +856,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260125.1529-0000';
+    const APP_VERSION = '20260123.1116';
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -946,7 +897,6 @@
 
           // Stats Tracking
           currentProblemFirstTry: true,
-          wrongAnswerCount: 0,
           stats: {
             completed: 0,
             correctFirst: 0,
@@ -973,7 +923,6 @@
           cardRight: document.getElementById('cardRight'),
           cardRightVal: document.getElementById('cardRightVal'),
           cardResult: document.getElementById('cardResult'),
-          hintBox: document.getElementById('hintBox'),
           operationDisplay: document.getElementById('operationDisplay'),
           
           // Icon References
@@ -993,9 +942,6 @@
         };
 
         this.bindEvents();
-
-        // Incomplete-answer nudge timer (2-digit answers)
-        this.nudgeTimerId = 0;
 
         // iOS Safari marker (used for idle-only layout nudge)
         if (this.isIOSSafari()) document.body.classList.add('ios-safari');
@@ -1116,7 +1062,7 @@
         try {
           const raw = localStorage.getItem('mathflash.practiceCycles.v1');
           if (!raw) {
-            // default: regular baseline (since 1–9 are selected by default)
+            // default: regular baseline (since 1â€“9 are selected by default)
             this.state.practiceCycles = 1;
             this.state.practiceCyclesMode = 'regular';
             this.state.practiceCyclesUserOverride = false;
@@ -1177,7 +1123,7 @@
             ? (this.state.practiceCyclesLastNonNoneMode || 'regular')
             : prevMode;
 
-        // 'none' is availability only — do NOT reset cycles or override
+        // 'none' is availability only â€” do NOT reset cycles or override
         if (newMode === 'none') {
           this.state.practiceCyclesMode = 'none';
           if (this.dom.practiceCyclesSelect) {
@@ -1276,18 +1222,18 @@
         // mixed state: leave label unchanged (per spec)
       }
       
-      updateCountLabel() {
-        this.dom.countLabel.textContent = this.state.isSessionActive 
-          ? 'Problems remaining' 
-          : 'Problems selected';
-      }
-
       // NEW: Updates the text display based on current selections (Live Count)
       updatePendingCount() {
           const pool = this.getFilteredPool();
           const cycles = (this.state.practiceCycles >= 1 && this.state.practiceCycles <= 5) ? this.state.practiceCycles : 1;
           const total = pool.length * cycles;
           this.dom.countDisplay.textContent = total;
+      }
+
+      updateCountLabel() {
+        this.dom.countLabel.textContent = this.state.isSessionActive 
+          ? 'Problems remaining' 
+          : 'Problems selected';
       }
 
       applyTheme(mode) {
@@ -1343,6 +1289,7 @@
                 
         // Reset Cards to Dashes
         this.updateAllChipUI();
+        this.updateCountLabel();
         this.updatePracticeCyclesModeFromSelection();
         
         // Update the count immediately based on default selections (after cycles mode defaulting)
@@ -1439,6 +1386,7 @@
         // Enable Input
         this.dom.input.disabled = false;
         this.dom.input.value = '';
+        this.updateCountLabel();
         if (this.isIOSSafari()) this.focusInputLocked();
         else this.dom.input.focus();
 
@@ -1718,14 +1666,14 @@
             'Session start time': startTimeStr,
             'Session end time': endTimeStr,
             'Session length': timeStr,
-            'Problems selected': String(baseSelected),        // ← Convert to String
+            'Problems selected': String(baseSelected),        // â† Convert to String
             'Practice cycles': String(cyclesUsed),
             'Total problems': String(total),
-            'Problems completed': String(n),           // ← Convert to String
-            'Percent completed (%)': String(pctCompleted), // ← Convert to String
+            'Problems completed': String(n),           // â† Convert to String
+            'Percent completed (%)': String(pctCompleted), // â† Convert to String
             'Correct (first try)': String(c),
             'Missed (first try)': String(m),
-            'Accuracy (%)': String(accuracy),          // ← Convert to String
+            'Accuracy (%)': String(accuracy),          // â† Convert to String
             'Target speed (sec/prob)': targetSpeedStr,
             'Calculation speed (sec/prob)': timerWasActive ? String(calcSpeedVal) : '',
             'Calculation time': calcTime,
@@ -1818,7 +1766,6 @@
         
         // Reset flag for the new problem
         this.state.currentProblemFirstTry = true;
-        this.state.wrongAnswerCount = 0;
         
         const p = this.state.queue.shift();
         this.state.currentProblem = this.configureProblemDisplay(p);
@@ -1883,31 +1830,6 @@
         this.dom.input.value = '';
         }
 
-      showHint() {
-        const p = this.state.currentProblem;
-        
-        // Build canonical form (a op b = c where a < b)
-        const stdA = Math.min(p.left, p.right);
-        const stdB = Math.max(p.left, p.right);
-        const isAdd = this.dom.opSelect.value === 'addsub';
-        const opSym = isAdd ? '+' : '×';
-        const hintText = `${stdA} ${opSym} ${stdB} = ${p.result}`;
-        
-        this.dom.hintBox.textContent = hintText;
-        this.dom.hintBox.classList.remove('fade-out');
-        this.dom.hintBox.classList.add('show');
-        
-        // Display for 1.5s, then fade out over 0.5s
-        setTimeout(() => {
-          this.dom.hintBox.classList.add('fade-out');
-          
-          // Remove after fade completes
-          setTimeout(() => {
-            this.dom.hintBox.classList.remove('show', 'fade-out');
-          }, 500);
-        }, 1500);
-      }
-
       checkAnswer() {
         const userVal = parseInt(this.dom.input.value, 10);
         if (isNaN(userVal)) return;
@@ -1928,14 +1850,6 @@
             this.state.currentProblemFirstTry = false;
           }
 
-          // Increment wrong answer counter
-          this.state.wrongAnswerCount++;
-          
-          // Show hint after exactly 3 wrong answers
-          if (this.state.wrongAnswerCount === 3) {
-            this.showHint();
-          }
-
           const p = this.state.currentProblem;
           
           // --- CAPTURE MISSED PROBLEM LOGIC ---
@@ -1947,7 +1861,7 @@
           const stdB = Math.max(p.left, p.right);
           const stdRes = p.result;
           const isAdd = this.dom.opSelect.value === 'addsub';
-          const opSym = isAdd ? '+' : '×';
+          const opSym = isAdd ? '+' : 'Ã—';
 
           // 2. Find if this problem is already tracked
           let missedEntry = this.state.missedProblems.find(m => m.a === stdA && m.b === stdB);
@@ -1964,15 +1878,7 @@
           // ------------------------------------
 
           this.dom.input.classList.add('error');
-          window.__mathflashDebugError = 'now';
-          if (window.__mathflashViewportDebugUpdate) window.__mathflashViewportDebugUpdate();
-
-          setTimeout(() => {
-            this.dom.input.classList.remove('error');
-            window.__mathflashDebugError = '―';
-            if (window.__mathflashViewportDebugUpdate) window.__mathflashViewportDebugUpdate();
-          }, 400);
-
+          setTimeout(() => this.dom.input.classList.remove('error'), 400);
           this.dom.input.select();
         }
       }
@@ -2169,13 +2075,13 @@
               const label = (chip.textContent || '').trim().toLowerCase();
 
               if (label === 'clr') {
-                // Clear all (turn OFF 1–9)
+                // Clear all (turn OFF 1â€“9)
                 this.dom.chips.forEach(c => {
                   if (c.dataset.val !== 'all') c.setAttribute('aria-pressed', 'false');
                 });
                 chip.textContent = 'All';
               } else {
-                // All on (turn ON 1–9)
+                // All on (turn ON 1â€“9)
                 this.dom.chips.forEach(c => {
                   if (c.dataset.val !== 'all') c.setAttribute('aria-pressed', 'true');
                 });
@@ -2187,7 +2093,7 @@
               chip.disabled = false;
 
             } else {
-              // Normal 1–9 toggle remains intact
+              // Normal 1â€“9 toggle remains intact
               const isPressed = chip.getAttribute('aria-pressed') === 'true';
               chip.setAttribute('aria-pressed', isPressed ? 'false' : 'true');
             }
@@ -2234,67 +2140,20 @@
 
         this.dom.input.addEventListener('input', () => {
           this.dom.input.value = this.dom.input.value.replace(/[^0-9]/g, '');
-
-          // Always cancel any pending "incomplete answer" nudge on new input
-          if (this.nudgeTimerId) {
-            clearTimeout(this.nudgeTimerId);
-            this.nudgeTimerId = 0;
-          }
-
-          // Also clear any active nudge class as typing continues
-          this.dom.input.classList.remove('nudge');
-
           if (!this.state.currentProblem) return;
-
           const userStr = this.dom.input.value;
           const correctStr = String(this.state.currentProblem.correct);
           const userVal = parseInt(userStr, 10);
-
-          // Gentle nudge: 2-digit correct answer, user paused at 1 digit (no penalty)
-          if (correctStr.length === 2 && userStr.length === 1) {
-            this.nudgeTimerId = setTimeout(() => {
-              if (!this.state.currentProblem) return;
-              const curCorrectStr = String(this.state.currentProblem.correct);
-              if (curCorrectStr.length !== 2) return;
-              if (this.dom.input.value.length !== 1) return;
-
-              // Trigger a yellow rim pulse (no "error" styling, no select())
-              this.dom.input.classList.remove('nudge');
-              void this.dom.input.offsetWidth; // allow re-trigger
-              this.dom.input.classList.add('nudge');
-
-              setTimeout(() => this.dom.input.classList.remove('nudge'), 1100);
-            }, 2100);
-          }
-
-          // Normal behavior (unchanged): only check when correct OR when user has entered full length
           if (userVal === this.state.currentProblem.correct) {
-            if (this.nudgeTimerId) {
-              clearTimeout(this.nudgeTimerId);
-              this.nudgeTimerId = 0;
-            }
-            this.dom.input.classList.remove('nudge');
             this.checkAnswer();
           } 
           else if (userStr.length >= correctStr.length) {
-            if (this.nudgeTimerId) {
-              clearTimeout(this.nudgeTimerId);
-              this.nudgeTimerId = 0;
-            }
-            this.dom.input.classList.remove('nudge');
-            this.checkAnswer();
+             this.checkAnswer();
           }
         });
 
         this.dom.input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            if (this.nudgeTimerId) {
-              clearTimeout(this.nudgeTimerId);
-              this.nudgeTimerId = 0;
-            }
-            this.dom.input.classList.remove('nudge');
-            this.checkAnswer();
-          }
+          if (e.key === 'Enter') this.checkAnswer();
         });
         
         // Toggle mobile layout when keyboard opens/closes
@@ -2382,20 +2241,20 @@
 
             html += box(
                 'vw prt',
-                Math.round(vv.width) + ' × ' + Math.round(vv.height)
+                Math.round(vv.width) + ' Ã— ' + Math.round(vv.height)
             );
         
             if (ans) {
                 const r = ans.getBoundingClientRect();
                 html += box(
                     'ans bx',
-                    Math.round(r.width) + ' × ' + Math.round(r.height)
+                    Math.round(r.width) + ' Ã— ' + Math.round(r.height)
                 );
             }
         
-            // uiScale (read from CSS variable if present; otherwise show "—")
+            // uiScale (read from CSS variable if present; otherwise show "â€”")
             const ps = document.getElementById('practiceStack');
-            let scaleText = '—';
+            let scaleText = 'â€”';
             if (ps) {
                 const s = getComputedStyle(ps).getPropertyValue('--uiScale').trim();
                 if (s) scaleText = s;
@@ -2405,22 +2264,16 @@
             // Cloud debug status (only populated when ?debug=1 and a cloud save was attempted)
             html += box('online', navigator.onLine ? 'Y' : 'N');
             if (window.__mathflashCloudDebug) {
-                html += box('cloud id', window.__mathflashCloudDebug.id || '—');
-                html += box('cloud', window.__mathflashCloudDebug.phase || '—');
-                html += box('cloud bytes', window.__mathflashCloudDebug.bytes != null ? String(window.__mathflashCloudDebug.bytes) : '—');
+                html += box('cloud id', window.__mathflashCloudDebug.id || 'â€”');
+                html += box('cloud', window.__mathflashCloudDebug.phase || 'â€”');
+                html += box('cloud bytes', window.__mathflashCloudDebug.bytes != null ? String(window.__mathflashCloudDebug.bytes) : 'â€”');
             } else {
-                html += box('cloud', '—');
+                html += box('cloud', 'â€”');
             }
-
-            // Live error marker: "now" when error class applied, "―" when cleared
-            html += box('error', window.__mathflashDebugError || '―');
         
             dbg.innerHTML = html;
         }
-
-        // Expose update so other code can force-refresh the overlay.
-        window.__mathflashViewportDebugUpdate = update;
-
+    
         window.visualViewport.addEventListener('resize', update);
         window.addEventListener('orientationchange', update);
     
