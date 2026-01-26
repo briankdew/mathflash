@@ -268,6 +268,8 @@
       position: relative;
       width: 0px; height: 0px;
       transition: transform 0.1s linear;
+      --result-x: 0px;
+      --result-y: 85px;
     }
 
     /* --- CARDS --- */
@@ -305,7 +307,7 @@
     #cardRight { left: 145px; top: -85px; width: 210px; height: 150px; }
     
     #cardResult { 
-      left: 0px; top: 85px; width: 290px; height: 150px;
+      left: var(--result-x); top: var(--result-y); width: 290px; height: 150px;
       background-color: var(--color-card-result-bg); 
       color: var(--theme-text-result);
     }
@@ -365,8 +367,8 @@
     /* --- HINT BOX --- */
     .hint-box {
       position: absolute;
-      left: 0px;
-      top: 85px;
+      left: var(--result-x);
+      top: var(--result-y);
       transform: translate(-50%, -50%);
       width: 250px;
       height: 180px;
@@ -861,7 +863,7 @@
 
           <div class="geo-card" id="cardLeft"><span id="cardLeftVal"></span></div>
           <div class="geo-card" id="cardRight"><span id="cardRightVal"></span></div>
-          <div class="geo-card" id="cardResult"></div>
+          <div class="geo-card" id="cardResult"><span id="cardResultVal"></span></div>
           <div class="hint-box" id="hintBox"></div>
 
           <div class="geo-circle" id="circleMain">
@@ -972,6 +974,7 @@
           cardRight: document.getElementById('cardRight'),
           cardRightVal: document.getElementById('cardRightVal'),
           cardResult: document.getElementById('cardResult'),
+          cardResultVal: document.getElementById('cardResultVal'),
           hintBox: document.getElementById('hintBox'),
           operationDisplay: document.getElementById('operationDisplay'),
           
@@ -1349,7 +1352,7 @@
 
         this.dom.cardLeftVal.textContent = "--";
         this.dom.cardRightVal.textContent = "--";
-        this.dom.cardResult.textContent = "---";
+        this.dom.cardResultVal.textContent = "---";
         
         // Card Colors (Done state)
         const beige02 = 'var(--palette-beige-02)';
@@ -1793,6 +1796,16 @@
       // --- GAMEPLAY LOOP ---
 
       nextProblem() {
+        if (this.hintFadeTimerId) {
+          clearTimeout(this.hintFadeTimerId);
+          this.hintFadeTimerId = 0;
+        }
+        if (this.hintHideTimerId) {
+          clearTimeout(this.hintHideTimerId);
+          this.hintHideTimerId = 0;
+        }
+        this.dom.hintBox.classList.remove('show', 'fade-out');
+
         if (this.state.queue.length === 0) {
           // Practice Cycles: regenerate a fresh base queue for the next cycle (no super-set)
           if (this.state.cyclesRemaining > 0) {
@@ -1875,7 +1888,7 @@
 
         this.dom.cardLeftVal.textContent = show('left', p.left);
         this.dom.cardRightVal.textContent = show('right', p.right);
-        this.dom.cardResult.textContent = show('result', p.result);
+        this.dom.cardResultVal.textContent = show('result', p.result);
 
         // Operand blink cue is handled in nextProblem() (blink-off gap before rendering)
         
@@ -1884,6 +1897,15 @@
 
       showHint() {
         const p = this.state.currentProblem;
+
+        if (this.hintFadeTimerId) {
+          clearTimeout(this.hintFadeTimerId);
+          this.hintFadeTimerId = 0;
+        }
+        if (this.hintHideTimerId) {
+          clearTimeout(this.hintHideTimerId);
+          this.hintHideTimerId = 0;
+        }
         
         // Build canonical form (a op b = c where a < b)
         const stdA = Math.min(p.left, p.right);
@@ -1897,12 +1919,14 @@
         this.dom.hintBox.classList.add('show');
         
         // Display for 1.5s, then fade out over 0.5s
-        setTimeout(() => {
+        this.hintFadeTimerId = setTimeout(() => {
+          this.hintFadeTimerId = 0;
           this.dom.hintBox.classList.add('fade-out');
           
           // Remove after fade completes
-          setTimeout(() => {
+          this.hintHideTimerId = setTimeout(() => {
             this.dom.hintBox.classList.remove('show', 'fade-out');
+            this.hintHideTimerId = 0;
           }, 500);
         }, 1500);
       }
@@ -1980,7 +2004,7 @@
         const p = this.state.currentProblem;
         this.dom.cardLeftVal.textContent = p.left;
         this.dom.cardRightVal.textContent = p.right;
-        this.dom.cardResult.textContent = p.result;
+        this.dom.cardResultVal.textContent = p.result;
       }
 
       updateLog(msg) {
@@ -2305,13 +2329,18 @@
           document.body.classList.remove('keyboard-open');
         });  
         
-        this.dom.downloadBtn.addEventListener('click', () => this.downloadLog());
+        if (this.dom.downloadBtn) {
+          this.dom.downloadBtn.addEventListener('click', () => this.downloadLog());
+        }
         
         // Shield Click: If user clicks the background, focus the input
-        document.getElementById('sessionShield').addEventListener('click', () => {
-             if (this.isIOSSafari()) this.focusInputLocked();
-             else this.dom.input.focus();
-        });
+        const sessionShield = document.getElementById('sessionShield');
+        if (sessionShield) {
+          sessionShield.addEventListener('click', () => {
+               if (this.isIOSSafari()) this.focusInputLocked();
+               else this.dom.input.focus();
+          });
+        }
 
         window.addEventListener('resize', () => this.handleResize());
 
