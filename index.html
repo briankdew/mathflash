@@ -370,28 +370,32 @@
       left: var(--result-x);
       top: var(--result-y);
       transform: translate(-50%, -50%);
-      width: 250px;
-      height: 180px;
-      background-color: white;
-      border: 1px solid black;
+      width: 280px;
+      height: 140px;
+      background-color: rgba(255, 255, 255, 0.67);
+      border: 0px solid black;
       box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
-      display: none;
+      border-radius: 70px;
+      display: flex;
       justify-content: center;
       align-items: center;
       z-index: 5;
       font-family: 'Nunito', sans-serif;
       font-weight: 700;
-      font-size: 55px;
-      color: black;
+      font-size: 42px;
+      color: var(--palette-beige-07);
       text-align: center;
+      transition: opacity 1s ease-in;
       opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .hint-box.show {
       display: flex;
       opacity: 1;
-      transition: none;
+      visibility: visible;
+      pointer-events: auto;
     }
 
     .hint-box.fade-out {
@@ -906,7 +910,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260126.0033-0000';
+    const APP_VERSION = '20260126.0033-1216';
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -1918,16 +1922,18 @@
         this.dom.hintBox.classList.remove('fade-out');
         this.dom.hintBox.classList.add('show');
         
-        // Display for 1.5s, then fade out over 0.5s
+        // Display for 1.5s, then fade out over CSS transition duration
         this.hintFadeTimerId = setTimeout(() => {
           this.hintFadeTimerId = 0;
-          this.dom.hintBox.classList.add('fade-out');
-          
-          // Remove after fade completes
-          this.hintHideTimerId = setTimeout(() => {
+
+          const onFadeEnd = (e) => {
+            if (e.propertyName !== 'opacity') return;
             this.dom.hintBox.classList.remove('show', 'fade-out');
-            this.hintHideTimerId = 0;
-          }, 500);
+            this.dom.hintBox.removeEventListener('transitionend', onFadeEnd);
+          };
+
+          this.dom.hintBox.addEventListener('transitionend', onFadeEnd);
+          this.dom.hintBox.classList.add('fade-out');
         }, 1500);
       }
 
@@ -2384,6 +2390,13 @@
         if (!dbg || !window.visualViewport) return;
     
         dbg.style.display = 'block';
+
+        const hint = document.getElementById('hintBox');
+        if (hint) {
+            hint.textContent = '8 × 7 = 56';
+            hint.classList.remove('fade-out');
+            hint.classList.add('show');
+        }
     
         function box(label, value) {
             return `
