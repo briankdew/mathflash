@@ -431,7 +431,19 @@
       border-color: #b00020; color: #b00020;
     }
     #answerInput.nudge {
-      animation: nudgePulse 1.0s ease-in-out both;
+      animation: nudgeShake 0.5s ease-in-out both;
+    }
+
+    #cardLeft.operand-nudge,
+    #cardRight.operand-nudge {
+      transform-origin: center center;
+      animation: nudgeScaleUpDown 0.35s ease-in-out both;
+    }
+
+    @keyframes nudgeScaleUpDown {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.1); }
+      100% { transform: translate(-50%, -50%) scale(1); }
     }
 
     @keyframes shake {
@@ -441,13 +453,13 @@
       40%, 60% { transform: translate3d(4px, 0, 0); }
     }
 
-    @keyframes nudgePulse {
-      0%   { box-shadow: var(--shadow-card); }
-      5%  { box-shadow: 0 0 0 5px rgba(226, 206, 62, 0.95), var(--shadow-card); }
-      25%  { box-shadow: var(--shadow-card); }
-      45%  { box-shadow: 0 0 0 5px rgba(2, 196, 56, 0.95), var(--shadow-card); }
-      85%  { box-shadow: var(--shadow-card); }
-      100% { box-shadow: var(--shadow-card); }
+    @keyframes nudgeShake {
+      0%   { transform: translate3d(0, 0, 0); }
+      20%  { transform: translate3d(-2px, 0, 0); }
+      40%  { transform: translate3d(2px, 0, 0); }
+      60%  { transform: translate3d(-2px, 0, 0); }
+      80%  { transform: translate3d(2px, 0, 0); }
+      100% { transform: translate3d(0, 0, 0); }
     }
     
     .remaining-counter { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted); font-weight: 600; }
@@ -910,7 +922,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260126.0033-1216';
+    const APP_VERSION = '20260126.0033-1402';
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -2272,6 +2284,8 @@
 
           // Also clear any active nudge class as typing continues
           this.dom.input.classList.remove('nudge');
+          this.dom.cardLeft.classList.remove('operand-nudge');
+          this.dom.cardRight.classList.remove('operand-nudge');
 
           if (!this.state.currentProblem) return;
 
@@ -2287,12 +2301,25 @@
               if (curCorrectStr.length !== 2) return;
               if (this.dom.input.value.length !== 1) return;
 
-              // Trigger a yellow rim pulse (no "error" styling, no select())
-              this.dom.input.classList.remove('nudge');
-              void this.dom.input.offsetWidth; // allow re-trigger
-              this.dom.input.classList.add('nudge');
+              // Step 1: Scale operand cards to cue "still working here"
+              this.dom.cardLeft.classList.remove('operand-nudge');
+              this.dom.cardRight.classList.remove('operand-nudge');
+              void this.dom.cardLeft.offsetWidth; // allow re-trigger
+              void this.dom.cardRight.offsetWidth; // allow re-trigger
+              this.dom.cardLeft.classList.add('operand-nudge');
+              this.dom.cardRight.classList.add('operand-nudge');
 
-              setTimeout(() => this.dom.input.classList.remove('nudge'), 1100);
+              setTimeout(() => {
+                this.dom.cardLeft.classList.remove('operand-nudge');
+                this.dom.cardRight.classList.remove('operand-nudge');
+
+                // Step 2: Shake answer input to cue "finish typing here"
+                this.dom.input.classList.remove('nudge');
+                void this.dom.input.offsetWidth; // allow re-trigger
+                this.dom.input.classList.add('nudge');
+
+                setTimeout(() => this.dom.input.classList.remove('nudge'), 600);
+              }, 350);
             }, 2100);
           }
 
