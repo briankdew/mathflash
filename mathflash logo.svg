@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="2020.3" height="300" fill="none" stroke-linecap="square" stroke-miterlimit="10" version="1.1" viewBox="0 0 2020.3 300" xmlns="http://www.w3.org/2000/svg">
+ <style>
+  :root {
+   --theme-logo-math: #85a8cd;
+   --theme-logo-flash: #3a6187;
+  }
+ </style>
  <clipPath>
   <path d="m0 0h2048v512h-2048z"/>
  </clipPath>
