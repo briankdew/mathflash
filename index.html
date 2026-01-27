@@ -193,8 +193,19 @@
       line-height: 1;
     }
     
+    .logo-word { position: relative; display: inline-block; line-height: 1; }
     .logo-math { color: var(--theme-logo-math); }
     .logo-flash { color: var(--theme-logo-flash); }
+    .logo-tm {
+      position: absolute;
+      left: 100%;
+      top: 0;
+      font-size: calc(1em * 7 / 30);
+      font-weight: 500;
+      color: var(--theme-logo-math);
+      line-height: 1;
+      letter-spacing: 0;
+    }
     
     .tagline {
       font-family: 'Fredoka', sans-serif;
@@ -777,7 +788,7 @@
     
     <header>
       <div class="logo">
-        <span class="logo-math">math</span><span class="logo-flash">flash</span>
+        <span class="logo-word"><span class="logo-math">math</span><span class="logo-flash">flash</span><span class="logo-tm">TM</span></span>
       </div>
       <div class="tagline">let's put some math in your back pocket!</div>
     </header>
