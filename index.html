@@ -206,6 +206,18 @@
       line-height: 1;
       letter-spacing: 0;
     }
+
+    .debug-logo-preview {
+      display: none;
+      margin-top: 0.5rem;
+    }
+
+    .debug-logo-preview img {
+      max-width: min(320px, 80vw);
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
     
     .tagline {
       font-family: 'Fredoka', sans-serif;
@@ -791,6 +803,9 @@
         <span class="logo-word"><span class="logo-math">math</span><span class="logo-flash">flash</span><span class="logo-tm">TM</span></span>
       </div>
       <div class="tagline">let's put some math in your back pocket!</div>
+      <div id="debugLogoPreview" class="debug-logo-preview" aria-hidden="true">
+        <img src="mathflash logo.svg" alt="Mathflash logo preview">
+      </div>
     </header>
 
     <aside class="panel-settings">
@@ -2435,6 +2450,9 @@
             hint.classList.remove('fade-out');
             hint.classList.add('show');
         }
+
+        const logoPreview = document.getElementById('debugLogoPreview');
+        if (logoPreview) logoPreview.style.display = 'block';
     
         function box(label, value) {
             return `
