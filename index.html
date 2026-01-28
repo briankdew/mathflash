@@ -244,6 +244,35 @@
       color: var(--color-text-main);
     }
 
+    .answer-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .voice-toggle {
+      border: 1px solid var(--palette-beige-02);
+      background: var(--color-white);
+      color: var(--color-text-main);
+      border-radius: 8px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .voice-toggle[aria-disabled="true"] {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .voice-status {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      display: none;
+    }
+
     /* Sidebar Headers */
     .panel-settings h3,
     .panel-data h3 {
@@ -920,6 +949,10 @@
 
       <div class="answer-section">
         <input type="text" id="answerInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="go">
+        <div class="answer-controls">
+          <button type="button" id="voiceToggleBtn" class="voice-toggle" aria-pressed="false" aria-disabled="true">🎤 Voice</button>
+          <span id="voiceStatus" class="voice-status" aria-live="polite">Listening…</span>
+        </div>
         <div class="control-group session-controls-centered">
           <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
           <div class="remaining-counter" style="text-align: center; margin-top: 0.5rem;">
