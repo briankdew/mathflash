@@ -992,6 +992,8 @@
           hasRenderedFirstProblem: false,
           isTimerRunning: false,
           isSessionActive: false,
+          speechAvailable: false,
+          speechHttpsOk: false,
 
           // iOS scroll-lock (session kiosk mode)
           scrollLockX: 0,
@@ -1058,9 +1060,12 @@
           countLabel: document.getElementById('countLabel'),
           logBox: document.getElementById('sessionLog'),
           downloadBtn: document.getElementById('downloadBtn'),
-          userBadge: document.getElementById('userBadge')
+          userBadge: document.getElementById('userBadge'),
+          voiceToggleBtn: document.getElementById('voiceToggleBtn'),
+          voiceStatus: document.getElementById('voiceStatus')
         };
 
+        this.initVoiceSupport();
         this.bindEvents();
 
         // Incomplete-answer nudge timer (2-digit answers)
@@ -1100,6 +1105,19 @@
         const isIOS = /iP(hone|od|ad)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
         return isIOS && isSafari;
+      }
+
+      initVoiceSupport() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        this.state.speechAvailable = Boolean(SpeechRecognition);
+        this.state.speechHttpsOk = Boolean(isSecure);
+
+        const enabled = this.state.speechAvailable && this.state.speechHttpsOk;
+        if (this.dom.voiceToggleBtn) {
+          this.dom.voiceToggleBtn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+          this.dom.voiceToggleBtn.disabled = !enabled;
+        }
       }
 
       lockScroll() {
