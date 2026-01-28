@@ -1138,6 +1138,22 @@
           this.state.isVoiceListening = false;
           this.updateVoiceToggleUI();
         };
+
+        this.speech.onresult = (event) => {
+          if (!this.dom.input) return;
+          if (!this.state.isVoiceEnabled || !this.state.isSessionActive) return;
+
+          let transcript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
+
+          transcript = transcript.trim();
+          if (transcript.length === 0) return;
+
+          this.dom.input.value = transcript;
+          this.dom.input.focus();
+        };
       }
 
       startVoiceRecognition() {
