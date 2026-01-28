@@ -995,6 +995,7 @@
           speechAvailable: false,
           speechHttpsOk: false,
           isVoiceEnabled: false,
+          isVoiceListening: false,
 
           // iOS scroll-lock (session kiosk mode)
           scrollLockX: 0,
@@ -1114,7 +1115,52 @@
         this.state.speechAvailable = Boolean(SpeechRecognition);
         this.state.speechHttpsOk = Boolean(isSecure);
 
+        if (this.state.speechAvailable) {
+          this.setupSpeechRecognition(SpeechRecognition);
+        }
+
         this.updateVoiceToggleUI();
+      }
+
+      setupSpeechRecognition(SpeechRecognition) {
+        if (this.speech) return;
+        this.speech = new SpeechRecognition();
+        this.speech.continuous = true;
+        this.speech.interimResults = true;
+        this.speech.lang = 'en-US';
+
+        this.speech.onstart = () => {
+          this.state.isVoiceListening = true;
+          this.updateVoiceToggleUI();
+        };
+
+        this.speech.onend = () => {
+          this.state.isVoiceListening = false;
+          this.updateVoiceToggleUI();
+        };
+      }
+
+      startVoiceRecognition() {
+        if (!this.speech) return;
+        if (this.state.isVoiceListening) return;
+        try {
+          this.speech.start();
+        } catch (e) {
+          // Ignore repeated start attempts
+        }
+      }
+
+      stopVoiceRecognition() {
+        if (!this.speech) return;
+        if (!this.state.isVoiceListening) return;
+        this.speech.stop();
+      }
+
+      syncVoiceRecognition() {
+        const supported = this.state.speechAvailable && this.state.speechHttpsOk;
+        const shouldListen = supported && this.state.isVoiceEnabled && this.state.isSessionActive;
+        if (shouldListen) this.startVoiceRecognition();
+        else this.stopVoiceRecognition();
       }
 
       updateVoiceToggleUI() {
@@ -1129,8 +1175,16 @@
         this.dom.voiceToggleBtn.textContent = this.state.isVoiceEnabled ? '🎤 Voice On' : '🎤 Voice Off';
 
         if (this.dom.voiceStatus) {
-          this.dom.voiceStatus.style.display = this.state.isVoiceEnabled ? 'inline' : 'none';
-          this.dom.voiceStatus.textContent = this.state.isVoiceEnabled ? 'Voice input enabled' : '';
+          if (this.state.isVoiceEnabled && this.state.isSessionActive) {
+            this.dom.voiceStatus.style.display = 'inline';
+            this.dom.voiceStatus.textContent = this.state.isVoiceListening ? 'Listening…' : 'Voice ready';
+          } else if (this.state.isVoiceEnabled) {
+            this.dom.voiceStatus.style.display = 'inline';
+            this.dom.voiceStatus.textContent = 'Voice input enabled';
+          } else {
+            this.dom.voiceStatus.style.display = 'none';
+            this.dom.voiceStatus.textContent = '';
+          }
         }
       }
 
@@ -1433,6 +1487,7 @@
         this.state.isSessionActive = false;
         this.updateCountLabel();
         this.updateVoiceToggleUI();
+        this.syncVoiceRecognition();
 
         // Deactivate Shield & Enable Sidebar Tabbing
         document.body.classList.remove('session-active');
@@ -1506,6 +1561,7 @@
         
         this.state.isSessionActive = true; // Only set active after validation passes
         this.updateVoiceToggleUI();
+        this.syncVoiceRecognition();
         this.updateCountLabel();
         this.state.sessionId = this.generateSessionId();
 
@@ -2259,6 +2315,7 @@
             if (this.dom.voiceToggleBtn.disabled) return;
             this.state.isVoiceEnabled = !this.state.isVoiceEnabled;
             this.updateVoiceToggleUI();
+            this.syncVoiceRecognition();
           });
         }
         
