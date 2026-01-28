@@ -994,6 +994,7 @@
           isSessionActive: false,
           speechAvailable: false,
           speechHttpsOk: false,
+          isVoiceEnabled: false,
 
           // iOS scroll-lock (session kiosk mode)
           scrollLockX: 0,
@@ -1113,10 +1114,23 @@
         this.state.speechAvailable = Boolean(SpeechRecognition);
         this.state.speechHttpsOk = Boolean(isSecure);
 
-        const enabled = this.state.speechAvailable && this.state.speechHttpsOk;
-        if (this.dom.voiceToggleBtn) {
-          this.dom.voiceToggleBtn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
-          this.dom.voiceToggleBtn.disabled = !enabled;
+        this.updateVoiceToggleUI();
+      }
+
+      updateVoiceToggleUI() {
+        if (!this.dom.voiceToggleBtn) return;
+        const supported = this.state.speechAvailable && this.state.speechHttpsOk;
+        const locked = this.state.isSessionActive;
+        const enabled = supported && !locked;
+
+        this.dom.voiceToggleBtn.disabled = !enabled;
+        this.dom.voiceToggleBtn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+        this.dom.voiceToggleBtn.setAttribute('aria-pressed', this.state.isVoiceEnabled ? 'true' : 'false');
+        this.dom.voiceToggleBtn.textContent = this.state.isVoiceEnabled ? '🎤 Voice On' : '🎤 Voice Off';
+
+        if (this.dom.voiceStatus) {
+          this.dom.voiceStatus.style.display = this.state.isVoiceEnabled ? 'inline' : 'none';
+          this.dom.voiceStatus.textContent = this.state.isVoiceEnabled ? 'Voice input enabled' : '';
         }
       }
 
@@ -1418,6 +1432,7 @@
       initIdleState() {
         this.state.isSessionActive = false;
         this.updateCountLabel();
+        this.updateVoiceToggleUI();
 
         // Deactivate Shield & Enable Sidebar Tabbing
         document.body.classList.remove('session-active');
@@ -1490,6 +1505,7 @@
         if (this.isIOSSafari()) this.lockScroll();
         
         this.state.isSessionActive = true; // Only set active after validation passes
+        this.updateVoiceToggleUI();
         this.updateCountLabel();
         this.state.sessionId = this.generateSessionId();
 
@@ -2237,6 +2253,14 @@
 
         // Ensure mode defaults stay aligned when Operation changes can force chip state changes
         this.updatePracticeCyclesModeFromSelection();
+
+        if (this.dom.voiceToggleBtn) {
+          this.dom.voiceToggleBtn.addEventListener('click', () => {
+            if (this.dom.voiceToggleBtn.disabled) return;
+            this.state.isVoiceEnabled = !this.state.isVoiceEnabled;
+            this.updateVoiceToggleUI();
+          });
+        }
         
         // BUTTON TOGGLE EVENT (iOS: ensure first intentional tap triggers reset)
         let suppressSessionBtnClick = false;
