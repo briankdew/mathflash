@@ -1181,16 +1181,24 @@
           if (!this.dom.input) return;
           if (!this.state.isVoiceEnabled || !this.state.isSessionActive) return;
 
-          let transcript = '';
+          let interimTranscript = '';
+          let finalTranscript = '';
           for (let i = event.resultIndex; i < event.results.length; i++) {
-            transcript += event.results[i][0].transcript;
+            const result = event.results[i];
+            if (result.isFinal) finalTranscript += result[0].transcript;
+            else interimTranscript += result[0].transcript;
           }
 
-          transcript = transcript.trim();
-          if (transcript.length === 0) return;
+          const pick = (finalTranscript || interimTranscript).trim();
+          if (pick.length === 0) return;
 
-          const normalized = this.normalizeSpokenNumber(transcript);
-          this.dom.input.value = normalized ?? transcript;
+          const normalized = this.normalizeSpokenNumber(pick);
+          this.dom.input.value = normalized ?? pick;
+
+          if (finalTranscript.trim().length > 0) {
+            this.dom.input.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+
           this.dom.input.focus();
         };
       }
