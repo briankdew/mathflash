@@ -1151,9 +1151,80 @@
           transcript = transcript.trim();
           if (transcript.length === 0) return;
 
-          this.dom.input.value = transcript;
+          const normalized = this.normalizeSpokenNumber(transcript);
+          this.dom.input.value = normalized ?? transcript;
           this.dom.input.focus();
         };
+      }
+
+      normalizeSpokenNumber(raw) {
+        if (!raw) return null;
+        const cleaned = raw
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (!cleaned) return null;
+
+        if (/^\d+$/.test(cleaned)) return cleaned;
+
+        const text = cleaned.replace(/-/g, ' ');
+        const words = text.split(' ').filter(Boolean);
+        if (words.length === 0) return null;
+
+        const ones = {
+          zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5,
+          six: 6, seven: 7, eight: 8, nine: 9
+        };
+        const teens = {
+          ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14,
+          fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19
+        };
+        const tens = {
+          twenty: 20, thirty: 30, forty: 40, fifty: 50,
+          sixty: 60, seventy: 70, eighty: 80, ninety: 90
+        };
+
+        const allowed = new Set([
+          ...Object.keys(ones),
+          ...Object.keys(teens),
+          ...Object.keys(tens),
+          'hundred',
+          'and'
+        ]);
+
+        for (const word of words) {
+          if (!allowed.has(word)) return null;
+        }
+
+        let total = 0;
+        let current = 0;
+
+        for (const word of words) {
+          if (word === 'and') continue;
+          if (ones[word] !== undefined) {
+            current += ones[word];
+            continue;
+          }
+          if (teens[word] !== undefined) {
+            current += teens[word];
+            continue;
+          }
+          if (tens[word] !== undefined) {
+            current += tens[word];
+            continue;
+          }
+          if (word === 'hundred') {
+            if (current === 0) current = 1;
+            current *= 100;
+            continue;
+          }
+        }
+
+        total += current;
+        if (!Number.isFinite(total)) return null;
+        return String(total);
       }
 
       startVoiceRecognition() {
