@@ -2148,6 +2148,10 @@
                     if (this.state.activeCustomSet === '10s' || this.state.activeCustomSet === 'doubles') {
                         this.state.activeCustomSet = null;
                         this.dom.customChips.forEach(c => c.setAttribute('aria-pressed', 'false'));
+                        const resultOption = this.dom.missingSelect?.querySelector('option[value="result"]');
+                        if (resultOption) resultOption.disabled = false;
+                        const operandOption = this.dom.missingSelect?.querySelector('option[value="operand"]');
+                        if (operandOption) operandOption.disabled = false;
                         
                         // Reactivate standard chips (Default to All)
                         this.dom.chips.forEach(c => {
@@ -2223,6 +2227,10 @@
             if (this.state.activeCustomSet) {
               this.state.activeCustomSet = null;
               this.dom.customChips.forEach(cc => cc.setAttribute('aria-pressed', 'false'));
+              const resultOption = this.dom.missingSelect?.querySelector('option[value="result"]');
+              if (resultOption) resultOption.disabled = false;
+              const operandOption = this.dom.missingSelect?.querySelector('option[value="operand"]');
+              if (operandOption) operandOption.disabled = false;
             }
 
             if (chip.dataset.val === 'all') {
@@ -2276,6 +2284,21 @@
 
                 if (newVal === '10s') {
                     this.dom.missingSelect.value = 'operand';
+                    const resultOption = this.dom.missingSelect?.querySelector('option[value="result"]');
+                    if (resultOption) resultOption.disabled = true;
+                    const operandOption = this.dom.missingSelect?.querySelector('option[value="operand"]');
+                    if (operandOption) operandOption.disabled = false;
+                } else if (newVal === 'doubles') {
+                    this.dom.missingSelect.value = 'result';
+                    const operandOption = this.dom.missingSelect?.querySelector('option[value="operand"]');
+                    if (operandOption) operandOption.disabled = true;
+                    const resultOption = this.dom.missingSelect?.querySelector('option[value="result"]');
+                    if (resultOption) resultOption.disabled = false;
+                } else {
+                    const resultOption = this.dom.missingSelect?.querySelector('option[value="result"]');
+                    if (resultOption) resultOption.disabled = false;
+                    const operandOption = this.dom.missingSelect?.querySelector('option[value="operand"]');
+                    if (operandOption) operandOption.disabled = false;
                 }
 
                 // 3. Update Visuals for Custom Chips (Exclusive)
