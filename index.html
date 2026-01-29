@@ -2274,6 +2274,10 @@
                 // 2. Set Active State
                 this.state.activeCustomSet = newVal;
 
+                if (newVal === '10s') {
+                    this.dom.missingSelect.value = 'operand';
+                }
+
                 // 3. Update Visuals for Custom Chips (Exclusive)
                 this.dom.customChips.forEach(c => {
                     c.setAttribute('aria-pressed', c.dataset.custom === newVal ? 'true' : 'false');
