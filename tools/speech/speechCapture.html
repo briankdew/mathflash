@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>speechCapture</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { max-width: 760px; margin: 24px auto; padding: 0 16px; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-radius: 8px; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .pill { padding: 6px 10px; border-radius: 999px; border: 1px solid #bbb; font-size: 12px; }
+    .pill.on { border-color: #2b7; }
+    .pill.off { border-color: #999; }
+    input[type="text"] {
+      width: 120px;
+      font-size: 20px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #bbb;
+    }
+    #feed {
+      margin-top: 16px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 12px;
+      min-height: 240px;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.35;
+      background: #fafafa;
+      overflow: auto;
+    }
+    .hint { color: #555; font-size: 13px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>speechCapture</h1>
+
+  <div class="row">
+    <button id="startEndBtn">Start</button>
+
+    <button id="micToggleBtn" aria-pressed="false">Mic Off</button>
+    <span id="micStatePill" class="pill off">Typed input mode</span>
+
+    <label for="answerInput" style="margin-left:auto;">Answer:</label>
+    <input id="answerInput" type="text" inputmode="numeric" autocomplete="off" maxlength="1" disabled />
+  </div>
+
+  <div class="hint">
+    - Start enables input; End disables input.<br>
+    - Mic On = voice-only (typing disabled). Mic Off = typed-only (speech disabled).<br>
+    - Any accepted single digit auto-submits and is logged below.
+  </div>
+
+  <div id="feed" aria-label="Real-time input feed"></div>
+
+<script>
+(() => {
+  // -----------------------------
+  // State
+  // -----------------------------
+  let sessionActive = false;
+  let micOn = false;
+
+  let recognition = null;
+  let recognizing = false;
+
+  const startEndBtn = document.getElementById('startEndBtn');
+  const micToggleBtn = document.getElementById('micToggleBtn');
+  const micStatePill = document.getElementById('micStatePill');
+  const answerInput = document.getElementById('answerInput');
+  const feed = document.getElementById('feed');
+
+  // -----------------------------
+  // Utilities
+  // -----------------------------
+  function ts() {
+    const d = new Date();
+    return d.toLocaleTimeString(undefined, { hour12: false }) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+  }
+
+  function logLine(kind, text) {
+    feed.textContent += `[${ts()}] ${kind}: ${text}\n`;
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function setAnswerBoxEnabled(enabled) {
+    answerInput.disabled = !enabled;
+    if (enabled) answerInput.focus();
+    if (!enabled) answerInput.value = '';
+  }
+
+  function setTypedModeUI() {
+    micToggleBtn.textContent = micOn ? 'Mic On' : 'Mic Off';
+    micToggleBtn.setAttribute('aria-pressed', String(micOn));
+
+    if (micOn) {
+      micStatePill.textContent = 'Voice input mode';
+      micStatePill.classList.remove('off');
+      micStatePill.classList.add('on');
+      // When Mic On, typed input is not allowed:
+      answerInput.readOnly = true;
+    } else {
+      micStatePill.textContent = 'Typed input mode';
+      micStatePill.classList.remove('on');
+      micStatePill.classList.add('off');
+      answerInput.readOnly = false;
+    }
+  }
+
+  // Accept only a single digit 0-9
+  function normalizeToSingleDigit(raw) {
+    if (raw == null) return null;
+    const s = String(raw).trim().toLowerCase();
+
+    // Direct digit present?
+    const m = s.match(/\b([0-9])\b/);
+    if (m) return m[1];
+
+    // Common word -> digit mapping (covers one-nine + zero)
+    const map = {
+      'zero': '0',
+      'oh': '0',
+      'one': '1',
+      'two': '2',
+      'to': '2',
+      'too': '2',
+      'three': '3',
+      'four': '4',
+      'for': '4',
+      'five': '5',
+      'six': '6',
+      'seven': '7',
+      'eight': '8',
+      'ate': '8',
+      'nine': '9'
+    };
+
+    // Look for whole-word match anywhere
+    for (const [word, digit] of Object.entries(map)) {
+      const re = new RegExp(`\\b${word}\\b`, 'i');
+      if (re.test(s)) return digit;
+    }
+
+    return null;
+  }
+
+  function submitDigit(digit, source) {
+    if (!sessionActive) return;
+
+    // Replace value (never append)
+    answerInput.value = digit;
+
+    // Auto-submit immediately
+    logLine('SUBMIT', `${digit}  (source=${source})`);
+
+    // Clear quickly so you can see if duplicates happen later
+    answerInput.value = '';
+    if (!micOn) answerInput.focus();
+  }
+
+  // -----------------------------
+  // Speech Recognition Setup
+  // -----------------------------
+  function initRecognitionIfPossible() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      logLine('INFO', 'Web Speech API SpeechRecognition not available in this browser.');
+      return null;
+    }
+
+    const r = new SR();
+    r.lang = 'en-US';
+    r.continuous = true;       // keep listening while session active
+    r.interimResults = true;   // useful for debugging, but we only submit on final
+    r.maxAlternatives = 3;
+
+    r.onstart = () => { recognizing = true; logLine('REC', 'onstart'); };
+    r.onend = () => { recognizing = false; logLine('REC', 'onend');  autoRestartIfNeeded(); };
+    r.onerror = (e) => { logLine('REC_ERR', `${e.error}${e.message ? ' - ' + e.message : ''}`); };
+    r.onaudiostart = () => logLine('REC', 'onaudiostart');
+    r.onaudioend = () => logLine('REC', 'onaudioend');
+    r.onspeechstart = () => logLine('REC', 'onspeechstart');
+    r.onspeechend = () => logLine('REC', 'onspeechend');
+    r.onsoundstart = () => logLine('REC', 'onsoundstart');
+    r.onsoundend = () => logLine('REC', 'onsoundend');
+    r.onnomatch = () => logLine('REC', 'onnomatch');
+
+    r.onresult = (event) => {
+      // Only act if we're in voice-only mode and session is active
+      if (!sessionActive || !micOn) return;
+
+      // Consume ONLY new results from resultIndex onward (prevents reprocessing)
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const res = event.results[i];
+        const top = res[0];
+        const transcript = (top && top.transcript) ? top.transcript : '';
+        const conf = (top && typeof top.confidence === 'number') ? top.confidence.toFixed(3) : 'n/a';
+
+        logLine('REC_RES', `i=${i} final=${res.isFinal} conf=${conf} txt="${transcript.trim()}"`);
+
+        if (res.isFinal) {
+          const digit = normalizeToSingleDigit(transcript);
+          if (digit != null) {
+            submitDigit(digit, 'voice');
+          } else {
+            logLine('REC_RES', 'final result had no single-digit match (ignored)');
+          }
+        }
+      }
+    };
+
+    return r;
+  }
+
+  function startRecognition() {
+    if (!recognition) recognition = initRecognitionIfPossible();
+    if (!recognition) return;
+
+    if (recognizing) return;
+    try {
+      recognition.start();
+      logLine('REC', 'start() called');
+    } catch (e) {
+      // start() can throw if called too quickly after an end
+      logLine('REC_ERR', `start() threw: ${e && e.message ? e.message : String(e)}`);
+    }
+  }
+
+  function stopRecognition() {
+    if (!recognition) return;
+    if (!recognizing) return;
+    try {
+      recognition.stop();
+      logLine('REC', 'stop() called');
+    } catch (e) {
+      logLine('REC_ERR', `stop() threw: ${e && e.message ? e.message : String(e)}`);
+    }
+  }
+
+  function autoRestartIfNeeded() {
+    // If mic is on AND session is active, keep speech recognition running.
+    // Some implementations end unexpectedly; this restarts it.
+    if (sessionActive && micOn) {
+      // tiny delay avoids "start called too soon" errors
+      setTimeout(() => {
+        if (sessionActive && micOn && !recognizing) startRecognition();
+      }, 250);
+    }
+  }
+
+  // -----------------------------
+  // UI Events
+  // -----------------------------
+  startEndBtn.addEventListener('click', () => {
+    sessionActive = !sessionActive;
+
+    if (sessionActive) {
+      startEndBtn.textContent = 'End';
+      setAnswerBoxEnabled(true);
+      logLine('SESSION', 'Start (active)');
+
+      if (micOn) startRecognition();
+    } else {
+      startEndBtn.textContent = 'Start';
+      setAnswerBoxEnabled(false);
+      logLine('SESSION', 'End (idle)');
+
+      stopRecognition();
+    }
+  });
+
+  micToggleBtn.addEventListener('click', () => {
+    micOn = !micOn;
+    setTypedModeUI();
+    logLine('MIC', micOn ? 'On (voice-only)' : 'Off (typed-only)');
+
+    // Enforce mode immediately
+    if (micOn) {
+      // Clear any partial typed value (optional; keeps behavior crisp)
+      answerInput.value = '';
+      if (sessionActive) startRecognition();
+    } else {
+      stopRecognition();
+      if (sessionActive) answerInput.focus();
+    }
+  });
+
+  // Typed input: enforce single digit and auto-submit
+  answerInput.addEventListener('input', (e) => {
+    if (!sessionActive) return;
+    if (micOn) {
+      // Voice-only mode: ignore any typed input (and keep it empty)
+      answerInput.value = '';
+      return;
+    }
+
+    // Keep only first digit if someone pastes or types extra
+    const digit = normalizeToSingleDigit(answerInput.value);
+    if (digit == null) {
+      // If not a digit, clear
+      answerInput.value = '';
+      return;
+    }
+
+    // Force exact single-digit display before submit
+    answerInput.value = digit;
+    submitDigit(digit, 'typed');
+  });
+
+  // Prevent non-digit key presses in typed mode (optional hardening)
+  answerInput.addEventListener('keydown', (e) => {
+    if (answerInput.disabled) return;
+    if (micOn) {
+      e.preventDefault();
+      return;
+    }
+
+    const allowed = [
+      'Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'
+    ];
+    if (allowed.includes(e.key)) return;
+
+    // Allow digits only
+    if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+  });
+
+  // -----------------------------
+  // Init UI
+  // -----------------------------
+  setTypedModeUI();
+  logLine('INFO', 'Ready. Press Start.');
+})();
+</script>
+</body>
+</html>
