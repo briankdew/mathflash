@@ -50,23 +50,6 @@
 </head>
 <body>
   <h1>speechCapture</h1>
-  <div class="row" style="margin-bottom: 12px;">
-    <label for="modeSelect">Mode:</label>
-    <select id="modeSelect">
-      <option value="learn">Learning</option>
-      <option value="eval">Evaluation</option>
-      <option value="challenge">Challenge</option>
-    </select>
-  </div>
-  <div class="row" style="margin-bottom: 12px;">
-    <label for="blinkToggleSelect">Blink:</label>
-    <select id="blinkToggleSelect">
-      <option value="on">On</option>
-      <option value="off">Off</option>
-    </select>
-    <label for="blinkRateInput">Rate:</label>
-    <input id="blinkRateInput" type="number" min="0.1" max="5.0" step="0.1" value="2.0" />
-  </div>
 
   <div class="center-stack">
     <div class="problem-row">
@@ -84,6 +67,10 @@
       <button id="micToggleBtn" aria-pressed="false">Type</button>
     </div>
 
+    <div class="blink-row">
+      <label for="blinkRateInput">Blink rate (s):</label>
+      <input id="blinkRateInput" type="number" min="0.1" max="5.0" step="0.1" value="2.0" />
+    </div>
   </div>
 
   <div class="hint">
@@ -125,8 +112,6 @@
   const blinkDot = document.getElementById('blinkDot');
   const blinkRateInput = document.getElementById('blinkRateInput');
   const problemCounter = document.getElementById('problemCounter');
-  const modeSelect = document.getElementById('modeSelect');
-  const blinkToggleSelect = document.getElementById('blinkToggleSelect');
 
   // -----------------------------
   // Utilities
@@ -155,6 +140,7 @@
   let blinkTimerId = 0;
   let blinkHideTimerId = 0;
   let blinkOn = false;
+  let speechStarted = false;
   let currentAnswer = null;
   let awaitingSubmission = false;
 
@@ -183,9 +169,9 @@
     if (!showNextFact()) return false;
     spaceCount += 1;
     if (problemCounter) problemCounter.textContent = String(spaceCount);
-    const logIndex = spaceCount - 1;
-    if (logAuto) logLine('AUTO-NEXT', `Problem ${logIndex} (Ans: ${currentAnswer})`);
-    else if (mode === MODE_LEARN) logLine('CURRENT_PROB', `Problem ${logIndex} (Ans: ${currentAnswer})`);
+    if (logAuto) logLine('AUTO-NEXT', `Problem ${spaceCount} (Ans: ${currentAnswer})`);
+    else if (mode === MODE_LEARN) logLine('CURRENT_PROB', `Problem ${spaceCount} (Ans: ${currentAnswer})`);
+    if (mode === MODE_LEARN) startRecognitionForCurrentProblem();
     return true;
   }
 
@@ -359,14 +345,19 @@
 
     const r = new SR();
     r.lang = 'en-US';
-    r.continuous = true;       // keep listening while session active
+    r.continuous = false;      // capture a single utterance per start
     r.interimResults = true;   // emit interim results for debugging
     r.maxAlternatives = 1;
 
     r.onstart = () => { recognizing = true; logLine('REC', 'onstart'); };
-    r.onend = () => { recognizing = false; logLine('REC', 'onend');  autoRestartIfNeeded(); };
+    r.onend = () => {
+      recognizing = false;
+      logLine('REC', 'onend');
+      restartRecognitionIfAwaiting();
+    };
     r.onerror = (e) => { logLine('REC_ERR', `${e.error}${e.message ? ' - ' + e.message : ''}`); };
     r.onaudiostart = () => {
+      speechStarted = true;
       logLine('REC', 'onaudiostart');
       if (sessionActive && mode === MODE_LEARN && !awaitingSubmission && !problemDisplay.textContent) {
         advanceProblem(false);
@@ -450,15 +441,20 @@
     }
   }
 
-  function autoRestartIfNeeded() {
-    // If mic is on AND session is active, keep speech recognition running.
-    // Some implementations end unexpectedly; this restarts it.
-    if (sessionActive && micOn) {
-      // tiny delay avoids "start called too soon" errors
-      setTimeout(() => {
-        if (sessionActive && micOn && !recognizing) startRecognition();
-      }, 250);
-    }
+  function startRecognitionForCurrentProblem() {
+    if (!sessionActive || !micOn || mode !== MODE_LEARN) return;
+    if (!awaitingSubmission) return;
+    if (recognizing) return;
+    startRecognition();
+  }
+
+  function restartRecognitionIfAwaiting() {
+    if (!sessionActive || !micOn || mode !== MODE_LEARN) return;
+    if (!awaitingSubmission) return;
+    // tiny delay avoids "start called too soon" errors
+    setTimeout(() => {
+      startRecognitionForCurrentProblem();
+    }, 150);
   }
 
   // -----------------------------
@@ -471,25 +467,25 @@
       startEndBtn.textContent = 'End';
       setAnswerBoxEnabled(true);
       feed.textContent = '';
-      spaceCount = 0;
+      spaceCount = -1;
       if (problemCounter) problemCounter.textContent = String(spaceCount);
       if (problemDisplay) problemDisplay.textContent = '';
+      speechStarted = false;
       currentAnswer = null;
       awaitingSubmission = false;
       lastFinalTranscript = '';
       resetFacts();
       logLine('SESSION', 'Start (active)');
-      if (blinkToggleSelect?.value === 'on') {
-        startBlinkTimer(parseFloat(blinkRateInput?.value) || 1.0);
-      }
+      startBlinkTimer(parseFloat(blinkRateInput?.value) || 1.0);
 
-      if (micOn) startRecognition();
+      if (mode === MODE_LEARN) advanceProblem(false);
     } else {
       startEndBtn.textContent = 'Start';
       setAnswerBoxEnabled(false);
       logLine('SESSION', 'End (idle)');
       stopBlinkTimer();
       if (problemDisplay) problemDisplay.textContent = '';
+      speechStarted = false;
       currentAnswer = null;
       awaitingSubmission = false;
 
@@ -506,38 +502,16 @@
     if (micOn) {
       // Clear any partial typed value (optional; keeps behavior crisp)
       answerInput.value = '';
-      if (sessionActive) startRecognition();
+      if (sessionActive && mode === MODE_LEARN && !awaitingSubmission) {
+        advanceProblem(false);
+      } else if (sessionActive) {
+        startRecognitionForCurrentProblem();
+      }
     } else {
       stopRecognition();
       if (sessionActive) answerInput.focus();
     }
   });
-
-  if (modeSelect) {
-    modeSelect.addEventListener('change', () => {
-      mode = modeSelect.value;
-      logLine('MODE', `Mode set to ${mode}`);
-      if (sessionActive && mode === MODE_EVAL && blinkToggleSelect?.value === 'on') {
-        const val = parseFloat(blinkRateInput?.value) || 1.0;
-        startBlinkTimer(val);
-      }
-    });
-  }
-
-  if (blinkToggleSelect) {
-    blinkToggleSelect.addEventListener('change', () => {
-      const isOn = blinkToggleSelect.value === 'on';
-      logLine('BLINK', isOn ? 'On' : 'Off');
-      if (!isOn) {
-        stopBlinkTimer();
-        return;
-      }
-      if (sessionActive) {
-        const val = parseFloat(blinkRateInput?.value) || 1.0;
-        startBlinkTimer(val);
-      }
-    });
-  }
 
   // Typed input: enforce numeric-only and auto-submit
   answerInput.addEventListener('input', (e) => {
@@ -583,9 +557,6 @@
   setTypedModeUI();
   logLine('INFO', 'Ready. Press Start.');
   stopBlinkTimer();
-  if (modeSelect) {
-    modeSelect.value = mode;
-  }
 
   if (downloadLogBtn) {
     downloadLogBtn.addEventListener('click', () => {
@@ -598,7 +569,6 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
     });
   }
 
@@ -615,7 +585,7 @@
       if (isNaN(val)) return;
       const clamped = Math.max(0.1, Math.min(5.0, val));
       blinkRateInput.value = clamped.toFixed(1);
-      if (sessionActive && blinkToggleSelect?.value === 'on') startBlinkTimer(clamped);
+      if (sessionActive) startBlinkTimer(clamped);
     });
   }
 })();
