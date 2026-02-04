@@ -4,34 +4,120 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>speechCapture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" />
   <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    :root { font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     body { max-width: 760px; margin: 24px auto; padding: 0 16px; }
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .setting-label { font-weight: 700; }
     button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-radius: 8px; cursor: pointer; }
     button:disabled { opacity: .5; cursor: not-allowed; }
-    .center-stack { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-    .problem-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
-    .problem-display { margin: 0; }
-    .problem-text { display: inline-block; width: 7ch; text-align: center; }
+    .center-stack { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+    .problem-no-row { display: flex; align-items: center; justify-content: center; gap: 0px; }
+    .problem-no-label {
+      width: 150px;
+      height: 30px;
+      border: none;
+      border-radius: 0;
+      color: #000000;
+      background: none;
+      font-size: 1.33rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .problem-no-value {
+      width: 50px;
+      height: 30px;
+      border: 1px solid #000000;
+      border-radius: 5px;
+      color: #000000;
+      background: none;
+      font-size: 1.33rem;
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .equation-row { display: flex; align-items: center; justify-content: center; gap: 0px; }
+    .operand-box {
+      width: 160px;
+      height: 110px;
+      border: none;
+      border-radius: 20px;
+      color: #4b4837;
+      background: #dad8cc;
+      font-size: 6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .operator-box {
+      width: 70px;
+      height: 110px;
+      border: none;
+      border-radius: 0;
+      color: #4b4837;
+      background: none;
+      font-size: 6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .result-row { display: flex; align-items: center; justify-content: center; }
+    .result-box {
+      width: 215px;
+      height: 110px;
+      border: none;
+      border-radius: 20px;
+      color: #4b4837;
+      background: #dad8cc;
+      font-size: 6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     .blink-dot {
-      width: 1em;
-      height: 1em;
+      width: 0.75em;
+      height: 0.75em;
       border-radius: 50%;
       background: #c33;
       opacity: 0;
     }
-    .counter-text { font-weight: 400; margin: 0; }
     .button-row { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
-    .answer-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .blink-row { display: flex; gap: 8px; align-items: center; justify-content: center; }
-    input[type="text"] {
-      width: 120px;
-      font-size: 20px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid #bbb;
+    .answer-stack { display: flex; flex-direction: column; align-items: center; gap: 0; }
+    .answer-label {
+      width: 90px;
+      height: 40px;
+      border: none;
+      border-radius: 0;
+      color: #000000;
+      background: none;
+      font-size: 1.33rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+    .answer-input {
+      width: 100px;
+      height: 60px;
+      border: 1px solid #000000;
+      border-radius: 10px;
+      color: #000000;
+      background: none;
+      font-size: 2.5rem;
+      font-weight: 400;
+      text-align: center;
+      padding: 0;
+    }
+    .blink-row { display: flex; gap: 4px; align-items: center; justify-content: center; }
     #feed {
       margin-top: 16px;
       border: 1px solid #ddd;
@@ -45,38 +131,45 @@
       background: #fafafa;
       overflow: auto;
     }
-    .hint { color: #555; font-size: 13px; margin-top: 10px; }
   </style>
 </head>
 <body>
   <h1>speechCapture</h1>
-  <div class="row" style="margin-bottom: 12px;">
-    <label for="modeSelect">Mode:</label>
+  <div class="row" style="margin-bottom: 12px; justify-content: flex-start;">
+    <label class="setting-label" for="modeSelect">Mode</label>
     <select id="modeSelect">
       <option value="learn">Learning</option>
       <option value="eval">Evaluation</option>
       <option value="challenge">Challenge</option>
     </select>
-  </div>
-  <div class="row" style="margin-bottom: 12px;">
-    <label for="blinkToggleSelect">Blink:</label>
+    <label class="setting-label" for="blinkToggleSelect">  Blink</label>
     <select id="blinkToggleSelect">
       <option value="on">On</option>
-      <option value="off">Off</option>
+      <option value="off" selected>Off</option>
     </select>
-    <label for="blinkRateInput">Rate:</label>
+    <label class="setting-label" for="blinkRateInput">  Rate</label>
     <input id="blinkRateInput" type="number" min="0.1" max="5.0" step="0.1" value="2.0" />
+    <span id="blinkDot" class="blink-dot"></span>
+    <label class="setting-label" for="problemCountInput">Problems</label>
+    <input id="problemCountInput" type="number" min="1" max="200" step="1" value="10" />
   </div>
 
   <div class="center-stack">
-    <div class="problem-row">
-      <h1 id="problemDisplay" class="problem-display problem-text"></h1>
-      <span id="blinkDot" class="blink-dot"></span>
-      <h1 id="problemCounter" class="problem-display counter-text">0</h1>
+    <div class="problem-no-row">
+      <div class="problem-no-label">Problem no.</div>
+      <div id="problemCounter" class="problem-no-value">0</div>
     </div>
-    <div class="answer-wrap">
-      <label for="answerInput">Answer:</label>
-      <input id="answerInput" type="text" inputmode="numeric" autocomplete="off" maxlength="4" disabled />
+    <div class="equation-row">
+      <div id="leftOperand" class="operand-box"></div>
+      <div id="operatorBox" class="operator-box"></div>
+      <div id="rightOperand" class="operand-box"></div>
+    </div>
+    <div class="result-row">
+      <div id="resultBox" class="result-box"></div>
+    </div>
+    <div class="answer-stack">
+      <div class="answer-label">Answer</div>
+      <input id="answerInput" class="answer-input" type="text" inputmode="numeric" autocomplete="off" maxlength="4" disabled />
     </div>
 
     <div class="button-row">
@@ -84,12 +177,6 @@
       <button id="micToggleBtn" aria-pressed="false">Type</button>
     </div>
 
-  </div>
-
-  <div class="hint">
-    - Start enables input; End disables input.<br>
-    - Mic On = voice-only (typing disabled). Mic Off = typed-only (speech disabled).<br>
-    - Any accepted single digit auto-submits and is logged below.
   </div>
 
   <div class="row" style="justify-content: flex-start; margin-top: 12px;">
@@ -104,7 +191,7 @@
   // State
   // -----------------------------
   let sessionActive = false;
-  let micOn = false;
+  let micOn = true;
 
   let recognition = null;
   let recognizing = false;
@@ -121,12 +208,16 @@
   const answerInput = document.getElementById('answerInput');
   const feed = document.getElementById('feed');
   const downloadLogBtn = document.getElementById('downloadLogBtn');
-  const problemDisplay = document.getElementById('problemDisplay');
   const blinkDot = document.getElementById('blinkDot');
   const blinkRateInput = document.getElementById('blinkRateInput');
   const problemCounter = document.getElementById('problemCounter');
   const modeSelect = document.getElementById('modeSelect');
   const blinkToggleSelect = document.getElementById('blinkToggleSelect');
+  const problemCountInput = document.getElementById('problemCountInput');
+  const leftOperand = document.getElementById('leftOperand');
+  const rightOperand = document.getElementById('rightOperand');
+  const operatorBox = document.getElementById('operatorBox');
+  const resultBox = document.getElementById('resultBox');
 
   // -----------------------------
   // Utilities
@@ -152,6 +243,7 @@
   let factQueue = [];
   let factIndex = 0;
   let spaceCount = 0;
+  let answeredCount = 0;
   let blinkTimerId = 0;
   let blinkHideTimerId = 0;
   let blinkOn = false;
@@ -164,7 +256,7 @@
   }
 
   function showNextFact() {
-    if (!problemDisplay || !sessionActive) return false;
+    if (!leftOperand || !rightOperand || !operatorBox || !resultBox || !sessionActive) return false;
     if (awaitingSubmission) return false;
     if (factQueue.length === 0 || factIndex >= factQueue.length) resetFacts();
 
@@ -172,8 +264,11 @@
     const swap = Math.random() < 0.5;
     const left = swap ? fact.b : fact.a;
     const right = swap ? fact.a : fact.b;
-    problemDisplay.textContent = `${left} x ${right}`;
+    leftOperand.textContent = String(left);
+    operatorBox.textContent = '×';
+    rightOperand.textContent = String(right);
     currentAnswer = fact.a * fact.b;
+    resultBox.textContent = String(currentAnswer);
     lastFinalTranscript = '';
     awaitingSubmission = true;
     return true;
@@ -259,9 +354,10 @@
     const s = String(raw).trim().toLowerCase();
 
     // Direct number present (e.g., "42", "1,000", "1 000")
-    const m = s.match(/\b(\d[\d,\s]{0,6}\d|\d)\b/);
+    // If multiple numbers appear, take the first numeric token only.
+    const m = s.match(/\b\d+\b/);
     if (m) {
-      const cleaned = m[1].replace(/[,\s]/g, '');
+      const cleaned = m[0].replace(/[,\s]/g, '');
       const val = parseInt(cleaned, 10);
       return (val >= 0 && val <= 1000) ? String(val) : null;
     }
@@ -340,6 +436,18 @@
     // Auto-submit immediately
     logLine('SUBMIT', `${digit}  (source=${source})`);
     awaitingSubmission = false;
+    answeredCount += 1;
+
+    const totalProblems = parseInt(problemCountInput?.value, 10);
+    if (Number.isFinite(totalProblems) && totalProblems > 0 && answeredCount >= totalProblems) {
+      logLine('SESSION', `Auto-end after ${answeredCount} problems`);
+      setTimeout(() => endSession(), 0);
+      // Clear quickly so you can see if duplicates happen later
+      answerInput.value = '';
+      if (!micOn) answerInput.focus();
+      return;
+    }
+
     if (mode === MODE_LEARN) advanceProblem(false);
 
     // Clear quickly so you can see if duplicates happen later
@@ -368,7 +476,7 @@
     r.onerror = (e) => { logLine('REC_ERR', `${e.error}${e.message ? ' - ' + e.message : ''}`); };
     r.onaudiostart = () => {
       logLine('REC', 'onaudiostart');
-      if (sessionActive && mode === MODE_LEARN && !awaitingSubmission && !problemDisplay.textContent) {
+      if (sessionActive && mode === MODE_LEARN && !awaitingSubmission && !leftOperand.textContent) {
         advanceProblem(false);
       }
     };
@@ -464,37 +572,49 @@
   // -----------------------------
   // UI Events
   // -----------------------------
-  startEndBtn.addEventListener('click', () => {
-    sessionActive = !sessionActive;
-
-    if (sessionActive) {
-      startEndBtn.textContent = 'End';
-      setAnswerBoxEnabled(true);
-      feed.textContent = '';
-      spaceCount = 0;
-      if (problemCounter) problemCounter.textContent = String(spaceCount);
-      if (problemDisplay) problemDisplay.textContent = '';
-      currentAnswer = null;
-      awaitingSubmission = false;
-      lastFinalTranscript = '';
-      resetFacts();
-      logLine('SESSION', 'Start (active)');
-      if (blinkToggleSelect?.value === 'on') {
-        startBlinkTimer(parseFloat(blinkRateInput?.value) || 1.0);
-      }
-
-      if (micOn) startRecognition();
-    } else {
-      startEndBtn.textContent = 'Start';
-      setAnswerBoxEnabled(false);
-      logLine('SESSION', 'End (idle)');
-      stopBlinkTimer();
-      if (problemDisplay) problemDisplay.textContent = '';
-      currentAnswer = null;
-      awaitingSubmission = false;
-
-      stopRecognition();
+  function startSession() {
+    sessionActive = true;
+    startEndBtn.textContent = 'End';
+    setAnswerBoxEnabled(true);
+    feed.textContent = '';
+    spaceCount = 0;
+    answeredCount = 0;
+    if (problemCounter) problemCounter.textContent = String(spaceCount);
+    if (leftOperand) leftOperand.textContent = '';
+    if (operatorBox) operatorBox.textContent = '';
+    if (rightOperand) rightOperand.textContent = '';
+    if (resultBox) resultBox.textContent = '';
+    currentAnswer = null;
+    awaitingSubmission = false;
+    lastFinalTranscript = '';
+    resetFacts();
+    logLine('SESSION', 'Start (active)');
+    if (blinkToggleSelect?.value === 'on') {
+      startBlinkTimer(parseFloat(blinkRateInput?.value) || 1.0);
     }
+
+    if (micOn) startRecognition();
+  }
+
+  function endSession() {
+    sessionActive = false;
+    startEndBtn.textContent = 'Start';
+    setAnswerBoxEnabled(false);
+    logLine('SESSION', 'End (idle)');
+    stopBlinkTimer();
+    if (leftOperand) leftOperand.textContent = '';
+    if (operatorBox) operatorBox.textContent = '';
+    if (rightOperand) rightOperand.textContent = '';
+    if (resultBox) resultBox.textContent = '';
+    currentAnswer = null;
+    awaitingSubmission = false;
+
+    stopRecognition();
+  }
+
+  startEndBtn.addEventListener('click', () => {
+    if (sessionActive) endSession();
+    else startSession();
   });
 
   micToggleBtn.addEventListener('click', () => {
@@ -594,7 +714,10 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `speechCapture_log_${new Date().toISOString().slice(0,10)}.txt`;
+      const now = new Date();
+      const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+      const time = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+      a.download = `speechCapture_log_${date}.${time}.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
