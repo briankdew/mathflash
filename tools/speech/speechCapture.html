@@ -56,6 +56,11 @@
       align-items: center;
       justify-content: center;
     }
+    .operand-value {
+      display: inline-block;
+      transition: opacity 40ms linear;
+    }
+    .operand-blink-off { opacity: 0; }
     .operator-box {
       width: 70px;
       height: 110px;
@@ -82,6 +87,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
     .blink-dot {
       width: 0.75em;
@@ -92,9 +98,16 @@
     }
     .button-row { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
     .begin-prompt {
-      font-size: .8rem;
+      font-size: .9rem;
       color: #333;
-      min-height: 1.3em;
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6px;
+      pointer-events: none;
     }
     .begin-prompt.is-hidden { visibility: hidden; }
     .answer-stack { display: flex; flex-direction: column; align-items: center; gap: 0; }
@@ -179,12 +192,15 @@
       <div id="problemCounter" class="problem-no-value">0</div>
     </div>
     <div class="equation-row">
-      <div id="leftOperand" class="operand-box"></div>
+      <div id="leftOperand" class="operand-box"><span id="leftOperandValue" class="operand-value"></span></div>
       <div id="operatorBox" class="operator-box"></div>
-      <div id="rightOperand" class="operand-box"></div>
+      <div id="rightOperand" class="operand-box"><span id="rightOperandValue" class="operand-value"></span></div>
     </div>
     <div class="result-row">
-      <div id="resultBox" class="result-box"></div>
+      <div id="resultBox" class="result-box">
+        <span id="resultValue"></span>
+        <div id="beginPrompt" class="begin-prompt is-hidden">Say "Begin" to start.</div>
+      </div>
     </div>
     <div class="answer-stack">
       <div class="answer-label">Answer</div>
@@ -195,8 +211,6 @@
       <button id="startEndBtn">Start</button>
       <button id="micToggleBtn" aria-pressed="false">Type</button>
     </div>
-    <div id="beginPrompt" class="begin-prompt is-hidden">Say "Begin" to start the session.</div>
-
   </div>
 
   <div class="row" style="justify-content: flex-start; margin-top: 12px;">
@@ -240,8 +254,11 @@
   const missingValueSelect = document.getElementById('missingValueSelect');
   const leftOperand = document.getElementById('leftOperand');
   const rightOperand = document.getElementById('rightOperand');
+  const leftOperandValue = document.getElementById('leftOperandValue');
+  const rightOperandValue = document.getElementById('rightOperandValue');
   const operatorBox = document.getElementById('operatorBox');
   const resultBox = document.getElementById('resultBox');
+  const resultValue = document.getElementById('resultValue');
   const beginPrompt = document.getElementById('beginPrompt');
 
   // -----------------------------
@@ -275,6 +292,8 @@
   let currentAnswer = null;
   let currentFact = null;
   let awaitingSubmission = false;
+  let hasRenderedFirstProblem = false;
+  let operandFadeTimerId = 0;
   let waitingForBegin = false;
 
   function resetFacts() {
@@ -284,19 +303,19 @@
 
   function applyMissingDisplay() {
     if (!currentFact) return;
-    if (!leftOperand || !rightOperand || !resultBox) return;
+    if (!leftOperandValue || !rightOperandValue || !resultValue) return;
 
     const hideOperands = (missingValue === 'operands') && sessionActive;
     const hideResult = (missingValue === 'result') && sessionActive;
 
-    leftOperand.textContent = hideOperands ? '' : String(currentFact.left);
-    rightOperand.textContent = hideOperands ? '' : String(currentFact.right);
-    resultBox.textContent = hideResult ? '' : String(currentFact.answer);
+    leftOperandValue.textContent = hideOperands ? '' : String(currentFact.left);
+    rightOperandValue.textContent = hideOperands ? '' : String(currentFact.right);
+    resultValue.textContent = hideResult ? '' : String(currentFact.answer);
   }
 
   function showNextFact() {
     if (waitingForBegin) return false;
-    if (!leftOperand || !rightOperand || !operatorBox || !resultBox || !sessionActive) return false;
+    if (!leftOperandValue || !rightOperandValue || !operatorBox || !resultValue || !sessionActive) return false;
     if (awaitingSubmission) return false;
     if (factQueue.length === 0 || factIndex >= factQueue.length) resetFacts();
 
@@ -306,7 +325,23 @@
     const right = swap ? fact.a : fact.b;
     currentAnswer = (fact.op === 'add') ? (fact.a + fact.b) : (fact.a * fact.b);
     currentFact = { left, right, answer: currentAnswer };
-    applyMissingDisplay();
+    if (operandFadeTimerId) {
+      clearTimeout(operandFadeTimerId);
+      operandFadeTimerId = 0;
+    }
+    if (!hasRenderedFirstProblem) {
+      applyMissingDisplay();
+      hasRenderedFirstProblem = true;
+    } else {
+      leftOperandValue.classList.add('operand-blink-off');
+      rightOperandValue.classList.add('operand-blink-off');
+      operandFadeTimerId = setTimeout(() => {
+        applyMissingDisplay();
+        leftOperandValue.classList.remove('operand-blink-off');
+        rightOperandValue.classList.remove('operand-blink-off');
+        operandFadeTimerId = 0;
+      }, 40);
+    }
     lastFinalTranscript = '';
     awaitingSubmission = true;
     return true;
@@ -518,7 +553,7 @@
     r.onerror = (e) => { logLine('REC_ERR', `${e.error}${e.message ? ' - ' + e.message : ''}`); };
     r.onaudiostart = () => {
       logLine('REC', 'onaudiostart');
-      if (sessionActive && !waitingForBegin && mode === MODE_LEARN && !awaitingSubmission && !leftOperand.textContent) {
+      if (sessionActive && !waitingForBegin && mode === MODE_LEARN && !awaitingSubmission && !leftOperandValue.textContent) {
         advanceProblem(false);
       }
     };
@@ -649,13 +684,18 @@
     feed.textContent = '';
     spaceCount = 0;
     answeredCount = 0;
+    hasRenderedFirstProblem = false;
+    if (operandFadeTimerId) {
+      clearTimeout(operandFadeTimerId);
+      operandFadeTimerId = 0;
+    }
     waitingForBegin = micOn;
     if (beginPrompt) beginPrompt.classList.toggle('is-hidden', !waitingForBegin);
     if (problemCounter) problemCounter.textContent = String(spaceCount);
-    if (leftOperand) leftOperand.textContent = '';
+    if (leftOperandValue) leftOperandValue.textContent = '';
     if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
-    if (rightOperand) rightOperand.textContent = '';
-    if (resultBox) resultBox.textContent = '';
+    if (rightOperandValue) rightOperandValue.textContent = '';
+    if (resultValue) resultValue.textContent = '';
     currentAnswer = null;
     currentFact = null;
     awaitingSubmission = false;
@@ -675,12 +715,18 @@
     setAnswerBoxEnabled(false);
     logLine('SESSION', 'End (idle)');
     stopBlinkTimer();
+    if (operandFadeTimerId) {
+      clearTimeout(operandFadeTimerId);
+      operandFadeTimerId = 0;
+    }
+    if (leftOperandValue) leftOperandValue.classList.remove('operand-blink-off');
+    if (rightOperandValue) rightOperandValue.classList.remove('operand-blink-off');
     waitingForBegin = false;
     if (beginPrompt) beginPrompt.classList.add('is-hidden');
-    if (leftOperand) leftOperand.textContent = '';
+    if (leftOperandValue) leftOperandValue.textContent = '';
     if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
-    if (rightOperand) rightOperand.textContent = '';
-    if (resultBox) resultBox.textContent = '';
+    if (rightOperandValue) rightOperandValue.textContent = '';
+    if (resultValue) resultValue.textContent = '';
     currentAnswer = null;
     currentFact = null;
     awaitingSubmission = false;
@@ -734,9 +780,9 @@
       awaitingSubmission = false;
       currentFact = null;
       if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
-      if (leftOperand) leftOperand.textContent = '';
-      if (rightOperand) rightOperand.textContent = '';
-      if (resultBox) resultBox.textContent = '';
+      if (leftOperandValue) leftOperandValue.textContent = '';
+      if (rightOperandValue) rightOperandValue.textContent = '';
+      if (resultValue) resultValue.textContent = '';
       if (sessionActive) advanceProblem(false);
     });
   }
