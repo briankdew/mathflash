@@ -159,6 +159,12 @@
       <option value="add" selected>Addition</option>
       <option value="mul">Multiplication</option>
     </select>
+    <label class="setting-label" for="missingValueSelect">Missing value</label>
+    <select id="missingValueSelect">
+      <option value="operands">Operands</option>
+      <option value="result" selected>Result</option>
+      <option value="none">None</option>
+    </select>
   </div>
 
   <div class="center-stack">
@@ -210,6 +216,7 @@
   const MODE_CHALLENGE = 'challenge';
   let mode = MODE_LEARN;
   let operation = 'add';
+  let missingValue = 'result';
 
   const startEndBtn = document.getElementById('startEndBtn');
   const micToggleBtn = document.getElementById('micToggleBtn');
@@ -223,6 +230,7 @@
   const blinkToggleSelect = document.getElementById('blinkToggleSelect');
   const problemCountInput = document.getElementById('problemCountInput');
   const operationSelect = document.getElementById('operationSelect');
+  const missingValueSelect = document.getElementById('missingValueSelect');
   const leftOperand = document.getElementById('leftOperand');
   const rightOperand = document.getElementById('rightOperand');
   const operatorBox = document.getElementById('operatorBox');
@@ -257,11 +265,24 @@
   let blinkHideTimerId = 0;
   let blinkOn = false;
   let currentAnswer = null;
+  let currentFact = null;
   let awaitingSubmission = false;
 
   function resetFacts() {
     factQueue = shuffle(buildFacts());
     factIndex = 0;
+  }
+
+  function applyMissingDisplay() {
+    if (!currentFact) return;
+    if (!leftOperand || !rightOperand || !resultBox) return;
+
+    const hideOperands = (missingValue === 'operands') && sessionActive;
+    const hideResult = (missingValue === 'result') && sessionActive;
+
+    leftOperand.textContent = hideOperands ? '' : String(currentFact.left);
+    rightOperand.textContent = hideOperands ? '' : String(currentFact.right);
+    resultBox.textContent = hideResult ? '' : String(currentFact.answer);
   }
 
   function showNextFact() {
@@ -273,11 +294,10 @@
     const swap = Math.random() < 0.5;
     const left = swap ? fact.b : fact.a;
     const right = swap ? fact.a : fact.b;
-    leftOperand.textContent = String(left);
     operatorBox.textContent = (fact.op === 'add') ? '+' : '×';
-    rightOperand.textContent = String(right);
     currentAnswer = (fact.op === 'add') ? (fact.a + fact.b) : (fact.a * fact.b);
-    resultBox.textContent = String(currentAnswer);
+    currentFact = { left, right, answer: currentAnswer };
+    applyMissingDisplay();
     lastFinalTranscript = '';
     awaitingSubmission = true;
     return true;
@@ -594,6 +614,7 @@
     if (rightOperand) rightOperand.textContent = '';
     if (resultBox) resultBox.textContent = '';
     currentAnswer = null;
+    currentFact = null;
     awaitingSubmission = false;
     lastFinalTranscript = '';
     resetFacts();
@@ -616,6 +637,7 @@
     if (rightOperand) rightOperand.textContent = '';
     if (resultBox) resultBox.textContent = '';
     currentAnswer = null;
+    currentFact = null;
     awaitingSubmission = false;
 
     stopRecognition();
@@ -659,11 +681,20 @@
       logLine('OP', `Operation set to ${operation}`);
       resetFacts();
       awaitingSubmission = false;
+      currentFact = null;
       if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
       if (leftOperand) leftOperand.textContent = '';
       if (rightOperand) rightOperand.textContent = '';
       if (resultBox) resultBox.textContent = '';
       if (sessionActive) advanceProblem(false);
+    });
+  }
+
+  if (missingValueSelect) {
+    missingValueSelect.addEventListener('change', () => {
+      missingValue = missingValueSelect.value;
+      logLine('MISS', `Missing value set to ${missingValue}`);
+      applyMissingDisplay();
     });
   }
 
@@ -731,6 +762,9 @@
   }
   if (operationSelect) {
     operationSelect.value = operation;
+  }
+  if (missingValueSelect) {
+    missingValueSelect.value = missingValue;
   }
   if (operatorBox) {
     operatorBox.textContent = (operation === 'add') ? '+' : '×';
