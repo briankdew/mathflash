@@ -91,6 +91,12 @@
       opacity: 0;
     }
     .button-row { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .begin-prompt {
+      font-size: .8rem;
+      color: #333;
+      min-height: 1.3em;
+    }
+    .begin-prompt.is-hidden { visibility: hidden; }
     .answer-stack { display: flex; flex-direction: column; align-items: center; gap: 0; }
     .answer-label {
       width: 90px;
@@ -159,7 +165,7 @@
       <option value="add" selected>Addition</option>
       <option value="mul">Multiplication</option>
     </select>
-    <label class="setting-label" for="missingValueSelect">Missing value</label>
+    <label class="setting-label" for="missingValueSelect">  Missing value</label>
     <select id="missingValueSelect">
       <option value="operands">Operands</option>
       <option value="result" selected>Result</option>
@@ -189,6 +195,7 @@
       <button id="startEndBtn">Start</button>
       <button id="micToggleBtn" aria-pressed="false">Type</button>
     </div>
+    <div id="beginPrompt" class="begin-prompt is-hidden">Say "Begin" to start the session.</div>
 
   </div>
 
@@ -235,6 +242,7 @@
   const rightOperand = document.getElementById('rightOperand');
   const operatorBox = document.getElementById('operatorBox');
   const resultBox = document.getElementById('resultBox');
+  const beginPrompt = document.getElementById('beginPrompt');
 
   // -----------------------------
   // Utilities
@@ -267,6 +275,7 @@
   let currentAnswer = null;
   let currentFact = null;
   let awaitingSubmission = false;
+  let waitingForBegin = false;
 
   function resetFacts() {
     factQueue = shuffle(buildFacts());
@@ -286,6 +295,7 @@
   }
 
   function showNextFact() {
+    if (waitingForBegin) return false;
     if (!leftOperand || !rightOperand || !operatorBox || !resultBox || !sessionActive) return false;
     if (awaitingSubmission) return false;
     if (factQueue.length === 0 || factIndex >= factQueue.length) resetFacts();
@@ -308,8 +318,12 @@
     spaceCount += 1;
     if (problemCounter) problemCounter.textContent = String(spaceCount);
     const logIndex = spaceCount - 1;
-    if (logAuto) logLine('AUTO-NEXT', `Problem ${logIndex} (Ans: ${currentAnswer})`);
-    else if (mode === MODE_LEARN) logLine('CURRENT_PROB', `Problem ${logIndex} (Ans: ${currentAnswer})`);
+    if (logAuto) {
+      logLine('AUTO-NEXT', `Problem ${logIndex} (Ans: ${currentAnswer})`);
+    } else if (mode === MODE_LEARN && currentFact) {
+      const opSymbol = (operation === 'add') ? '+' : '×';
+      logLine('CURR_PROB', `Problem ${logIndex} (${currentFact.left} ${opSymbol} ${currentFact.right} = ${currentFact.answer})`);
+    }
     return true;
   }
 
@@ -505,7 +519,7 @@
     r.onerror = (e) => { logLine('REC_ERR', `${e.error}${e.message ? ' - ' + e.message : ''}`); };
     r.onaudiostart = () => {
       logLine('REC', 'onaudiostart');
-      if (sessionActive && mode === MODE_LEARN && !awaitingSubmission && !leftOperand.textContent) {
+      if (sessionActive && !waitingForBegin && mode === MODE_LEARN && !awaitingSubmission && !leftOperand.textContent) {
         advanceProblem(false);
       }
     };
@@ -551,6 +565,13 @@
           const cleaned = transcript.trim().toLowerCase();
           if (cleaned && cleaned === lastFinalTranscript) continue;
           lastFinalTranscript = cleaned;
+          if (waitingForBegin && /\bbegin\b/.test(cleaned)) {
+            waitingForBegin = false;
+            if (beginPrompt) beginPrompt.classList.add('is-hidden');
+            logLine('BEGIN', 'Begin detected');
+            advanceProblem(false);
+            continue;
+          }
           const val = normalizeToNumber(transcript);
           if (val != null) {
             submitDigit(val, 'voice');
@@ -608,6 +629,8 @@
     feed.textContent = '';
     spaceCount = 0;
     answeredCount = 0;
+    waitingForBegin = micOn;
+    if (beginPrompt) beginPrompt.classList.toggle('is-hidden', !waitingForBegin);
     if (problemCounter) problemCounter.textContent = String(spaceCount);
     if (leftOperand) leftOperand.textContent = '';
     if (operatorBox) operatorBox.textContent = '';
@@ -632,6 +655,8 @@
     setAnswerBoxEnabled(false);
     logLine('SESSION', 'End (idle)');
     stopBlinkTimer();
+    waitingForBegin = false;
+    if (beginPrompt) beginPrompt.classList.add('is-hidden');
     if (leftOperand) leftOperand.textContent = '';
     if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
     if (rightOperand) rightOperand.textContent = '';
@@ -657,8 +682,14 @@
     if (micOn) {
       // Clear any partial typed value (optional; keeps behavior crisp)
       answerInput.value = '';
+      if (sessionActive) {
+        waitingForBegin = true;
+        if (beginPrompt) beginPrompt.classList.remove('is-hidden');
+      }
       if (sessionActive) startRecognition();
     } else {
+      waitingForBegin = false;
+      if (beginPrompt) beginPrompt.classList.add('is-hidden');
       stopRecognition();
       if (sessionActive) answerInput.focus();
     }
