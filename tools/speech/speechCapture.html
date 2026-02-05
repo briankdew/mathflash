@@ -157,7 +157,7 @@
     <input id="blinkRateInput" type="number" min="0.1" max="5.0" step="0.1" value="2.0" />
     <span id="blinkDot" class="blink-dot"></span>
     <label class="setting-label" for="problemCountInput">Problems</label>
-    <input id="problemCountInput" type="number" min="1" max="200" step="1" value="10" />
+    <input id="problemCountInput" type="number" min="1" max="200" step="1" value="20" />
   </div>
   <div class="row" style="margin-bottom: 12px; justify-content: flex-start;">
     <label class="setting-label" for="operationSelect">Operation</label>
@@ -304,7 +304,6 @@
     const swap = Math.random() < 0.5;
     const left = swap ? fact.b : fact.a;
     const right = swap ? fact.a : fact.b;
-    operatorBox.textContent = (fact.op === 'add') ? '+' : '×';
     currentAnswer = (fact.op === 'add') ? (fact.a + fact.b) : (fact.a * fact.b);
     currentFact = { left, right, answer: currentAnswer };
     applyMissingDisplay();
@@ -563,6 +562,27 @@
             nudgeTimerId = 0;
           }
           const cleaned = transcript.trim().toLowerCase();
+          if (cleaned === '' && awaitingSubmission) {
+            const logIndex = spaceCount - 1;
+            logLine('PROB_SKIP', `Problem ${logIndex} (Empty final=true detected)`);
+            if (recognition) {
+              try {
+                recognition.abort();
+                logLine('REC', 'abort() called');
+              } catch (e) {
+                logLine('REC_ERR', `abort() threw: ${e && e.message ? e.message : String(e)}`);
+              }
+            }
+            recognition = null;
+            recognizing = false;
+            logLine('REC_RESET', 'after PROB_SKIP');
+            if (sessionActive && micOn) {
+              setTimeout(() => startRecognition(), 0);
+            }
+            awaitingSubmission = false;
+            advanceProblem(false);
+            continue;
+          }
           if (cleaned && cleaned === lastFinalTranscript) continue;
           lastFinalTranscript = cleaned;
           if (waitingForBegin && /\bbegin\b/.test(cleaned)) {
@@ -633,7 +653,7 @@
     if (beginPrompt) beginPrompt.classList.toggle('is-hidden', !waitingForBegin);
     if (problemCounter) problemCounter.textContent = String(spaceCount);
     if (leftOperand) leftOperand.textContent = '';
-    if (operatorBox) operatorBox.textContent = '';
+    if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
     if (rightOperand) rightOperand.textContent = '';
     if (resultBox) resultBox.textContent = '';
     currentAnswer = null;
