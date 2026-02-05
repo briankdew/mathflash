@@ -153,6 +153,13 @@
     <label class="setting-label" for="problemCountInput">Problems</label>
     <input id="problemCountInput" type="number" min="1" max="200" step="1" value="10" />
   </div>
+  <div class="row" style="margin-bottom: 12px; justify-content: flex-start;">
+    <label class="setting-label" for="operationSelect">Operation</label>
+    <select id="operationSelect">
+      <option value="add" selected>Addition</option>
+      <option value="mul">Multiplication</option>
+    </select>
+  </div>
 
   <div class="center-stack">
     <div class="problem-no-row">
@@ -202,6 +209,7 @@
   const MODE_EVAL = 'eval';
   const MODE_CHALLENGE = 'challenge';
   let mode = MODE_LEARN;
+  let operation = 'add';
 
   const startEndBtn = document.getElementById('startEndBtn');
   const micToggleBtn = document.getElementById('micToggleBtn');
@@ -214,6 +222,7 @@
   const modeSelect = document.getElementById('modeSelect');
   const blinkToggleSelect = document.getElementById('blinkToggleSelect');
   const problemCountInput = document.getElementById('problemCountInput');
+  const operationSelect = document.getElementById('operationSelect');
   const leftOperand = document.getElementById('leftOperand');
   const rightOperand = document.getElementById('rightOperand');
   const operatorBox = document.getElementById('operatorBox');
@@ -232,9 +241,9 @@
 
   function buildFacts() {
     const facts = [];
-    for (let a = 1; a <= 12; a++) {
-      for (let b = a; b <= 12; b++) {
-        facts.push({ a, b });
+    for (let a = 1; a <= 9; a++) {
+      for (let b = a; b <= 9; b++) {
+        facts.push({ a, b, op: operation });
       }
     }
     return facts;
@@ -265,9 +274,9 @@
     const left = swap ? fact.b : fact.a;
     const right = swap ? fact.a : fact.b;
     leftOperand.textContent = String(left);
-    operatorBox.textContent = '×';
+    operatorBox.textContent = (fact.op === 'add') ? '+' : '×';
     rightOperand.textContent = String(right);
-    currentAnswer = fact.a * fact.b;
+    currentAnswer = (fact.op === 'add') ? (fact.a + fact.b) : (fact.a * fact.b);
     resultBox.textContent = String(currentAnswer);
     lastFinalTranscript = '';
     awaitingSubmission = true;
@@ -603,7 +612,7 @@
     logLine('SESSION', 'End (idle)');
     stopBlinkTimer();
     if (leftOperand) leftOperand.textContent = '';
-    if (operatorBox) operatorBox.textContent = '';
+    if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
     if (rightOperand) rightOperand.textContent = '';
     if (resultBox) resultBox.textContent = '';
     currentAnswer = null;
@@ -641,6 +650,20 @@
         const val = parseFloat(blinkRateInput?.value) || 1.0;
         startBlinkTimer(val);
       }
+    });
+  }
+
+  if (operationSelect) {
+    operationSelect.addEventListener('change', () => {
+      operation = operationSelect.value;
+      logLine('OP', `Operation set to ${operation}`);
+      resetFacts();
+      awaitingSubmission = false;
+      if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
+      if (leftOperand) leftOperand.textContent = '';
+      if (rightOperand) rightOperand.textContent = '';
+      if (resultBox) resultBox.textContent = '';
+      if (sessionActive) advanceProblem(false);
     });
   }
 
@@ -705,6 +728,12 @@
   stopBlinkTimer();
   if (modeSelect) {
     modeSelect.value = mode;
+  }
+  if (operationSelect) {
+    operationSelect.value = operation;
+  }
+  if (operatorBox) {
+    operatorBox.textContent = (operation === 'add') ? '+' : '×';
   }
 
   if (downloadLogBtn) {
