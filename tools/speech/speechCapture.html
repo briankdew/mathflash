@@ -99,6 +99,7 @@
     .button-row { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
     .begin-prompt {
       font-size: .9rem;
+      font-weight: 400;
       color: #333;
       position: absolute;
       inset: 0;
@@ -167,7 +168,7 @@
       <option value="off" selected>Off</option>
     </select>
     <label class="setting-label" for="blinkRateInput">  Rate</label>
-    <input id="blinkRateInput" type="number" min="0.1" max="5.0" step="0.1" value="2.0" />
+    <input id="blinkRateInput" type="number" min="0.1" max="10.0" step="0.1" value="2.0" />
     <span id="blinkDot" class="blink-dot"></span>
     <label class="setting-label" for="problemCountInput">Problems</label>
     <input id="problemCountInput" type="number" min="1" max="200" step="1" value="20" />
@@ -288,6 +289,7 @@
   let answeredCount = 0;
   let blinkTimerId = 0;
   let blinkHideTimerId = 0;
+  let learnBlinkTimerId = 0;
   let blinkOn = false;
   let currentAnswer = null;
   let currentFact = null;
@@ -344,6 +346,9 @@
     }
     lastFinalTranscript = '';
     awaitingSubmission = true;
+    if (mode === MODE_LEARN && blinkToggleSelect?.value === 'on') {
+      scheduleLearnBlink(parseFloat(blinkRateInput?.value) || 1.0);
+    }
     return true;
   }
 
@@ -386,11 +391,29 @@
     blinkTimerId = setInterval(show, ms);
   }
 
+  function scheduleLearnBlink(seconds) {
+    if (!blinkDot) return;
+    if (learnBlinkTimerId) clearTimeout(learnBlinkTimerId);
+    if (blinkHideTimerId) clearTimeout(blinkHideTimerId);
+    blinkDot.style.opacity = '0';
+    const ms = Math.max(100, Math.min(5000, Math.round(seconds * 1000)));
+    learnBlinkTimerId = setTimeout(() => {
+      blinkDot.style.opacity = '1';
+      if (blinkHideTimerId) clearTimeout(blinkHideTimerId);
+      blinkHideTimerId = setTimeout(() => {
+        blinkDot.style.opacity = '0';
+      }, 500);
+      learnBlinkTimerId = 0;
+    }, ms);
+  }
+
   function stopBlinkTimer() {
     if (blinkTimerId) clearInterval(blinkTimerId);
     if (blinkHideTimerId) clearTimeout(blinkHideTimerId);
+    if (learnBlinkTimerId) clearTimeout(learnBlinkTimerId);
     blinkTimerId = 0;
     blinkHideTimerId = 0;
+    learnBlinkTimerId = 0;
     blinkOn = false;
     if (blinkDot) blinkDot.style.opacity = '0';
   }
@@ -423,6 +446,42 @@
       micToggleBtn.style.borderColor = '#2b7';
       answerInput.readOnly = false;
     }
+  }
+
+  function detectDuplicateOrMixedTokens(raw) {
+    if (raw == null) return null;
+    const s = String(raw).trim().toLowerCase();
+    if (!s) return null;
+
+    const digitTokens = s.match(/\b\d+\b/g);
+    const wordTokens = s.split(/[^a-z]+/).filter(Boolean);
+    const wordToVal = {
+      'zero': 0, 'oh': 0,
+      'one': 1, 'two': 2, 'to': 2, 'too': 2,
+      'three': 3, 'four': 4, 'for': 4,
+      'five': 5, 'six': 6, 'seven': 7,
+      'eight': 8, 'ate': 8, 'nine': 9,
+      'ten': 10, 'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14,
+      'fifteen': 15, 'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19
+    };
+
+    const vals = [];
+    if (digitTokens) {
+      for (const t of digitTokens) vals.push(parseInt(t, 10));
+    }
+    if (wordTokens.length > 0) {
+      for (const t of wordTokens) {
+        if (wordToVal[t] == null) return null;
+        vals.push(wordToVal[t]);
+      }
+    }
+
+    if (vals.length > 1) {
+      const allSame = vals.every((v) => v === vals[0]);
+      return allSame ? { type: 'duplicate', value: vals[0] } : { type: 'mixed' };
+    }
+
+    return null;
   }
 
   // Normalize spoken/typed number up to 1000 (digits or common word forms)
@@ -615,7 +674,54 @@
               setTimeout(() => startRecognition(), 0);
             }
             awaitingSubmission = false;
-            advanceProblem(false);
+            setTimeout(() => advanceProblem(false), 250);
+            continue;
+          }
+          if (awaitingSubmission && /[:/]/.test(cleaned)) {
+            const logIndex = spaceCount - 1;
+            logLine('PROB_SKIP', `Problem ${logIndex} (Non-numeric symbol detected)`);
+            if (recognition) {
+              try {
+                recognition.abort();
+                logLine('REC', 'abort() called');
+              } catch (e) {
+                logLine('REC_ERR', `abort() threw: ${e && e.message ? ' - ' + e.message : String(e)}`);
+              }
+            }
+            recognition = null;
+            recognizing = false;
+            logLine('REC_RESET', 'after PROB_SKIP');
+            if (sessionActive && micOn) {
+              setTimeout(() => startRecognition(), 0);
+            }
+            awaitingSubmission = false;
+            setTimeout(() => advanceProblem(false), 250);
+            continue;
+          }
+          const tokenCheck = detectDuplicateOrMixedTokens(cleaned);
+          if (tokenCheck?.type === 'mixed' && awaitingSubmission) {
+            const logIndex = spaceCount - 1;
+            logLine('PROB_SKIP', `Problem ${logIndex} (Mixed token detected)`);
+            if (recognition) {
+              try {
+                recognition.abort();
+                logLine('REC', 'abort() called');
+              } catch (e) {
+                logLine('REC_ERR', `abort() threw: ${e && e.message ? e.message : String(e)}`);
+              }
+            }
+            recognition = null;
+            recognizing = false;
+            logLine('REC_RESET', 'after PROB_SKIP');
+            if (sessionActive && micOn) {
+              setTimeout(() => startRecognition(), 0);
+            }
+            awaitingSubmission = false;
+            setTimeout(() => advanceProblem(false), 250);
+            continue;
+          }
+          if (tokenCheck?.type === 'duplicate') {
+            submitDigit(String(tokenCheck.value), 'voice');
             continue;
           }
           if (cleaned && cleaned === lastFinalTranscript) continue;
@@ -702,7 +808,7 @@
     lastFinalTranscript = '';
     resetFacts();
     logLine('SESSION', 'Start (active)');
-    if (blinkToggleSelect?.value === 'on') {
+    if (blinkToggleSelect?.value === 'on' && mode === MODE_EVAL) {
       startBlinkTimer(parseFloat(blinkRateInput?.value) || 1.0);
     }
 
@@ -769,6 +875,13 @@
         const val = parseFloat(blinkRateInput?.value) || 1.0;
         startBlinkTimer(val);
       }
+      if (sessionActive && mode !== MODE_EVAL) {
+        stopBlinkTimer();
+        if (mode === MODE_LEARN && blinkToggleSelect?.value === 'on' && awaitingSubmission) {
+          const val = parseFloat(blinkRateInput?.value) || 1.0;
+          scheduleLearnBlink(val);
+        }
+      }
     });
   }
 
@@ -803,9 +916,12 @@
         stopBlinkTimer();
         return;
       }
-      if (sessionActive) {
+      if (sessionActive && mode === MODE_EVAL) {
         const val = parseFloat(blinkRateInput?.value) || 1.0;
         startBlinkTimer(val);
+      } else if (sessionActive && mode === MODE_LEARN && awaitingSubmission) {
+        const val = parseFloat(blinkRateInput?.value) || 1.0;
+        scheduleLearnBlink(val);
       }
     });
   }
@@ -896,9 +1012,13 @@
     blinkRateInput.addEventListener('change', () => {
       const val = parseFloat(blinkRateInput.value);
       if (isNaN(val)) return;
-      const clamped = Math.max(0.1, Math.min(5.0, val));
+      const clamped = Math.max(0.1, Math.min(10.0, val));
       blinkRateInput.value = clamped.toFixed(1);
-      if (sessionActive && blinkToggleSelect?.value === 'on') startBlinkTimer(clamped);
+      if (sessionActive && blinkToggleSelect?.value === 'on' && mode === MODE_EVAL) {
+        startBlinkTimer(clamped);
+      } else if (sessionActive && blinkToggleSelect?.value === 'on' && mode === MODE_LEARN && awaitingSubmission) {
+        scheduleLearnBlink(clamped);
+      }
     });
   }
 })();
