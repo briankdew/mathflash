@@ -990,10 +990,47 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
+      let platform = 'Unknown';
+      const sanitizePlatform = (value) => String(value || 'Unknown').replace(/[^A-Za-z0-9_]/g, '').slice(0, 20) || 'Unknown';
+      if (navigator.userAgentData) {
+        const brands = navigator.userAgentData.brands || [];
+        const brandNames = brands.map((b) => b.brand);
+        let browser = 'Unknown';
+        if (brandNames.some((b) => /Microsoft Edge/i.test(b))) browser = 'Edge';
+        else if (brandNames.some((b) => /Google Chrome/i.test(b))) browser = 'Chrome';
+        else if (brandNames.some((b) => /Chromium/i.test(b))) browser = 'Chrome';
+        const plat = navigator.userAgentData.platform || '';
+        let os = 'Unknown';
+        if (/Windows/i.test(plat)) os = 'Windows';
+        else if (/Mac/i.test(plat)) os = 'macOS';
+        else if (/Linux/i.test(plat)) os = 'Linux';
+        else if (/Android/i.test(plat)) os = 'Android';
+        else if (/iOS/i.test(plat)) os = 'iOS';
+        platform = `${browser}_${os}`;
+      } else {
+        const ua = navigator.userAgent || '';
+        let browser = 'Unknown';
+        if (/\bEdgiOS\b/.test(ua)) browser = 'Edge';
+        else if (/\bCriOS\b/.test(ua)) browser = 'Chrome';
+        else if (/\bFxiOS\b/.test(ua)) browser = 'Firefox';
+        else if ((/iPhone|iPad/i.test(ua)) && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua)) browser = 'Safari';
+        else if (/Macintosh/i.test(ua) && /Safari/i.test(ua) && !/Chrome|Chromium|Edg/i.test(ua)) browser = 'Safari';
+        else if (/Edg/i.test(ua)) browser = 'Edge';
+        else if (/Firefox/i.test(ua)) browser = 'Firefox';
+        else if (/Chrome/i.test(ua) && !/Edg/i.test(ua)) browser = 'Chrome';
+        let os = 'Unknown';
+        if (/Windows NT/i.test(ua)) os = 'Windows';
+        else if (/Mac OS X/i.test(ua)) os = 'macOS';
+        else if (/Android/i.test(ua)) os = 'Android';
+        else if (/iPhone|iPad/i.test(ua)) os = 'iOS';
+        else if (/Linux/i.test(ua)) os = 'Linux';
+        platform = `${browser}_${os}`;
+      }
+      platform = sanitizePlatform(platform);
       const now = new Date();
       const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
       const time = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
-      a.download = `speechCapture_log_${date}.${time}.txt`;
+      a.download = `speechCapture_log_${platform}_${date}.${time}.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
