@@ -231,7 +231,6 @@
   let recognition = null;
   let recognizing = false;
   let lastFinalTranscript = '';
-  let nudgeTimerId = 0;
 
   const MODE_LEARN = 'learn';
   const MODE_EVAL = 'eval';
@@ -618,13 +617,7 @@
     };
     r.onaudioend = () => logLine('REC', 'onaudioend');
     r.onspeechstart = () => logLine('REC', 'onspeechstart');
-    r.onspeechend = () => {
-      if (nudgeTimerId) {
-        clearTimeout(nudgeTimerId);
-        nudgeTimerId = 0;
-      }
-      logLine('REC', 'onspeechend');
-    };
+    r.onspeechend = () => logLine('REC', 'onspeechend');
     r.onsoundstart = () => logLine('REC', 'onsoundstart');
     r.onsoundend = () => logLine('REC', 'onsoundend');
     r.onnomatch = () => logLine('REC', 'onnomatch');
@@ -642,19 +635,7 @@
 
         logLine('REC_RES', `i=${i} final=${res.isFinal} conf=${conf} txt="${transcript.trim()}"`);
 
-        if (!res.isFinal) {
-          if (nudgeTimerId) clearTimeout(nudgeTimerId);
-          nudgeTimerId = setTimeout(() => {
-            logLine('NUDGE', 'Answer not recognized. Try again, and speak clearly.');
-            nudgeTimerId = 0;
-          }, 2100);
-        }
-
         if (res.isFinal) {
-          if (nudgeTimerId) {
-            clearTimeout(nudgeTimerId);
-            nudgeTimerId = 0;
-          }
           const cleaned = transcript.trim().toLowerCase();
           if (cleaned === '' && awaitingSubmission) {
             const logIndex = spaceCount - 1;
