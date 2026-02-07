@@ -293,6 +293,7 @@
   let blinkOn = false;
   let currentAnswer = null;
   let currentFact = null;
+  let lastAltCount = null;
   let awaitingSubmission = false;
   let hasRenderedFirstProblem = false;
   let operandFadeTimerId = 0;
@@ -327,6 +328,7 @@
     const right = swap ? fact.a : fact.b;
     currentAnswer = (fact.op === 'add') ? (fact.a + fact.b) : (fact.a * fact.b);
     currentFact = { left, right, answer: currentAnswer };
+    lastAltCount = null;
     if (operandFadeTimerId) {
       clearTimeout(operandFadeTimerId);
       operandFadeTimerId = 0;
@@ -607,6 +609,10 @@
     answerInput.value = digit;
 
     // Auto-submit immediately
+    if (lastAltCount != null) {
+      const logIndex = spaceCount - 1;
+      logLine('MAX_ALT', `Problem ${logIndex} (Final alternatives=${lastAltCount}, max=${recognition?.maxAlternatives ?? 'n/a'})`);
+    }
     logLine('SUBMIT', `${digit}  (source=${source})`);
     awaitingSubmission = false;
     answeredCount += 1;
@@ -675,6 +681,7 @@
 
         if (res.isFinal) {
           const cleaned = transcript.trim().toLowerCase();
+          lastAltCount = res.length;
           if (cleaned === '' && awaitingSubmission) {
             const logIndex = spaceCount - 1;
             logLine('PROB_SKIP', `Problem ${logIndex} (Empty final=true detected)`);
