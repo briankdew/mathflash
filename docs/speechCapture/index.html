@@ -185,6 +185,11 @@
       <option value="result" selected>Result</option>
       <option value="none">None</option>
     </select>
+    <label class="setting-label" for="onErrorSelect">  On error</label>
+    <select id="onErrorSelect">
+      <option value="new" selected>New problem</option>
+      <option value="skip">Omit problem</option>
+    </select>
   </div>
 
   <div class="center-stack">
@@ -239,6 +244,7 @@
   let mode = MODE_LEARN;
   let operation = 'add';
   let missingValue = 'result';
+  let onErrorMode = 'new';
 
   const startEndBtn = document.getElementById('startEndBtn');
   const micToggleBtn = document.getElementById('micToggleBtn');
@@ -253,6 +259,7 @@
   const problemCountInput = document.getElementById('problemCountInput');
   const operationSelect = document.getElementById('operationSelect');
   const missingValueSelect = document.getElementById('missingValueSelect');
+  const onErrorSelect = document.getElementById('onErrorSelect');
   const leftOperand = document.getElementById('leftOperand');
   const rightOperand = document.getElementById('rightOperand');
   const leftOperandValue = document.getElementById('leftOperandValue');
@@ -293,6 +300,8 @@
   let blinkOn = false;
   let currentAnswer = null;
   let currentFact = null;
+  let interimDuplicateValue = null;
+  let skippedCount = 0;
   let awaitingSubmission = false;
   let hasRenderedFirstProblem = false;
   let operandFadeTimerId = 0;
@@ -327,6 +336,7 @@
     const right = swap ? fact.a : fact.b;
     currentAnswer = (fact.op === 'add') ? (fact.a + fact.b) : (fact.a * fact.b);
     currentFact = { left, right, answer: currentAnswer };
+    interimDuplicateValue = null;
     if (operandFadeTimerId) {
       clearTimeout(operandFadeTimerId);
       operandFadeTimerId = 0;
@@ -350,6 +360,29 @@
       scheduleLearnBlink(parseFloat(blinkRateInput?.value) || 1.0);
     }
     return true;
+  }
+
+  function maybeEndSessionAfterSkip() {
+    const totalProblems = parseInt(problemCountInput?.value, 10);
+    if (Number.isFinite(totalProblems) && totalProblems > 0) {
+      if (onErrorMode === 'skip' && (answeredCount + skippedCount) >= totalProblems) {
+        logLine('AUTO-END', `Session ended after ${answeredCount} answered, ${skippedCount} skipped`);
+        setTimeout(() => endSession(), 0);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function handleSkipAdvance(restartRecognition) {
+    if (onErrorMode === 'skip') {
+      skippedCount += 1;
+      if (maybeEndSessionAfterSkip()) return;
+    }
+    if (restartRecognition && sessionActive && micOn) {
+      setTimeout(() => startRecognition(), 0);
+    }
+    setTimeout(() => advanceProblem(false), 250);
   }
 
   function advanceProblem(logAuto) {
@@ -613,7 +646,7 @@
 
     const totalProblems = parseInt(problemCountInput?.value, 10);
     if (Number.isFinite(totalProblems) && totalProblems > 0 && answeredCount >= totalProblems) {
-      logLine('AUTO-END', `Session ended after ${answeredCount} problems`);
+      logLine('AUTO-END', `Session ended after ${answeredCount} answered, ${skippedCount} skipped`);
       setTimeout(() => endSession(), 0);
       // Clear quickly so you can see if duplicates happen later
       answerInput.value = '';
@@ -621,7 +654,9 @@
       return;
     }
 
-    if (mode === MODE_LEARN) advanceProblem(false);
+    if (mode === MODE_LEARN) {
+      advanceProblem(false);
+    }
 
     // Clear quickly so you can see if duplicates happen later
     answerInput.value = '';
@@ -673,8 +708,40 @@
 
         logLine('REC_RES', `i=${i} final=${res.isFinal} conf=${conf} txt="${transcript.trim()}"`);
 
+        if (!res.isFinal) {
+          const interimCheck = detectDuplicateOrMixedTokens(transcript);
+          if (interimCheck?.type === 'duplicate') {
+            interimDuplicateValue = interimCheck.value;
+          }
+        }
+
         if (res.isFinal) {
           const cleaned = transcript.trim().toLowerCase();
+          if (
+            interimDuplicateValue != null &&
+            /^\d+$/.test(cleaned) &&
+            cleaned.length > 1 &&
+            cleaned.split('').every((ch) => ch === cleaned[0]) &&
+            parseInt(cleaned[0], 10) === interimDuplicateValue &&
+            awaitingSubmission
+          ) {
+            const logIndex = spaceCount - 1;
+            logLine('PROB_SKIP', `Problem ${logIndex} (Interim duplicate detected)`);
+            if (recognition) {
+              try {
+                recognition.abort();
+                logLine('REC', 'abort() called');
+              } catch (e) {
+                logLine('REC_ERR', `abort() threw: ${e && e.message ? ' - ' + e.message : String(e)}`);
+              }
+            }
+            recognition = null;
+            recognizing = false;
+            logLine('REC_RESET', 'after PROB_SKIP');
+            awaitingSubmission = false;
+            handleSkipAdvance(true);
+            continue;
+          }
           if (cleaned === '' && awaitingSubmission) {
             const logIndex = spaceCount - 1;
             logLine('PROB_SKIP', `Problem ${logIndex} (Empty final=true detected)`);
@@ -689,11 +756,8 @@
             recognition = null;
             recognizing = false;
             logLine('REC_RESET', 'after PROB_SKIP');
-            if (sessionActive && micOn) {
-              setTimeout(() => startRecognition(), 0);
-            }
             awaitingSubmission = false;
-            setTimeout(() => advanceProblem(false), 250);
+            handleSkipAdvance(true);
             continue;
           }
           if (awaitingSubmission && /[:/]/.test(cleaned)) {
@@ -710,11 +774,8 @@
             recognition = null;
             recognizing = false;
             logLine('REC_RESET', 'after PROB_SKIP');
-            if (sessionActive && micOn) {
-              setTimeout(() => startRecognition(), 0);
-            }
             awaitingSubmission = false;
-            setTimeout(() => advanceProblem(false), 250);
+            handleSkipAdvance(true);
             continue;
           }
           const tokenCheck = detectDuplicateOrMixedTokens(cleaned);
@@ -732,11 +793,8 @@
             recognition = null;
             recognizing = false;
             logLine('REC_RESET', 'after PROB_SKIP');
-            if (sessionActive && micOn) {
-              setTimeout(() => startRecognition(), 0);
-            }
             awaitingSubmission = false;
-            setTimeout(() => advanceProblem(false), 250);
+            handleSkipAdvance(true);
             continue;
           }
           if (tokenCheck?.type === 'duplicate') {
@@ -811,6 +869,7 @@
     logLine('ENV', `Browser=${env.browser} OS=${env.os}`);
     spaceCount = 0;
     answeredCount = 0;
+    skippedCount = 0;
     hasRenderedFirstProblem = false;
     if (operandFadeTimerId) {
       clearTimeout(operandFadeTimerId);
@@ -929,6 +988,13 @@
     });
   }
 
+  if (onErrorSelect) {
+    onErrorSelect.addEventListener('change', () => {
+      onErrorMode = onErrorSelect.value;
+      logLine('ON_ERROR', `On error set to ${onErrorMode}`);
+    });
+  }
+
   if (blinkToggleSelect) {
     blinkToggleSelect.addEventListener('change', () => {
       const isOn = blinkToggleSelect.value === 'on';
@@ -999,6 +1065,9 @@
   }
   if (missingValueSelect) {
     missingValueSelect.value = missingValue;
+  }
+  if (onErrorSelect) {
+    onErrorSelect.value = onErrorMode;
   }
   if (operatorBox) {
     operatorBox.textContent = (operation === 'add') ? '+' : '×';
