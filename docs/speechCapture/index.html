@@ -14,6 +14,7 @@
     .setting-label { font-weight: 700; }
     button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-radius: 8px; cursor: pointer; }
     button:disabled { opacity: .5; cursor: not-allowed; }
+    .small-button { padding: 5px 12px; font-size: 0.85rem; }
     .center-stack { display: flex; flex-direction: column; align-items: center; gap: 15px; }
     .problem-no-row { display: flex; align-items: center; justify-content: center; gap: 0px; }
     .problem-no-label {
@@ -139,17 +140,17 @@
     }
     .blink-row { display: flex; gap: 4px; align-items: center; justify-content: center; }
     #feed {
-      margin-top: 16px;
+      margin-top: 5px;
       border: 1px solid #ddd;
       border-radius: 10px;
-      padding: 12px;
-      min-height: 240px;
+      padding: 5px;
+      height: 375px;
       white-space: pre-wrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 13px;
+      font-size: 11px;
       line-height: 1.35;
       background: #fafafa;
-      overflow: auto;
+      overflow-y: scroll;
     }
   </style>
 </head>
@@ -219,11 +220,11 @@
     </div>
   </div>
 
-  <div class="row" style="justify-content: flex-start; margin-top: 12px;">
-    <button id="downloadLogBtn">Download log</button>
+  <div class="row" style="justify-content: flex-start; margin-top: 5px;">
+    <button id="downloadLogBtn" class="small-button">Download log</button>
   </div>
 
-  <div id="feed" aria-label="Real-time input feed"></div>
+  <div id="feed" class="feed-window" aria-label="Real-time input feed"></div>
 
 <script>
 (() => {
@@ -237,6 +238,7 @@
   let recognizing = false;
   let lastFinalTranscript = '';
   let lastLogTimestamp = '';
+  let logLineCount = 0;
 
   const MODE_LEARN = 'learn';
   const MODE_EVAL = 'eval';
@@ -302,6 +304,8 @@
   let currentFact = null;
   let interimDuplicateValue = null;
   let skippedCount = 0;
+  let spacebarMarkCount = 0;
+  let spacebarMarkArmed = false;
   let awaitingSubmission = false;
   let hasRenderedFirstProblem = false;
   let operandFadeTimerId = 0;
@@ -396,6 +400,7 @@
       const opSymbol = (operation === 'add') ? '+' : '×';
       logLine('CURR_PROB', `Problem ${logIndex} (${currentFact.left} ${opSymbol} ${currentFact.right} = ${currentFact.answer})`);
     }
+    spacebarMarkArmed = true;
     return true;
   }
 
@@ -458,7 +463,9 @@
 
   function logLine(kind, text) {
     lastLogTimestamp = ts();
-    feed.textContent += `[${lastLogTimestamp}] ${kind}: ${text}\n`;
+    const lineNo = String(logLineCount).padStart(3, '0');
+    feed.textContent += `${lineNo} [${lastLogTimestamp}] ${kind}: ${text}\n`;
+    logLineCount += 1;
     feed.scrollTop = feed.scrollHeight;
   }
 
@@ -554,6 +561,37 @@
     return null;
   }
 
+  function stitchTokenDigits(raw) {
+    if (raw == null) return null;
+    const s = String(raw).trim().toLowerCase();
+    if (!s) return null;
+
+    const digitTokens = s.match(/\b\d+\b/g);
+    const wordTokens = s.split(/[^a-z]+/).filter(Boolean);
+    const wordToVal = {
+      'zero': 0, 'oh': 0,
+      'one': 1, 'two': 2, 'to': 2, 'too': 2,
+      'three': 3, 'four': 4, 'for': 4,
+      'five': 5, 'six': 6, 'seven': 7,
+      'eight': 8, 'ate': 8, 'nine': 9,
+      'ten': 10, 'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14,
+      'fifteen': 15, 'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19
+    };
+
+    const parts = [];
+    if (digitTokens) {
+      for (const t of digitTokens) parts.push(String(parseInt(t, 10)));
+    }
+    if (wordTokens.length > 0) {
+      for (const t of wordTokens) {
+        if (wordToVal[t] == null) return null;
+        parts.push(String(wordToVal[t]));
+      }
+    }
+    if (!parts.length) return null;
+    return parts.join('');
+  }
+
   // Normalize spoken/typed number up to 1000 (digits or common word forms)
   function normalizeToNumber(raw) {
     if (raw == null) return null;
@@ -640,7 +678,7 @@
     answerInput.value = digit;
 
     // Auto-submit immediately
-    logLine('SUBMIT', `${digit}  (source=${source})`);
+    logLine('SUBMIT', `${digit}`);
     awaitingSubmission = false;
     answeredCount += 1;
 
@@ -725,21 +763,13 @@
             parseInt(cleaned[0], 10) === interimDuplicateValue &&
             awaitingSubmission
           ) {
-            const logIndex = spaceCount - 1;
-            logLine('PROB_SKIP', `Problem ${logIndex} (Interim duplicate detected)`);
-            if (recognition) {
-              try {
-                recognition.abort();
-                logLine('REC', 'abort() called');
-              } catch (e) {
-                logLine('REC_ERR', `abort() threw: ${e && e.message ? ' - ' + e.message : String(e)}`);
-              }
+            const stitched = stitchTokenDigits(cleaned);
+            if (stitched != null) {
+              const logIndex = spaceCount - 1;
+              logLine('FLAGGED', `Problem ${logIndex} (Stitched="${stitched}" from "${cleaned}")`);
+              submitDigit(stitched, 'voice');
+              continue;
             }
-            recognition = null;
-            recognizing = false;
-            logLine('REC_RESET', 'after PROB_SKIP');
-            awaitingSubmission = false;
-            handleSkipAdvance(true);
             continue;
           }
           if (cleaned === '' && awaitingSubmission) {
@@ -780,22 +810,13 @@
           }
           const tokenCheck = detectDuplicateOrMixedTokens(cleaned);
           if (tokenCheck?.type === 'mixed' && awaitingSubmission) {
-            const logIndex = spaceCount - 1;
-            logLine('PROB_SKIP', `Problem ${logIndex} (Mixed token detected)`);
-            if (recognition) {
-              try {
-                recognition.abort();
-                logLine('REC', 'abort() called');
-              } catch (e) {
-                logLine('REC_ERR', `abort() threw: ${e && e.message ? e.message : String(e)}`);
-              }
+            const stitched = stitchTokenDigits(cleaned);
+            if (stitched != null) {
+              const logIndex = spaceCount - 1;
+              logLine('FLAGGED', `Problem ${logIndex} (Stitched="${stitched}" from "${cleaned}")`);
+              submitDigit(stitched, 'voice');
+              continue;
             }
-            recognition = null;
-            recognizing = false;
-            logLine('REC_RESET', 'after PROB_SKIP');
-            awaitingSubmission = false;
-            handleSkipAdvance(true);
-            continue;
           }
           if (tokenCheck?.type === 'duplicate') {
             submitDigit(String(tokenCheck.value), 'voice');
@@ -865,11 +886,22 @@
     startEndBtn.textContent = 'End';
     setAnswerBoxEnabled(true);
     feed.textContent = '';
+    const equationRow = document.querySelector('.equation-row');
+    if (equationRow) {
+      const top = equationRow.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: Math.max(0, top - 5) });
+    } else {
+      window.scrollBy(0, -195);
+    }
+    logLineCount = 0;
     const env = detectPlatformInfo();
-    logLine('ENV', `Browser=${env.browser} OS=${env.os}`);
+    const sourceLabel = micOn ? 'Voice' : 'Typed';
+    logLine('ENV', `Browser=${env.browser} OS=${env.os} Source=${sourceLabel}`);
     spaceCount = 0;
     answeredCount = 0;
     skippedCount = 0;
+    spacebarMarkCount = 0;
+    spacebarMarkArmed = false;
     hasRenderedFirstProblem = false;
     if (operandFadeTimerId) {
       clearTimeout(operandFadeTimerId);
@@ -901,6 +933,7 @@
     setAnswerBoxEnabled(false);
     logLine('SESSION', 'End (idle)');
     stopBlinkTimer();
+    window.scrollTo({ top: 0 });
     if (operandFadeTimerId) {
       clearTimeout(operandFadeTimerId);
       operandFadeTimerId = 0;
@@ -1102,6 +1135,11 @@
   document.addEventListener('keydown', (e) => {
     if (e.code !== 'Space') return;
     e.preventDefault();
+    if (spacebarMarkArmed) {
+      logLine('SPACEBAR', `Time mark ${spacebarMarkCount}`);
+      spacebarMarkCount += 1;
+      spacebarMarkArmed = false;
+    }
     const advanced = advanceProblem(false);
     if (sessionActive && advanced) logLine('SPACE', 'Next problem');
   });
