@@ -240,6 +240,14 @@
   let lastLogTimestamp = '';
   let logLineCount = 0;
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const ENABLE_MIC_METER = urlParams.get('micmeter') !== '0';
+  const MIC_METER_INTERVAL_MS = 50;
+  const MIC_RMS_THRESHOLD = 0.02;
+  const MIC_HANGOVER_MS = 250;
+  const MIC_RMS_LOG_EVERY_MS = 50;
+  const MIC_RMS_LOG_THRESHOLD = 0.005;
+
   const MODE_LEARN = 'learn';
   const MODE_EVAL = 'eval';
   const MODE_CHALLENGE = 'challenge';
@@ -310,6 +318,14 @@
   let hasRenderedFirstProblem = false;
   let operandFadeTimerId = 0;
   let waitingForBegin = false;
+  let micStream = null;
+  let audioCtx = null;
+  let analyser = null;
+  let meterTimerId = 0;
+  let voiceActive = false;
+  let lastVoiceTs = 0;
+  let lastRmsLogTs = 0;
+  let micMeterErrorLogged = false;
 
   function resetFacts() {
     factQueue = shuffle(buildFacts());
@@ -486,6 +502,87 @@
     } else {
       micToggleBtn.style.borderColor = '#2b7';
       answerInput.readOnly = false;
+    }
+  }
+
+  async function startMicMeter() {
+    if (!ENABLE_MIC_METER) return;
+    if (meterTimerId || audioCtx || micStream) return;
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(micStream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      source.connect(analyser);
+      const buffer = new Float32Array(analyser.fftSize);
+      voiceActive = false;
+      lastVoiceTs = 0;
+      lastRmsLogTs = 0;
+      micMeterErrorLogged = false;
+      logLine('MIC_METER', `start (threshold=${MIC_RMS_THRESHOLD} hangover_ms=${MIC_HANGOVER_MS} interval_ms=${MIC_METER_INTERVAL_MS})`);
+      meterTimerId = setInterval(() => {
+        try {
+          if (!analyser) return;
+          analyser.getFloatTimeDomainData(buffer);
+          let sum = 0;
+          for (let i = 0; i < buffer.length; i++) {
+            const v = buffer[i];
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / buffer.length);
+          const now = Date.now();
+          if (rms >= MIC_RMS_THRESHOLD) {
+            lastVoiceTs = now;
+            if (!voiceActive) {
+              voiceActive = true;
+              logLine('MIC_VOICE', `on rms=${rms.toFixed(3)}`);
+            }
+          } else if (voiceActive && (now - lastVoiceTs) > MIC_HANGOVER_MS) {
+            voiceActive = false;
+            logLine('MIC_VOICE', `off rms=${rms.toFixed(3)}`);
+          }
+          if (rms > MIC_RMS_LOG_THRESHOLD && (now - lastRmsLogTs) >= MIC_RMS_LOG_EVERY_MS) {
+            lastRmsLogTs = now;
+            logLine('MIC_RMS', `rms=${rms.toFixed(3)} voiceActive=${voiceActive}`);
+          }
+        } catch (err) {
+          if (!micMeterErrorLogged) {
+            micMeterErrorLogged = true;
+            logLine('MIC_METER', `error ${err && err.message ? err.message : String(err)}`);
+          }
+        }
+      }, MIC_METER_INTERVAL_MS);
+    } catch (err) {
+      logLine('MIC_METER', `gum_error name=${err && err.name ? err.name : 'unknown'} message=${err && err.message ? err.message : ''}`);
+      await stopMicMeter();
+    }
+  }
+
+  async function stopMicMeter() {
+    if (meterTimerId) {
+      clearInterval(meterTimerId);
+      meterTimerId = 0;
+    }
+    if (micStream) {
+      micStream.getTracks().forEach((t) => t.stop());
+      micStream = null;
+    }
+    if (audioCtx) {
+      try {
+        await audioCtx.close();
+      } catch {
+        // ignore close errors
+      }
+      audioCtx = null;
+    }
+    analyser = null;
+    voiceActive = false;
+    lastVoiceTs = 0;
+    lastRmsLogTs = 0;
+    micMeterErrorLogged = false;
+    if (ENABLE_MIC_METER) {
+      logLine('MIC_METER', 'stop');
     }
   }
 
@@ -678,7 +775,8 @@
     answerInput.value = digit;
 
     // Auto-submit immediately
-    logLine('SUBMIT', `${digit}`);
+    const logIndex = spaceCount - 1;
+    logLine('SUBMIT', `Problem ${logIndex} (${digit})`);
     awaitingSubmission = false;
     answeredCount += 1;
 
@@ -897,6 +995,7 @@
     const env = detectPlatformInfo();
     const sourceLabel = micOn ? 'Voice' : 'Typed';
     logLine('ENV', `Browser=${env.browser} OS=${env.os} Source=${sourceLabel}`);
+    if (ENABLE_MIC_METER) startMicMeter();
     spaceCount = 0;
     answeredCount = 0;
     skippedCount = 0;
@@ -933,6 +1032,7 @@
     setAnswerBoxEnabled(false);
     logLine('SESSION', 'End (idle)');
     stopBlinkTimer();
+    if (ENABLE_MIC_METER) stopMicMeter();
     window.scrollTo({ top: 0 });
     if (operandFadeTimerId) {
       clearTimeout(operandFadeTimerId);
@@ -1157,6 +1257,10 @@
       }
     });
   }
+
+  window.addEventListener('beforeunload', () => {
+    if (ENABLE_MIC_METER) stopMicMeter();
+  });
 })();
 </script>
 </body>
