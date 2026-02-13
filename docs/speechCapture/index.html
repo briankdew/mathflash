@@ -318,6 +318,11 @@
   let hasRenderedFirstProblem = false;
   let operandFadeTimerId = 0;
   let waitingForBegin = false;
+  let currentProblemStartMs = 0;
+  let voiceOnMs = 0;
+  let voiceTimingLogged = false;
+  let pendingTProcess = null;
+  let pendingTSpeak = null;
   let micStream = null;
   let audioCtx = null;
   let analyser = null;
@@ -376,6 +381,11 @@
     }
     lastFinalTranscript = '';
     awaitingSubmission = true;
+    currentProblemStartMs = Date.now();
+    voiceOnMs = 0;
+    voiceTimingLogged = false;
+    pendingTProcess = null;
+    pendingTSpeak = null;
     if (mode === MODE_LEARN && blinkToggleSelect?.value === 'on') {
       scheduleLearnBlink(parseFloat(blinkRateInput?.value) || 1.0);
     }
@@ -395,6 +405,11 @@
   }
 
   function handleSkipAdvance(restartRecognition) {
+    voiceTimingLogged = true;
+    currentProblemStartMs = 0;
+    voiceOnMs = 0;
+    pendingTProcess = null;
+    pendingTSpeak = null;
     if (onErrorMode === 'skip') {
       skippedCount += 1;
       if (maybeEndSessionAfterSkip()) return;
@@ -537,10 +552,22 @@
             if (!voiceActive) {
               voiceActive = true;
               logLine('MIC_VOICE', `on rms=${rms.toFixed(3)}`);
+              if (!voiceTimingLogged && currentProblemStartMs) {
+                voiceOnMs = now;
+                const tProcess = (voiceOnMs - currentProblemStartMs) / 1000;
+                const logIndex = spaceCount - 1;
+                pendingTProcess = `Problem ${logIndex} (${tProcess.toFixed(3)}s)`;
+              }
             }
           } else if (voiceActive && (now - lastVoiceTs) > MIC_HANGOVER_MS) {
             voiceActive = false;
             logLine('MIC_VOICE', `off rms=${rms.toFixed(3)}`);
+            if (!voiceTimingLogged && currentProblemStartMs && voiceOnMs) {
+              const tSpeak = (now - voiceOnMs) / 1000;
+              const logIndex = spaceCount - 1;
+              pendingTSpeak = `Problem ${logIndex} (${tSpeak.toFixed(3)}s)`;
+              voiceTimingLogged = true;
+            }
           }
           if (rms > MIC_RMS_LOG_THRESHOLD && (now - lastRmsLogTs) >= MIC_RMS_LOG_EVERY_MS) {
             lastRmsLogTs = now;
@@ -774,6 +801,14 @@
     // Replace value (never append)
     answerInput.value = digit;
 
+    if (pendingTProcess) {
+      logLine('T_PROCESS', pendingTProcess);
+      pendingTProcess = null;
+    }
+    if (pendingTSpeak) {
+      logLine('T_SPEAK', pendingTSpeak);
+      pendingTSpeak = null;
+    }
     // Auto-submit immediately
     const logIndex = spaceCount - 1;
     logLine('SUBMIT', `Problem ${logIndex} (${digit})`);
