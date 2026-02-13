@@ -563,7 +563,7 @@
             voiceActive = false;
             logLine('MIC_VOICE', `off rms=${rms.toFixed(3)}`);
             if (!voiceTimingLogged && currentProblemStartMs && voiceOnMs) {
-              const tSpeak = (now - voiceOnMs) / 1000;
+              const tSpeak = (Math.max(0, now - MIC_HANGOVER_MS) - voiceOnMs) / 1000;
               const logIndex = spaceCount - 1;
               pendingTSpeak = `Problem ${logIndex} (${tSpeak.toFixed(3)}s)`;
               voiceTimingLogged = true;
