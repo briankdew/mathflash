@@ -40,12 +40,9 @@
   const operationSelect = document.getElementById('operationSelect');
   const missingValueSelect = document.getElementById('missingValueSelect');
   const onErrorSelect = document.getElementById('onErrorSelect');
-  const leftOperand = document.getElementById('leftOperand');
-  const rightOperand = document.getElementById('rightOperand');
   const leftOperandValue = document.getElementById('leftOperandValue');
   const rightOperandValue = document.getElementById('rightOperandValue');
   const operatorBox = document.getElementById('operatorBox');
-  const resultBox = document.getElementById('resultBox');
   const resultValue = document.getElementById('resultValue');
   const beginPrompt = document.getElementById('beginPrompt');
   const speechProcessing = window.SpeechProcessing;
@@ -424,7 +421,7 @@
     return { browser, os };
   }
 
-  function submitDigit(digit, source) {
+  function submitDigit(digit) {
     if (!sessionActive) return;
 
     // Replace value (never append)
@@ -493,7 +490,7 @@
         if (beginPrompt) beginPrompt.classList.add('is-hidden');
       },
       advanceProblem: () => advanceProblem(false),
-      submitDigit: (digit) => submitDigit(digit, 'voice'),
+      submitDigit: (digit) => submitDigit(digit),
       handleSkipAdvance
     });
 
@@ -697,7 +694,7 @@
 
     // Force normalized numeric display before submit
     answerInput.value = val;
-    submitDigit(val, 'typed');
+    submitDigit(val);
   });
 
   // Prevent non-digit key presses in typed mode (optional hardening)
