@@ -7,3 +7,4 @@ tools/speech/speechCapture.html
 tools/speech/speechCapture_deprecated_delete_if_found.html
 path/to/folder/
 docs/speechCapture/combine session logs/
+mathflash index *.html

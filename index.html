@@ -244,6 +244,35 @@
       color: var(--color-text-main);
     }
 
+    .answer-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .voice-toggle {
+      border: 1px solid var(--palette-beige-02);
+      background: var(--color-white);
+      color: var(--color-text-main);
+      border-radius: 8px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .voice-toggle[aria-disabled="true"] {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .voice-status {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      display: none;
+    }
+
     /* Sidebar Headers */
     .panel-settings h3,
     .panel-data h3 {
@@ -920,6 +949,10 @@
 
       <div class="answer-section">
         <input type="text" id="answerInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="go">
+        <div class="answer-controls">
+          <button type="button" id="voiceToggleBtn" class="voice-toggle" aria-pressed="false" aria-disabled="true">🎤 Voice</button>
+          <span id="voiceStatus" class="voice-status" aria-live="polite">Listening…</span>
+        </div>
         <div class="control-group session-controls-centered">
           <button id="sessionToggleBtn" class="btn btn-primary" style="width: 100%;">Start Session</button>
           <div class="remaining-counter" style="text-align: center; margin-top: 0.5rem;">
@@ -940,7 +973,7 @@
   </div>
 
   <script>
-    const APP_VERSION = '20260127.0905-0905';
+    const APP_VERSION = '20260128.1054-1054';
     class MathSession {
       constructor() {
         this.MODES = { ADDITION: 'addsub', MULTIPLICATION: 'multdiv' };
@@ -959,6 +992,12 @@
           hasRenderedFirstProblem: false,
           isTimerRunning: false,
           isSessionActive: false,
+          speechAvailable: false,
+          speechHttpsOk: false,
+          isVoiceEnabled: false,
+          isVoiceListening: false,
+          voiceErrorMessage: '',
+          voiceWarmupPending: false,
           sessionCompletionMsTotal: 0,
 
           // iOS scroll-lock (session kiosk mode)
@@ -1026,9 +1065,12 @@
           countLabel: document.getElementById('countLabel'),
           logBox: document.getElementById('sessionLog'),
           downloadBtn: document.getElementById('downloadBtn'),
-          userBadge: document.getElementById('userBadge')
+          userBadge: document.getElementById('userBadge'),
+          voiceToggleBtn: document.getElementById('voiceToggleBtn'),
+          voiceStatus: document.getElementById('voiceStatus')
         };
 
+        this.initVoiceSupport();
         this.bindEvents();
 
         // Incomplete-answer nudge timer (2-digit answers)
@@ -1068,6 +1110,222 @@
         const isIOS = /iP(hone|od|ad)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
         return isIOS && isSafari;
+      }
+
+      initVoiceSupport() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        this.state.speechAvailable = Boolean(SpeechRecognition);
+        this.state.speechHttpsOk = Boolean(isSecure);
+
+        if (!this.state.speechAvailable) {
+          this.state.voiceErrorMessage = 'Voice input not supported in this browser.';
+        } else if (!this.state.speechHttpsOk) {
+          this.state.voiceErrorMessage = 'Voice input requires HTTPS.';
+        }
+
+        if (this.state.speechAvailable) {
+          this.setupSpeechRecognition(SpeechRecognition);
+        }
+
+        this.updateVoiceToggleUI();
+      }
+
+      setVoiceError(message) {
+        this.state.voiceErrorMessage = message || '';
+        this.updateVoiceToggleUI();
+      }
+
+      setupSpeechRecognition(SpeechRecognition) {
+        if (this.speech) return;
+        this.speech = new SpeechRecognition();
+        this.speech.continuous = true;
+        this.speech.interimResults = true;
+        this.speech.lang = 'en-US';
+
+        this.speech.onstart = () => {
+          this.state.isVoiceListening = true;
+          this.setVoiceError('');
+          this.updateVoiceToggleUI();
+
+          if (this.state.voiceWarmupPending && !this.state.isSessionActive) {
+            this.state.voiceWarmupPending = false;
+            this.stopVoiceRecognition();
+          }
+        };
+
+        this.speech.onend = () => {
+          this.state.isVoiceListening = false;
+          this.updateVoiceToggleUI();
+        };
+
+        this.speech.onerror = (event) => {
+          const code = event && event.error ? event.error : 'unknown';
+          let msg = 'Voice input error.';
+          if (code === 'not-allowed' || code === 'service-not-allowed') {
+            msg = 'Microphone access denied.';
+          } else if (code === 'audio-capture') {
+            msg = 'No microphone detected.';
+          } else if (code === 'no-speech') {
+            msg = 'No speech detected.';
+          } else if (code === 'network') {
+            msg = 'Speech service unavailable.';
+          } else if (code === 'aborted') {
+            msg = 'Voice input aborted.';
+          } else if (code === 'language-not-supported') {
+            msg = 'Speech language not supported.';
+          }
+          this.setVoiceError(msg);
+        };
+
+        this.speech.onresult = (event) => {
+          if (!this.dom.input) return;
+          if (!this.state.isVoiceEnabled || !this.state.isSessionActive) return;
+
+          let interimTranscript = '';
+          let finalTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i];
+            if (result.isFinal) finalTranscript += result[0].transcript;
+            else interimTranscript += result[0].transcript;
+          }
+
+          const pick = (finalTranscript || interimTranscript).trim();
+          if (pick.length === 0) return;
+
+          const normalized = this.normalizeSpokenNumber(pick);
+          this.dom.input.value = normalized ?? pick;
+
+          if (finalTranscript.trim().length > 0) {
+            this.dom.input.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+
+          this.dom.input.focus();
+        };
+      }
+
+      normalizeSpokenNumber(raw) {
+        if (!raw) return null;
+        const cleaned = raw
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (!cleaned) return null;
+
+        if (/^\d+$/.test(cleaned)) return cleaned;
+
+        const text = cleaned.replace(/-/g, ' ');
+        const words = text.split(' ').filter(Boolean);
+        if (words.length === 0) return null;
+
+        const ones = {
+          zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5,
+          six: 6, seven: 7, eight: 8, nine: 9
+        };
+        const teens = {
+          ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14,
+          fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19
+        };
+        const tens = {
+          twenty: 20, thirty: 30, forty: 40, fifty: 50,
+          sixty: 60, seventy: 70, eighty: 80, ninety: 90
+        };
+
+        const allowed = new Set([
+          ...Object.keys(ones),
+          ...Object.keys(teens),
+          ...Object.keys(tens),
+          'hundred',
+          'and'
+        ]);
+
+        for (const word of words) {
+          if (!allowed.has(word)) return null;
+        }
+
+        let total = 0;
+        let current = 0;
+
+        for (const word of words) {
+          if (word === 'and') continue;
+          if (ones[word] !== undefined) {
+            current += ones[word];
+            continue;
+          }
+          if (teens[word] !== undefined) {
+            current += teens[word];
+            continue;
+          }
+          if (tens[word] !== undefined) {
+            current += tens[word];
+            continue;
+          }
+          if (word === 'hundred') {
+            if (current === 0) current = 1;
+            current *= 100;
+            continue;
+          }
+        }
+
+        total += current;
+        if (!Number.isFinite(total)) return null;
+        return String(total);
+      }
+
+      startVoiceRecognition() {
+        if (!this.speech) return;
+        if (this.state.isVoiceListening) return;
+        try {
+          this.setVoiceError('');
+          this.speech.start();
+        } catch (e) {
+          // Ignore repeated start attempts
+        }
+      }
+
+      stopVoiceRecognition() {
+        if (!this.speech) return;
+        if (!this.state.isVoiceListening) return;
+        this.speech.stop();
+      }
+
+      syncVoiceRecognition() {
+        const supported = this.state.speechAvailable && this.state.speechHttpsOk;
+        const shouldListen = supported && this.state.isVoiceEnabled && this.state.isSessionActive;
+        if (shouldListen) this.startVoiceRecognition();
+        else this.stopVoiceRecognition();
+      }
+
+      updateVoiceToggleUI() {
+        if (!this.dom.voiceToggleBtn) return;
+        const supported = this.state.speechAvailable && this.state.speechHttpsOk;
+        const locked = this.state.isSessionActive;
+        const enabled = supported && !locked;
+
+        this.dom.voiceToggleBtn.disabled = !enabled;
+        this.dom.voiceToggleBtn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+        this.dom.voiceToggleBtn.setAttribute('aria-pressed', this.state.isVoiceEnabled ? 'true' : 'false');
+        this.dom.voiceToggleBtn.textContent = this.state.isVoiceEnabled ? '🎤 Voice On' : '🎤 Voice Off';
+
+        if (this.dom.voiceStatus) {
+          if (this.state.voiceErrorMessage) {
+            this.dom.voiceStatus.style.display = 'inline';
+            this.dom.voiceStatus.textContent = this.state.voiceErrorMessage;
+            return;
+          }
+          if (this.state.isVoiceEnabled && this.state.isSessionActive) {
+            this.dom.voiceStatus.style.display = 'inline';
+            this.dom.voiceStatus.textContent = this.state.isVoiceListening ? 'Listening…' : 'Voice ready';
+          } else if (this.state.isVoiceEnabled) {
+            this.dom.voiceStatus.style.display = 'inline';
+            this.dom.voiceStatus.textContent = 'Voice input enabled';
+          } else {
+            this.dom.voiceStatus.style.display = 'none';
+            this.dom.voiceStatus.textContent = '';
+          }
+        }
       }
 
       lockScroll() {
@@ -1368,6 +1626,8 @@
       initIdleState() {
         this.state.isSessionActive = false;
         this.updateCountLabel();
+        this.updateVoiceToggleUI();
+        this.syncVoiceRecognition();
 
         // Deactivate Shield & Enable Sidebar Tabbing
         document.body.classList.remove('session-active');
@@ -1440,6 +1700,8 @@
         if (this.isIOSSafari()) this.lockScroll();
         
         this.state.isSessionActive = true; // Only set active after validation passes
+        this.updateVoiceToggleUI();
+        this.syncVoiceRecognition();
         this.updateCountLabel();
         this.state.sessionId = this.generateSessionId();
 
@@ -2224,6 +2486,20 @@
 
         // Ensure mode defaults stay aligned when Operation changes can force chip state changes
         this.updatePracticeCyclesModeFromSelection();
+
+        if (this.dom.voiceToggleBtn) {
+          this.dom.voiceToggleBtn.addEventListener('click', () => {
+            if (this.dom.voiceToggleBtn.disabled) return;
+            this.state.isVoiceEnabled = !this.state.isVoiceEnabled;
+            this.updateVoiceToggleUI();
+            if (this.state.isVoiceEnabled && !this.state.isSessionActive) {
+              this.state.voiceWarmupPending = true;
+              this.startVoiceRecognition();
+            } else {
+              this.syncVoiceRecognition();
+            }
+          });
+        }
         
         // BUTTON TOGGLE EVENT (iOS: ensure first intentional tap triggers reset)
         let suppressSessionBtnClick = false;
