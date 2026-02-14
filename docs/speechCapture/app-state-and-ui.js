@@ -85,6 +85,9 @@
 
   function getSttCapabilities() {
     const webSpeechSupported = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+    const whisperCapability = (typeof window.getWhisperAdapterCapability === 'function')
+      ? window.getWhisperAdapterCapability()
+      : { available: false, reason: 'Whisper capability probe unavailable.' };
     return {
       webspeech: {
         label: 'Web Speech',
@@ -100,8 +103,8 @@
       },
       whisper: {
         label: 'Whisper',
-        available: false,
-        reason: 'Adapter scaffold exists, but runtime integration is not implemented yet.'
+        available: Boolean(whisperCapability.available),
+        reason: whisperCapability.reason
       }
     };
   }
