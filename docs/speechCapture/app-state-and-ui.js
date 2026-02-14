@@ -36,6 +36,7 @@
   const problemCounter = document.getElementById('problemCounter');
   const modeSelect = document.getElementById('modeSelect');
   const sttEngineSelect = document.getElementById('sttEngineSelect');
+  const sttStatus = document.getElementById('sttStatus');
   const blinkToggleSelect = document.getElementById('blinkToggleSelect');
   const problemCountInput = document.getElementById('problemCountInput');
   const operationSelect = document.getElementById('operationSelect');
@@ -80,6 +81,29 @@
       }
     }
     return facts;
+  }
+
+  function getSttCapabilities() {
+    const webSpeechSupported = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+    return {
+      webspeech: {
+        label: 'Web Speech',
+        available: webSpeechSupported,
+        reason: webSpeechSupported
+          ? 'Available in this browser.'
+          : 'Web Speech SpeechRecognition API is unavailable in this browser.'
+      },
+      vosk: {
+        label: 'Vosk',
+        available: false,
+        reason: 'Adapter scaffold exists, but runtime integration is not implemented yet.'
+      },
+      whisper: {
+        label: 'Whisper',
+        available: false,
+        reason: 'Adapter scaffold exists, but runtime integration is not implemented yet.'
+      }
+    };
   }
 
   let factQueue = [];
@@ -726,20 +750,50 @@
 
   if (sttEngineSelect) {
     const manager = ensureSttAdapterManager();
-    const sttLabelById = {
-      webspeech: 'Web Speech',
-      vosk: 'Vosk',
-      whisper: 'Whisper'
-    };
+    const sttCapabilities = getSttCapabilities();
     const options = manager.listAdapterIds();
+    const renderSttStatus = (adapterId) => {
+      if (!sttStatus) return;
+      const capability = sttCapabilities[adapterId];
+      if (!capability) {
+        sttStatus.textContent = '';
+        return;
+      }
+      sttStatus.textContent = capability.available
+        ? `${capability.label} is available.`
+        : `${capability.label} unavailable: ${capability.reason}`;
+    };
+
     sttEngineSelect.innerHTML = options.map((id) => (
-      `<option value="${id}">${sttLabelById[id] || id}</option>`
+      `<option value="${id}"${sttCapabilities[id]?.available ? '' : ' disabled'}>${sttCapabilities[id]?.label || id}${sttCapabilities[id]?.available ? '' : ' (unavailable)'}</option>`
     )).join('');
-    sttEngineSelect.value = manager.getCurrentAdapterId();
+
+    const currentAdapterId = manager.getCurrentAdapterId();
+    const currentIsAvailable = Boolean(sttCapabilities[currentAdapterId]?.available);
+    const fallbackAdapterId = options.find((id) => sttCapabilities[id]?.available);
+    const selectedAdapterId = currentIsAvailable
+      ? currentAdapterId
+      : (fallbackAdapterId || currentAdapterId);
+
+    if (!currentIsAvailable && fallbackAdapterId) {
+      manager.setAdapter(fallbackAdapterId);
+      logLine('STT_INFO', `Adapter '${currentAdapterId}' unavailable; switched to '${fallbackAdapterId}'.`);
+    }
+
+    sttEngineSelect.value = selectedAdapterId;
+    renderSttStatus(selectedAdapterId);
 
     sttEngineSelect.addEventListener('change', () => {
       const nextAdapterId = sttEngineSelect.value;
+      const capability = sttCapabilities[nextAdapterId];
+      if (!capability?.available) {
+        logLine('STT_INFO', `${capability?.label || nextAdapterId} unavailable: ${capability?.reason || 'Unknown reason.'}`);
+        sttEngineSelect.value = manager.getCurrentAdapterId();
+        renderSttStatus(sttEngineSelect.value);
+        return;
+      }
       manager.setAdapter(nextAdapterId);
+      renderSttStatus(nextAdapterId);
       if (sessionActive && micOn) {
         startRecognition();
       }
