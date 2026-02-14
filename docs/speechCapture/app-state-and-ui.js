@@ -54,6 +54,12 @@
   if (!window.createSttAdapterManager) {
     throw new Error('adapters/stt-adapter-manager.js must be loaded before app-state-and-ui.js');
   }
+  if (!window.createVoskAdapter) {
+    throw new Error('adapters/vosk.js must be loaded before app-state-and-ui.js');
+  }
+  if (!window.createWhisperAdapter) {
+    throw new Error('adapters/whisper.js must be loaded before app-state-and-ui.js');
+  }
 
   // -----------------------------
   // Utilities
@@ -575,7 +581,9 @@
 
     sttAdapterManager = window.createSttAdapterManager({
       factories: {
-        webspeech: () => window.createWebSpeechAdapter(adapterDeps)
+        webspeech: () => window.createWebSpeechAdapter(adapterDeps),
+        vosk: () => window.createVoskAdapter(adapterDeps),
+        whisper: () => window.createWhisperAdapter(adapterDeps)
       },
       defaultAdapterId: 'webspeech',
       logLine
@@ -718,9 +726,14 @@
 
   if (sttEngineSelect) {
     const manager = ensureSttAdapterManager();
+    const sttLabelById = {
+      webspeech: 'Web Speech',
+      vosk: 'Vosk',
+      whisper: 'Whisper'
+    };
     const options = manager.listAdapterIds();
     sttEngineSelect.innerHTML = options.map((id) => (
-      `<option value="${id}">${id === 'webspeech' ? 'Web Speech' : id}</option>`
+      `<option value="${id}">${sttLabelById[id] || id}</option>`
     )).join('');
     sttEngineSelect.value = manager.getCurrentAdapterId();
 
