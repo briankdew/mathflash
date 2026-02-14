@@ -464,6 +464,97 @@
     if (!micOn) answerInput.focus();
   }
 
+  function skipProblemFromRecognition(reasonText, abortAndReset) {
+    const logIndex = spaceCount - 1;
+    logLine('PROB_SKIP', `Problem ${logIndex} (${reasonText})`);
+    abortAndReset();
+    logLine('REC_RESET', 'after PROB_SKIP');
+    awaitingSubmission = false;
+    handleSkipAdvance(true);
+  }
+
+  function handleRecognitionAudioStart() {
+    if (
+      sessionActive &&
+      !waitingForBegin &&
+      mode === MODE_LEARN &&
+      !awaitingSubmission &&
+      !leftOperandValue.textContent
+    ) {
+      advanceProblem(false);
+    }
+  }
+
+  function handleRecognitionInterimResult({ transcript }) {
+    const interimCheck = speechProcessing.detectDuplicateOrMixedTokens(transcript);
+    if (interimCheck?.type === 'duplicate') {
+      interimDuplicateValue = interimCheck.value;
+    }
+  }
+
+  function handleRecognitionFinalResult({ transcript, abortAndReset }) {
+    const cleaned = transcript.trim().toLowerCase();
+
+    if (
+      interimDuplicateValue != null &&
+      /^\d+$/.test(cleaned) &&
+      cleaned.length > 1 &&
+      cleaned.split('').every((ch) => ch === cleaned[0]) &&
+      parseInt(cleaned[0], 10) === interimDuplicateValue &&
+      awaitingSubmission
+    ) {
+      const stitched = speechProcessing.stitchTokenDigits(cleaned);
+      if (stitched != null) {
+        const logIndex = spaceCount - 1;
+        logLine('FLAGGED', `Problem ${logIndex} (Stitched="${stitched}" from "${cleaned}")`);
+        submitDigit(stitched);
+      }
+      return;
+    }
+
+    if (cleaned === '' && awaitingSubmission) {
+      skipProblemFromRecognition('Empty final=true detected', abortAndReset);
+      return;
+    }
+
+    if (awaitingSubmission && /[:/]/.test(cleaned)) {
+      skipProblemFromRecognition('Non-numeric symbol detected', abortAndReset);
+      return;
+    }
+
+    const tokenCheck = speechProcessing.detectDuplicateOrMixedTokens(cleaned);
+    if (tokenCheck?.type === 'mixed' && awaitingSubmission) {
+      const stitched = speechProcessing.stitchTokenDigits(cleaned);
+      if (stitched != null) {
+        const logIndex = spaceCount - 1;
+        logLine('FLAGGED', `Problem ${logIndex} (Stitched="${stitched}" from "${cleaned}")`);
+        submitDigit(stitched);
+      }
+      return;
+    }
+
+    if (tokenCheck?.type === 'duplicate') {
+      submitDigit(String(tokenCheck.value));
+      return;
+    }
+
+    if (cleaned && cleaned === lastFinalTranscript) return;
+    lastFinalTranscript = cleaned;
+
+    if (waitingForBegin && /\bbegin\b/.test(cleaned)) {
+      waitingForBegin = false;
+      if (beginPrompt) beginPrompt.classList.add('is-hidden');
+      logLine('BEGIN', 'Begin detected');
+      advanceProblem(false);
+      return;
+    }
+
+    const val = speechProcessing.normalizeToNumber(transcript);
+    if (val != null) {
+      submitDigit(val);
+    }
+  }
+
   // -----------------------------
   // Speech Recognition Setup
   // -----------------------------
@@ -474,28 +565,12 @@
     }
 
     const adapterDeps = {
-      modeLearn: MODE_LEARN,
-      speechProcessing,
       logLine,
       getSessionActive: () => sessionActive,
       getMicOn: () => micOn,
-      getMode: () => mode,
-      getAwaitingSubmission: () => awaitingSubmission,
-      setAwaitingSubmission: (value) => { awaitingSubmission = value; },
-      getWaitingForBegin: () => waitingForBegin,
-      setWaitingForBegin: (value) => { waitingForBegin = value; },
-      getInterimDuplicateValue: () => interimDuplicateValue,
-      setInterimDuplicateValue: (value) => { interimDuplicateValue = value; },
-      getLastFinalTranscript: () => lastFinalTranscript,
-      setLastFinalTranscript: (value) => { lastFinalTranscript = value; },
-      getSpaceCount: () => spaceCount,
-      getLeftOperandText: () => (leftOperandValue ? leftOperandValue.textContent : ''),
-      hideBeginPrompt: () => {
-        if (beginPrompt) beginPrompt.classList.add('is-hidden');
-      },
-      advanceProblem: () => advanceProblem(false),
-      submitDigit: (digit) => submitDigit(digit),
-      handleSkipAdvance
+      onAudioStart: handleRecognitionAudioStart,
+      onInterimResult: handleRecognitionInterimResult,
+      onFinalResult: handleRecognitionFinalResult
     };
 
     sttAdapterManager = window.createSttAdapterManager({
