@@ -1,0 +1,43 @@
+"Phrase
+No.","Session 1: Test
+Phrases","Expected
+Outcome","Actual
+Outcome","Desired
+Outcome"
+0,one hundred ten,PASS,110,PASS
+1,forty seven,PASS,47,PASS
+2,one hundred one,PASS,101,PASS
+3,two one,PASS,21,FAIL
+4,nine zero,PASS,90,FAIL
+5,one hundred nineteen,PASS,119,PASS
+6,one nine,PASS,19,FAIL
+7,forty,PASS,40,PASS
+8,one zero one,PASS,101,FAIL
+9,twenty one,PASS,21,PASS
+10,one eleven,PASS,111,PASS
+11,ninety,PASS,90,PASS
+12,one one,PASS,11,FAIL
+13,one hundred,PASS,100,PASS
+14,four seven,PASS,47,FAIL
+,,,,
+"Phrase
+No.","Session 2: Test
+Phrases","Expected
+Outcome","Actual
+Outcome","Desired
+Outcome"
+0,nineteen,PASS,19,PASS
+1,one hundred eleven,PASS,11,PASS
+2,one ten,PASS,110,PASS
+3,one hundred ninety nine,PASS,199,PASS
+4,one oh one,PASS,101,PASS
+5,two zero,PASS,20,FAIL
+6,one,PASS,1,PASS
+7,one zero zero,PASS,100,FAIL
+8,ninety nine,PASS,99,PASS
+9,nine,PASS,unrelated error,PASS
+10,twenty,PASS,20,PASS
+11,one hundred ten,PASS,110,PASS
+12,four zero,PASS,40,FAIL
+13,one nine nine,PASS,199,FAIL
+14,eleven,PASS,11,PASS
