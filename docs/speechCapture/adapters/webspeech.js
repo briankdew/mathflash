@@ -1,5 +1,5 @@
 (() => {
-  function createWebSpeechRecognitionController(deps) {
+  function createWebSpeechAdapter(deps) {
     let recognition = null;
     let recognizing = false;
 
@@ -204,5 +204,7 @@
     };
   }
 
-  window.createWebSpeechRecognitionController = createWebSpeechRecognitionController;
+  // Backward-compatible alias while migrating call sites.
+  window.createWebSpeechRecognitionController = createWebSpeechAdapter;
+  window.createWebSpeechAdapter = createWebSpeechAdapter;
 })();

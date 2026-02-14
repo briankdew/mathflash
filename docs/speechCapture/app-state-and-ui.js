@@ -5,7 +5,7 @@
   let sessionActive = false;
   let micOn = true;
 
-  let recognitionController = null;
+  let sttAdapterManager = null;
   let lastFinalTranscript = '';
   let lastLogTimestamp = '';
   let logLineCount = 0;
@@ -35,6 +35,7 @@
   const blinkRateInput = document.getElementById('blinkRateInput');
   const problemCounter = document.getElementById('problemCounter');
   const modeSelect = document.getElementById('modeSelect');
+  const sttEngineSelect = document.getElementById('sttEngineSelect');
   const blinkToggleSelect = document.getElementById('blinkToggleSelect');
   const problemCountInput = document.getElementById('problemCountInput');
   const operationSelect = document.getElementById('operationSelect');
@@ -49,6 +50,9 @@
 
   if (!speechProcessing) {
     throw new Error('speech-processing.js must be loaded before app-state-and-ui.js');
+  }
+  if (!window.createSttAdapterManager) {
+    throw new Error('adapters/stt-adapter-manager.js must be loaded before app-state-and-ui.js');
   }
 
   // -----------------------------
@@ -463,13 +467,13 @@
   // -----------------------------
   // Speech Recognition Setup
   // -----------------------------
-  function ensureRecognitionController() {
-    if (recognitionController) return recognitionController;
-    if (!window.createWebSpeechRecognitionController) {
+  function ensureSttAdapterManager() {
+    if (sttAdapterManager) return sttAdapterManager;
+    if (!window.createWebSpeechAdapter) {
       throw new Error('adapters/webspeech.js must be loaded before app-state-and-ui.js');
     }
 
-    recognitionController = window.createWebSpeechRecognitionController({
+    const adapterDeps = {
       modeLearn: MODE_LEARN,
       speechProcessing,
       logLine,
@@ -492,18 +496,26 @@
       advanceProblem: () => advanceProblem(false),
       submitDigit: (digit) => submitDigit(digit),
       handleSkipAdvance
+    };
+
+    sttAdapterManager = window.createSttAdapterManager({
+      factories: {
+        webspeech: () => window.createWebSpeechAdapter(adapterDeps)
+      },
+      defaultAdapterId: 'webspeech',
+      logLine
     });
 
-    return recognitionController;
+    return sttAdapterManager;
   }
 
   function startRecognition() {
-    ensureRecognitionController().start();
+    ensureSttAdapterManager().start();
   }
 
   function stopRecognition() {
-    if (!recognitionController) return;
-    recognitionController.stop();
+    if (!sttAdapterManager) return;
+    sttAdapterManager.stop();
   }
 
   // -----------------------------
@@ -524,7 +536,8 @@
     logLineCount = 0;
     const env = detectPlatformInfo();
     const sourceLabel = micOn ? 'Voice' : 'Typed';
-    logLine('ENV', `Browser=${env.browser} OS=${env.os} Source=${sourceLabel}`);
+    const sttEngine = ensureSttAdapterManager().getCurrentAdapterId();
+    logLine('ENV', `Browser=${env.browser} OS=${env.os} Source=${sourceLabel} STT=${sttEngine}`);
     if (ENABLE_MIC_METER) startMicMeter();
     spaceCount = 0;
     answeredCount = 0;
@@ -628,6 +641,23 @@
     });
   }
 
+  if (sttEngineSelect) {
+    const manager = ensureSttAdapterManager();
+    const options = manager.listAdapterIds();
+    sttEngineSelect.innerHTML = options.map((id) => (
+      `<option value="${id}">${id === 'webspeech' ? 'Web Speech' : id}</option>`
+    )).join('');
+    sttEngineSelect.value = manager.getCurrentAdapterId();
+
+    sttEngineSelect.addEventListener('change', () => {
+      const nextAdapterId = sttEngineSelect.value;
+      manager.setAdapter(nextAdapterId);
+      if (sessionActive && micOn) {
+        startRecognition();
+      }
+    });
+  }
+
   if (operationSelect) {
     operationSelect.addEventListener('change', () => {
       operation = operationSelect.value;
@@ -722,6 +752,9 @@
   stopBlinkTimer();
   if (modeSelect) {
     modeSelect.value = mode;
+  }
+  if (sttEngineSelect) {
+    sttEngineSelect.value = ensureSttAdapterManager().getCurrentAdapterId();
   }
   if (operationSelect) {
     operationSelect.value = operation;
