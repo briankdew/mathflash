@@ -8,6 +8,22 @@
       recognizing = false;
     }
 
+    function skipProblemAndResetRecognition(logIndex, reasonText) {
+      deps.logLine('PROB_SKIP', `Problem ${logIndex} (${reasonText})`);
+      if (recognition) {
+        try {
+          recognition.abort();
+          deps.logLine('REC', 'abort() called');
+        } catch (e) {
+          deps.logLine('REC_ERR', `abort() threw: ${e && e.message ? e.message : String(e)}`);
+        }
+      }
+      resetRecognitionAfterSkip();
+      deps.logLine('REC_RESET', 'after PROB_SKIP');
+      deps.setAwaitingSubmission(false);
+      deps.handleSkipAdvance(true);
+    }
+
     function autoRestartIfNeeded() {
       if (deps.getSessionActive() && deps.getMicOn()) {
         setTimeout(() => {
@@ -109,37 +125,13 @@
 
             if (cleaned === '' && awaitingSubmission) {
               const logIndex = deps.getSpaceCount() - 1;
-              deps.logLine('PROB_SKIP', `Problem ${logIndex} (Empty final=true detected)`);
-              if (recognition) {
-                try {
-                  recognition.abort();
-                  deps.logLine('REC', 'abort() called');
-                } catch (e) {
-                  deps.logLine('REC_ERR', `abort() threw: ${e && e.message ? e.message : String(e)}`);
-                }
-              }
-              resetRecognitionAfterSkip();
-              deps.logLine('REC_RESET', 'after PROB_SKIP');
-              deps.setAwaitingSubmission(false);
-              deps.handleSkipAdvance(true);
+              skipProblemAndResetRecognition(logIndex, 'Empty final=true detected');
               continue;
             }
 
             if (awaitingSubmission && /[:/]/.test(cleaned)) {
               const logIndex = deps.getSpaceCount() - 1;
-              deps.logLine('PROB_SKIP', `Problem ${logIndex} (Non-numeric symbol detected)`);
-              if (recognition) {
-                try {
-                  recognition.abort();
-                  deps.logLine('REC', 'abort() called');
-                } catch (e) {
-                  deps.logLine('REC_ERR', `abort() threw: ${e && e.message ? ' - ' + e.message : String(e)}`);
-                }
-              }
-              resetRecognitionAfterSkip();
-              deps.logLine('REC_RESET', 'after PROB_SKIP');
-              deps.setAwaitingSubmission(false);
-              deps.handleSkipAdvance(true);
+              skipProblemAndResetRecognition(logIndex, 'Non-numeric symbol detected');
               continue;
             }
 
