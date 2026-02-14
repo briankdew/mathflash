@@ -841,7 +841,7 @@
       </div>
 
       <div class="control-group">
-        <label class="control-label" for="problemOrder">Problem Order</label>
+        <label class="control-label" for="problemOrder">Problem order</label>
         <select id="problemOrder" class="select-input">
           <option value="random">Random</option>
           <option value="standard">Standard</option>
@@ -849,7 +849,7 @@
       </div>
 
       <div class="control-group">
-        <label class="control-label" for="operandOrder">Operand Order</label>
+        <label class="control-label" for="operandOrder">Operand order</label>
         <select id="operandOrder" class="select-input">
           <option value="random">Random</option>
           <option value="standard">Standard</option>
@@ -858,17 +858,17 @@
       </div>
 
       <div class="control-group">
-        <label class="control-label" for="missingValue">Missing Value</label>
+        <label class="control-label" for="missingValue">Missing value</label>
         <select id="missingValue" class="select-input">
           <option value="random">Random</option>
-          <option value="result" selected>Result Only</option>
-          <option value="operand">Operand Only</option>
+          <option value="result" selected>Result only</option>
+          <option value="operand">Operand only</option>
         </select>
       </div>
 
       <div class="control-group">
-        <label class="control-label">Practice Cycles</label>
-        <select id="practiceCyclesSelect" class="select-input practice-cycles-select pc-inactive" aria-label="Practice Cycles">
+        <label class="control-label">Practice cycles</label>
+        <select id="practiceCyclesSelect" class="select-input practice-cycles-select pc-inactive" aria-label="Practice cycles">
           <option value="1">1</option>
           <option value="2">2</option>
           <option value="3">3</option>
@@ -878,7 +878,7 @@
       </div>
 
       <div class="control-group">
-        <label class="control-label">Problem Set</label>
+        <label class="control-label">Problem set</label>
         <div class="chip-grid" id="problemSetGrid">
           <button type="button" class="chip" data-val="1" aria-pressed="true">1</button>
           <button type="button" class="chip" data-val="2" aria-pressed="true">2</button>
@@ -894,7 +894,7 @@
       </div>
 
       <div class="control-group">
-        <label class="control-label">Custom Problem Sets</label>
+        <label class="control-label">Custom problem sets</label>
         <div class="chip-grid-wide" id="customSetGrid">
           <button type="button" class="chip-wide" data-custom="10s" aria-pressed="false">10's</button>
           <button type="button" class="chip-wide" data-custom="doubles" aria-pressed="false">
@@ -906,7 +906,7 @@
       </div>
 
       <div class="control-group" style="display: flex; align-items: center; justify-content: start; gap: 1rem;">
-        <label class="control-label" style="margin:0;">Session Timer</label>
+        <label class="control-label" style="margin:0;">Session timer</label>
         <label class="toggle-switch">
           <input type="checkbox" id="timerToggle" checked>
           <span class="slider"></span>
@@ -998,6 +998,7 @@
           isVoiceListening: false,
           voiceErrorMessage: '',
           voiceWarmupPending: false,
+          sessionCompletionMsTotal: 0,
 
           // iOS scroll-lock (session kiosk mode)
           scrollLockX: 0,
@@ -1724,6 +1725,7 @@
           missedFirst: 0
         };
         this.state.hasRenderedFirstProblem = false;
+        this.state.sessionCompletionMsTotal = 0;
 
         // Timer Logic
         // Always track start time for stats, even if visual timer isn't used
@@ -1803,7 +1805,8 @@
         // Calculate Accuracy and Calculation Speed
         const accuracy = n > 0 ? (100 * (c / n)).toFixed(0) : 0;
         // Calculation Speed: seconds / Completed => sec/prob
-        const calcSpeedVal = n > 0 ? (elapsedSec / n).toFixed(1) : '0.0';
+        const completionSecTotal = this.state.sessionCompletionMsTotal / 1000;
+        const calcSpeedVal = n > 0 ? (completionSecTotal / n).toFixed(1) : '0.0';
 
         // Detect if session was interrupted
         let interruptMsg = "";
@@ -2191,7 +2194,34 @@
         // Operand blink cue is handled in nextProblem() (blink-off gap before rendering)
         
         this.dom.input.value = '';
+        
+        // Per-problem timing starts when the problem is presented (post-render)
+        if (p) {
+          p.presentedAtPerf = performance.now();
+          p.firstAttemptMs = null;
+          p.completionMs = null;
+          p.attempts = 0;
         }
+        }
+
+      recordAttemptTiming(userVal) {
+        const p = this.state.currentProblem;
+        if (!p || typeof p.correct !== 'number' || typeof p.presentedAtPerf !== 'number') return false;
+
+        const now = performance.now();
+        const attemptMs = Math.max(0, now - p.presentedAtPerf);
+
+        p.attempts = (p.attempts || 0) + 1;
+        if (p.firstAttemptMs === null) p.firstAttemptMs = attemptMs;
+
+        if (userVal === p.correct && p.completionMs === null) {
+          p.completionMs = attemptMs;
+          this.state.sessionCompletionMsTotal += attemptMs;
+          return true;
+        }
+
+        return false;
+      }
 
       showHint() {
         const p = this.state.currentProblem;
@@ -2236,6 +2266,10 @@
         if (isNaN(userVal)) return;
 
         if (userVal === this.state.currentProblem.correct) {
+          // Fallback: ensure completion timing exists if this path was reached without a recorded attempt
+          if (this.state.currentProblem && this.state.currentProblem.completionMs === null) {
+            this.recordAttemptTiming(userVal);
+          }
           // CORRECT LOGIC
           this.state.stats.completed++;
           if (this.state.currentProblemFirstTry) {
@@ -2653,6 +2687,7 @@
               this.nudgeTimerId = 0;
             }
             this.dom.input.classList.remove('nudge');
+            this.recordAttemptTiming(userVal);
             this.checkAnswer();
           } 
           else if (userStr.length >= correctStr.length) {
@@ -2661,6 +2696,7 @@
               this.nudgeTimerId = 0;
             }
             this.dom.input.classList.remove('nudge');
+            if (!isNaN(userVal)) this.recordAttemptTiming(userVal);
             this.checkAnswer();
           }
         });
@@ -2672,6 +2708,8 @@
               this.nudgeTimerId = 0;
             }
             this.dom.input.classList.remove('nudge');
+            const userVal = parseInt(this.dom.input.value, 10);
+            if (!isNaN(userVal)) this.recordAttemptTiming(userVal);
             this.checkAnswer();
           }
         });
