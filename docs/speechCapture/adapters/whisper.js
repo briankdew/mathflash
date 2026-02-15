@@ -47,6 +47,7 @@
     let recorder = null;
     let chunkSeq = 0;
     let queue = [];
+    let recordedChunks = [];
     let processing = false;
 
     const endpoint = DEFAULT_ENDPOINT;
@@ -58,6 +59,7 @@
 
     function clearState() {
       queue = [];
+      recordedChunks = [];
       processing = false;
       chunkSeq = 0;
     }
@@ -120,7 +122,11 @@
     function enqueueChunk(blob) {
       if (!started || !blob || blob.size === 0) return;
       chunkSeq += 1;
-      queue.push({ blob, seq: chunkSeq });
+      recordedChunks.push(blob);
+      const cumulativeBlob = new Blob(recordedChunks, {
+        type: (recorder && recorder.mimeType) ? recorder.mimeType : 'audio/webm'
+      });
+      queue.push({ blob: cumulativeBlob, seq: chunkSeq });
       void processQueue();
     }
 
