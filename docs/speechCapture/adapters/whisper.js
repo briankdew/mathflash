@@ -48,6 +48,7 @@
     let chunkSeq = 0;
     let queue = [];
     let recordedChunks = [];
+    let lastTranscript = '';
     let processing = false;
 
     const endpoint = DEFAULT_ENDPOINT;
@@ -60,8 +61,46 @@
     function clearState() {
       queue = [];
       recordedChunks = [];
+      lastTranscript = '';
       processing = false;
       chunkSeq = 0;
+    }
+
+    function cleanTranscript(raw) {
+      return String(raw || '')
+        .replace(/\[BLANK_AUDIO\]/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function getTranscriptDelta(previous, current) {
+      if (!current) return '';
+      if (!previous) return current;
+      if (current === previous) return '';
+      if (current.startsWith(previous)) {
+        return current.slice(previous.length).trim();
+      }
+
+      const prevTokens = previous.toLowerCase().split(/\s+/).filter(Boolean);
+      const currTokens = current.split(/\s+/).filter(Boolean);
+      const currLower = currTokens.map((t) => t.toLowerCase());
+      const maxOverlap = Math.min(prevTokens.length, currLower.length);
+
+      let overlap = 0;
+      for (let k = maxOverlap; k > 0; k--) {
+        const prevSuffix = prevTokens.slice(prevTokens.length - k).join(' ');
+        const currPrefix = currLower.slice(0, k).join(' ');
+        if (prevSuffix === currPrefix) {
+          overlap = k;
+          break;
+        }
+      }
+
+      if (overlap > 0) {
+        return currTokens.slice(overlap).join(' ').trim();
+      }
+
+      return current;
     }
 
     function cleanupMedia() {
@@ -101,7 +140,14 @@
           }
 
           const body = await res.json();
-          const transcript = String(body?.text || body?.transcript || '').trim();
+          const fullTranscript = cleanTranscript(body?.text || body?.transcript || '');
+          if (!fullTranscript) {
+            lastTranscript = '';
+            continue;
+          }
+
+          const transcript = getTranscriptDelta(lastTranscript, fullTranscript);
+          lastTranscript = fullTranscript;
           if (!transcript) continue;
 
           deps.logLine('REC_RES', `i=${seq} final=true conf=n/a txt="${transcript}"`);
