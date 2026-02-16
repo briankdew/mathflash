@@ -63,9 +63,17 @@
       return adapterIds.slice();
     }
 
+    function notify(eventName, payload) {
+      if (!currentAdapter) return;
+      if (typeof currentAdapter.onNotify === 'function') {
+        currentAdapter.onNotify(eventName, payload);
+      }
+    }
+
     return {
       start,
       stop,
+      notify,
       setAdapter,
       getCurrentAdapterId,
       listAdapterIds

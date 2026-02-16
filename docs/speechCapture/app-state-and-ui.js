@@ -154,6 +154,13 @@
     };
   }
 
+  function notifySttAdapter(eventName, payload = {}) {
+    if (!sttAdapterManager) return;
+    if (typeof sttAdapterManager.notify === 'function') {
+      sttAdapterManager.notify(eventName, payload);
+    }
+  }
+
   let factQueue = [];
   let factIndex = 0;
   let spaceCount = 0;
@@ -288,6 +295,10 @@
       expected_answer: currentFact ? currentFact.answer : null,
       auto_advanced: Boolean(logAuto)
     });
+    notifySttAdapter('problem_changed', {
+      problem_id: currentProblemId,
+      problem_index: logIndex
+    });
     if (logAuto) {
       logLine('AUTO-NEXT', `Problem ${logIndex} (Ans: ${currentAnswer})`);
     } else if (mode === MODE_LEARN && currentFact) {
@@ -421,6 +432,7 @@
               voiceActive = true;
               logLine('MIC_VOICE', `on rms=${rms.toFixed(3)}`);
               emitEvent('mic_voice_on', { rms });
+              notifySttAdapter('voice_boundary', { state: 'on', rms, ts_ms: now });
               if (!voiceTimingLogged && currentProblemStartMs) {
                 voiceOnMs = now;
                 const tProcess = (voiceOnMs - currentProblemStartMs) / 1000;
@@ -432,6 +444,7 @@
             voiceActive = false;
             logLine('MIC_VOICE', `off rms=${rms.toFixed(3)}`);
             emitEvent('mic_voice_off', { rms });
+            notifySttAdapter('voice_boundary', { state: 'off', rms, ts_ms: now });
             if (!voiceTimingLogged && currentProblemStartMs && voiceOnMs) {
               const tSpeak = (Math.max(0, now - MIC_HANGOVER_MS) - voiceOnMs) / 1000;
               const logIndex = spaceCount - 1;
@@ -602,11 +615,33 @@
     }
   }
 
-  function handleRecognitionFinalResult({ transcript, abortAndReset }) {
+  function handleRecognitionFinalResult({
+    transcript,
+    abortAndReset,
+    source_problem_id = null,
+    source_segment_id = null,
+    source_chunk_id = null
+  }) {
     const cleaned = transcript.trim().toLowerCase();
+    if (
+      source_problem_id != null &&
+      currentProblemId != null &&
+      String(source_problem_id) !== String(currentProblemId)
+    ) {
+      emitEvent('stt_final_ignored_stale', {
+        transcript_raw: String(transcript || ''),
+        source_problem_id,
+        source_segment_id,
+        source_chunk_id
+      });
+      return;
+    }
     emitEvent('stt_final_result', {
       transcript_raw: String(transcript || ''),
-      transcript_cleaned: cleaned
+      transcript_cleaned: cleaned,
+      source_problem_id,
+      source_segment_id,
+      source_chunk_id
     });
 
     if (

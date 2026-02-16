@@ -47,6 +47,7 @@
     let recorder = null;
     let chunkSeq = 0;
     let segmentId = 0;
+    let activeProblemId = null;
     let queue = [];
     let recordedChunks = [];
     let lastTranscript = '';
@@ -65,6 +66,33 @@
       lastTranscript = '';
       processing = false;
       chunkSeq = 0;
+      activeProblemId = null;
+    }
+
+    function normalizeProblemId(value) {
+      if (value == null) return null;
+      const s = String(value).trim();
+      return s === '' ? null : s;
+    }
+
+    function getProblemKey(value) {
+      return value == null ? '__none__' : String(value);
+    }
+
+    function startNewSegment(problemId, reason) {
+      segmentId += 1;
+      chunkSeq = 0;
+      queue = [];
+      recordedChunks = [];
+      lastTranscript = '';
+      activeProblemId = normalizeProblemId(problemId);
+      if (typeof deps.emitEvent === 'function') {
+        deps.emitEvent('stt_segment_open', {
+          segment_id: segmentId,
+          problem_id: activeProblemId,
+          reason
+        });
+      }
     }
 
     function cleanTranscript(raw) {
@@ -125,23 +153,20 @@
 
       while (started && queue.length > 0) {
         const item = queue.shift();
-        const { blob, seq, mimeType } = item;
+        const { blob, seq, mimeType, segmentId: itemSegmentId, context } = item;
         const uploadStart = Date.now();
-        const context = typeof deps.getEventContext === 'function'
-          ? deps.getEventContext({ segment_id: segmentId, chunk_id: seq, chunk_size_bytes: blob.size })
-          : {};
         const form = new FormData();
         form.append('file', blob, `whisper-chunk-${seq}.webm`);
         form.append('session_id', String(context.session_id || ''));
         form.append('problem_id', String(context.problem_id ?? ''));
-        form.append('segment_id', String(context.segment_id ?? segmentId));
+        form.append('segment_id', String(context.segment_id ?? itemSegmentId));
         form.append('chunk_id', String(context.chunk_id ?? seq));
         form.append('engine', String(context.engine || 'whisper'));
         form.append('client_ts_ms', String(context.client_ts_ms || Date.now()));
 
         if (typeof deps.emitEvent === 'function') {
           deps.emitEvent('stt_chunk_upload_start', {
-            segment_id: segmentId,
+            segment_id: itemSegmentId,
             chunk_id: seq,
             chunk_size_bytes: blob.size,
             chunk_mime_type: mimeType || (recorder ? recorder.mimeType : '')
@@ -156,7 +181,7 @@
 
           if (typeof deps.emitEvent === 'function') {
             deps.emitEvent('stt_chunk_upload_end', {
-              segment_id: segmentId,
+              segment_id: itemSegmentId,
               chunk_id: seq,
               http_status: res.status,
               elapsed_ms: Date.now() - uploadStart
@@ -172,10 +197,21 @@
           const fullTranscript = cleanTranscript(body?.text || body?.transcript || '');
           if (typeof deps.emitEvent === 'function') {
             deps.emitEvent('stt_result_raw', {
-              segment_id: segmentId,
+              segment_id: itemSegmentId,
               chunk_id: seq,
               transcript_full: fullTranscript
             });
+          }
+          if (itemSegmentId !== segmentId) {
+            if (typeof deps.emitEvent === 'function') {
+              deps.emitEvent('stt_result_ignored_stale_segment', {
+                segment_id: itemSegmentId,
+                current_segment_id: segmentId,
+                chunk_id: seq,
+                transcript_full: fullTranscript
+              });
+            }
+            continue;
           }
           if (!fullTranscript) {
             lastTranscript = '';
@@ -188,7 +224,7 @@
 
           if (typeof deps.emitEvent === 'function') {
             deps.emitEvent('stt_result_delta', {
-              segment_id: segmentId,
+              segment_id: itemSegmentId,
               chunk_id: seq,
               transcript_delta: transcript
             });
@@ -199,7 +235,10 @@
             index: seq,
             transcript,
             confidence: null,
-            abortAndReset
+            abortAndReset,
+            source_problem_id: context.problem_id,
+            source_segment_id: itemSegmentId,
+            source_chunk_id: seq
           });
         } catch (err) {
           deps.logLine('STT_ERR', `Whisper request failed for chunk ${seq}: ${err && err.message ? err.message : String(err)}`);
@@ -211,13 +250,34 @@
 
     function enqueueChunk(blob) {
       if (!started || !blob || blob.size === 0) return;
+      const context = typeof deps.getEventContext === 'function'
+        ? deps.getEventContext()
+        : {};
+      const contextProblemId = normalizeProblemId(context.problem_id);
+      if (segmentId === 0) {
+        startNewSegment(contextProblemId, 'first_chunk');
+      } else if (getProblemKey(contextProblemId) !== getProblemKey(activeProblemId)) {
+        startNewSegment(contextProblemId, 'problem_changed_context');
+      }
+
       chunkSeq += 1;
       recordedChunks.push(blob);
       const mimeType = (recorder && recorder.mimeType) ? recorder.mimeType : 'audio/webm';
       const cumulativeBlob = new Blob(recordedChunks, {
         type: mimeType
       });
-      queue.push({ blob: cumulativeBlob, seq: chunkSeq, mimeType });
+      queue.push({
+        blob: cumulativeBlob,
+        seq: chunkSeq,
+        mimeType,
+        segmentId,
+        context: {
+          ...context,
+          problem_id: contextProblemId,
+          segment_id: segmentId,
+          chunk_id: chunkSeq
+        }
+      });
       void processQueue();
     }
 
@@ -267,13 +327,14 @@
       };
 
       clearState();
-      segmentId += 1;
+      startNewSegment(null, 'capture_start');
       started = true;
       recorder.start(timesliceMs);
       deps.logLine('STT_INFO', `Whisper adapter active (endpoint=${endpoint}, chunk_ms=${timesliceMs}).`);
       if (typeof deps.emitEvent === 'function') {
         deps.emitEvent('stt_capture_start', {
           segment_id: segmentId,
+          problem_id: activeProblemId,
           endpoint,
           chunk_ms: timesliceMs
         });
@@ -303,10 +364,26 @@
       stop();
     }
 
+    function onNotify(eventName, payload) {
+      if (!started) return;
+      if (eventName === 'problem_changed') {
+        const nextProblemId = normalizeProblemId(payload && payload.problem_id);
+        startNewSegment(nextProblemId, 'problem_changed_notify');
+        return;
+      }
+      if (eventName === 'voice_boundary') {
+        const state = payload && payload.state;
+        if (state === 'off') {
+          startNewSegment(activeProblemId, 'voice_off_boundary');
+        }
+      }
+    }
+
     return {
       start,
       stop,
       reset,
+      onNotify,
       isRecognizing: () => started
     };
   }
