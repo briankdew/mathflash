@@ -13,6 +13,7 @@
   let currentSessionId = null;
   let currentProblemId = null;
   const structuredEventLog = [];
+  const sessionEventLog = [];
 
   const urlParams = new URLSearchParams(window.location.search);
   const ENABLE_MIC_METER = urlParams.get('micmeter') !== '0';
@@ -138,6 +139,7 @@
     };
     eventSeq += 1;
     structuredEventLog.push(event);
+    sessionEventLog.push(event);
   }
 
   function getAdapterEventContext(overrides = {}) {
@@ -716,6 +718,7 @@
     sessionActive = true;
     currentSessionId = makeId('sess');
     currentProblemId = null;
+    sessionEventLog.length = 0;
     startEndBtn.textContent = 'End';
     setAnswerBoxEnabled(true);
     feed.textContent = '';
@@ -1043,13 +1046,14 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      if (structuredEventLog.length) {
-        const jsonl = structuredEventLog.map((e) => JSON.stringify(e)).join('\n') + '\n';
+      if (sessionEventLog.length) {
+        const jsonl = sessionEventLog.map((e) => JSON.stringify(e)).join('\n') + '\n';
         const eventsBlob = new Blob([jsonl], { type: 'application/x-ndjson' });
         const eventsUrl = URL.createObjectURL(eventsBlob);
         const eventsLink = document.createElement('a');
         eventsLink.href = eventsUrl;
-        eventsLink.download = `speechCapture_events_${platform}_${date}.${time}.jsonl`;
+        const sessionSuffix = currentSessionId ? `_${currentSessionId}` : '';
+        eventsLink.download = `speechCapture_events_${platform}_${date}.${time}${sessionSuffix}.jsonl`;
         document.body.appendChild(eventsLink);
         eventsLink.click();
         document.body.removeChild(eventsLink);
