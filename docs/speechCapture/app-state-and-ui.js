@@ -725,6 +725,18 @@
     }
 
     if (val != null) {
+      const expectedVal = (currentAnswer == null) ? null : String(currentAnswer);
+      if (
+        getCurrentEngineId() === 'whisper' &&
+        expectedVal != null &&
+        ((expectedVal === '15' && val === '50') || (expectedVal === '16' && val === '60'))
+      ) {
+        emitEvent('stt_suspected_teens_tens_confusion', {
+          expected_value: expectedVal,
+          recognized_value: val,
+          transcript_cleaned: cleaned
+        });
+      }
       submitDigit(val);
     }
   }

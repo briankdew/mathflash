@@ -1,6 +1,8 @@
 (() => {
   const DEFAULT_ENDPOINT = '/api/stt/whisper';
   const DEFAULT_TIMESLICE_MS = 1200;
+  const RESULT_SETTLE_MS = 700;
+  const WINDOW_TIMEOUT_MS = 5000;
 
   function isWhisperBrowserSupported() {
     return Boolean(
@@ -57,6 +59,10 @@
     let lastTranscript = '';
     let processing = false;
     let restartingRecorder = false;
+    let pendingFinalResult = null;
+    let settleTimerId = 0;
+    let windowTimeoutTimerId = 0;
+    let voiceIsOn = false;
 
     const endpoint = DEFAULT_ENDPOINT;
     const timesliceMs = DEFAULT_TIMESLICE_MS;
@@ -66,6 +72,14 @@
     }
 
     function clearState() {
+      if (settleTimerId) {
+        clearTimeout(settleTimerId);
+        settleTimerId = 0;
+      }
+      if (windowTimeoutTimerId) {
+        clearTimeout(windowTimeoutTimerId);
+        windowTimeoutTimerId = 0;
+      }
       queue = [];
       recordedChunks = [];
       lastTranscript = '';
@@ -76,6 +90,8 @@
       windowActive = false;
       acceptingChunks = false;
       restartingRecorder = false;
+      pendingFinalResult = null;
+      voiceIsOn = false;
     }
 
     function normalizeProblemId(value) {
@@ -150,6 +166,111 @@
         stream.getTracks().forEach((t) => t.stop());
         stream = null;
       }
+    }
+
+    function clearSettleTimer() {
+      if (!settleTimerId) return;
+      clearTimeout(settleTimerId);
+      settleTimerId = 0;
+    }
+
+    function clearWindowTimeoutTimer() {
+      if (!windowTimeoutTimerId) return;
+      clearTimeout(windowTimeoutTimerId);
+      windowTimeoutTimerId = 0;
+    }
+
+    function resetWindowResultState() {
+      pendingFinalResult = null;
+      clearSettleTimer();
+      clearWindowTimeoutTimer();
+    }
+
+    function emitFinalToApp(result, reason) {
+      deps.logLine('REC_RES', `i=${result.index} final=true conf=n/a txt="${result.transcript}"`);
+      if (typeof deps.emitEvent === 'function') {
+        deps.emitEvent('stt_result_dispatch', {
+          segment_id: result.source_segment_id,
+          chunk_id: result.source_chunk_id,
+          reason
+        });
+      }
+      deps.onFinalResult({
+        index: result.index,
+        transcript: result.transcript,
+        confidence: null,
+        abortAndReset,
+        source_problem_id: result.source_problem_id,
+        source_segment_id: result.source_segment_id,
+        source_chunk_id: result.source_chunk_id
+      });
+    }
+
+    function dispatchPendingResult(reason, expectedWindowId = null) {
+      if (!windowActive) return false;
+      if (expectedWindowId != null && expectedWindowId !== activeWindowId) return false;
+      if (activeProblemId == null) return false;
+      if (!pendingFinalResult) return false;
+      if (pendingFinalResult.windowId !== activeWindowId) return false;
+
+      const result = pendingFinalResult;
+      pendingFinalResult = null;
+      emitFinalToApp(result, reason);
+      return true;
+    }
+
+    function dispatchTimeoutFallback(expectedWindowId) {
+      if (!windowActive) return;
+      if (expectedWindowId !== activeWindowId) return;
+      if (activeProblemId == null) return;
+
+      if (dispatchPendingResult('timeout_with_buffered_result', expectedWindowId)) {
+        return;
+      }
+
+      const emptyResult = {
+        index: 0,
+        transcript: '',
+        source_problem_id: activeProblemId,
+        source_segment_id: segmentId,
+        source_chunk_id: null
+      };
+      if (typeof deps.emitEvent === 'function') {
+        deps.emitEvent('stt_result_timeout_fallback', {
+          segment_id: segmentId,
+          window_id: activeWindowId,
+          reason: 'timeout_no_result'
+        });
+      }
+      emitFinalToApp(emptyResult, 'timeout_no_result');
+    }
+
+    function scheduleSettleFlush(reason) {
+      if (activeProblemId == null || !windowActive) return;
+      clearSettleTimer();
+      const expectedWindowId = activeWindowId;
+      settleTimerId = setTimeout(() => {
+        settleTimerId = 0;
+        if (!dispatchPendingResult(`voice_off_settle:${reason}`, expectedWindowId)) {
+          if (typeof deps.emitEvent === 'function') {
+            deps.emitEvent('stt_result_settle_waiting', {
+              segment_id: segmentId,
+              window_id: expectedWindowId,
+              reason
+            });
+          }
+        }
+      }, RESULT_SETTLE_MS);
+    }
+
+    function armWindowTimeout() {
+      if (activeProblemId == null || !windowActive) return;
+      clearWindowTimeoutTimer();
+      const expectedWindowId = activeWindowId;
+      windowTimeoutTimerId = setTimeout(() => {
+        windowTimeoutTimerId = 0;
+        dispatchTimeoutFallback(expectedWindowId);
+      }, WINDOW_TIMEOUT_MS);
     }
 
     function waitForRecorderStop(targetRecorder) {
@@ -237,6 +358,7 @@
       if (expectedWindowId != null && expectedWindowId !== activeWindowId) return;
       windowActive = false;
       acceptingChunks = false;
+      resetWindowResultState();
       if (typeof deps.emitEvent === 'function') {
         deps.emitEvent('stt_problem_window_close', {
           problem_id: activeProblemId,
@@ -254,6 +376,9 @@
       startNewSegment(problemId, reason);
       windowActive = true;
       acceptingChunks = false;
+      voiceIsOn = false;
+      resetWindowResultState();
+      armWindowTimeout();
       if (typeof deps.emitEvent === 'function') {
         deps.emitEvent('stt_problem_window_open', {
           problem_id: activeProblemId,
@@ -270,6 +395,8 @@
       startNewSegment(null, reason);
       windowActive = true;
       acceptingChunks = true;
+      voiceIsOn = false;
+      resetWindowResultState();
       if (typeof deps.emitEvent === 'function') {
         deps.emitEvent('stt_problem_window_open', {
           problem_id: activeProblemId,
@@ -374,16 +501,47 @@
             });
           }
 
-          deps.logLine('REC_RES', `i=${seq} final=true conf=n/a txt="${transcript}"`);
-          deps.onFinalResult({
+          if (activeProblemId == null) {
+            emitFinalToApp({
+              index: seq,
+              transcript,
+              source_problem_id: context.problem_id,
+              source_segment_id: itemSegmentId,
+              source_chunk_id: seq
+            }, 'begin_window_immediate');
+            continue;
+          }
+
+          if (!windowActive || windowId !== activeWindowId) {
+            if (typeof deps.emitEvent === 'function') {
+              deps.emitEvent('stt_result_ignored_stale_window', {
+                segment_id: itemSegmentId,
+                chunk_id: seq,
+                window_id: windowId,
+                current_window_id: activeWindowId
+              });
+            }
+            continue;
+          }
+
+          pendingFinalResult = {
             index: seq,
             transcript,
-            confidence: null,
-            abortAndReset,
             source_problem_id: context.problem_id,
             source_segment_id: itemSegmentId,
-            source_chunk_id: seq
-          });
+            source_chunk_id: seq,
+            windowId
+          };
+          if (typeof deps.emitEvent === 'function') {
+            deps.emitEvent('stt_result_buffered', {
+              segment_id: itemSegmentId,
+              chunk_id: seq,
+              window_id: windowId
+            });
+          }
+          if (!voiceIsOn) {
+            scheduleSettleFlush('buffered_while_voice_off');
+          }
         } catch (err) {
           deps.logLine('STT_ERR', `Whisper request failed for chunk ${seq}: ${err && err.message ? err.message : String(err)}`);
         }
@@ -490,6 +648,17 @@
         const nextProblemId = normalizeProblemId(payload && payload.problem_id);
         openProblemWindow(nextProblemId, 'problem_changed_notify');
         return;
+      }
+      if (eventName === 'voice_boundary') {
+        if (activeProblemId == null || !windowActive) return;
+        const state = payload && payload.state;
+        if (state === 'on') {
+          voiceIsOn = true;
+          clearSettleTimer();
+        } else if (state === 'off') {
+          voiceIsOn = false;
+          scheduleSettleFlush('voice_off');
+        }
       }
     }
 
