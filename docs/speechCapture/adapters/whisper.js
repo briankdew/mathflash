@@ -83,7 +83,7 @@
       segmentId += 1;
       chunkSeq = 0;
       queue = [];
-      recordedChunks = [];
+      // Keep cumulative chunks so each upload remains a decodable container stream.
       lastTranscript = '';
       activeProblemId = normalizeProblemId(problemId);
       if (typeof deps.emitEvent === 'function') {
