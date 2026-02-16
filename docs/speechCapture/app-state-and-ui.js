@@ -698,7 +698,32 @@
       return;
     }
 
-    const val = speechProcessing.normalizeToNumber(transcript);
+    if (!awaitingSubmission) {
+      emitEvent('stt_final_ignored_no_active_problem', {
+        transcript_raw: String(transcript || ''),
+        source_problem_id,
+        source_segment_id,
+        source_chunk_id
+      });
+      return;
+    }
+
+    let val = null;
+    if (getCurrentEngineId() === 'whisper') {
+      const whisperParseInput = cleaned.replace(/\bbegin\b/g, ' ').replace(/\s+/g, ' ').trim();
+      const candidates = speechProcessing.extractNumberCandidates(whisperParseInput);
+      if (candidates.length > 0) {
+        val = candidates[candidates.length - 1];
+      }
+      emitEvent('stt_number_candidates', {
+        transcript_parse_input: whisperParseInput,
+        number_candidates: candidates,
+        selected_value: val
+      });
+    } else {
+      val = speechProcessing.normalizeToNumber(transcript);
+    }
+
     if (val != null) {
       submitDigit(val);
     }

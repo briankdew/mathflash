@@ -136,9 +136,55 @@
     return found && total >= 0 && total <= 1000 ? String(total) : null;
   }
 
+  function extractNumberCandidates(raw) {
+    if (raw == null) return [];
+    const s = String(raw).trim().toLowerCase();
+    if (!s) return [];
+
+    const out = [];
+
+    const digitMatches = s.match(/\b\d+\b/g) || [];
+    for (const token of digitMatches) {
+      const val = parseInt(token, 10);
+      if (Number.isFinite(val) && val >= 0 && val <= 1000) {
+        out.push(String(val));
+      }
+    }
+
+    const tokens = s.split(/[^a-z]+/).filter(Boolean);
+    if (!tokens.length) return out;
+
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+
+      if (TEENS[t] != null) {
+        out.push(String(TEENS[t]));
+        continue;
+      }
+
+      if (TENS[t] != null) {
+        let n = TENS[t];
+        const next = tokens[i + 1];
+        if (next && UNITS[next] != null) {
+          n += UNITS[next];
+          i += 1;
+        }
+        if (n >= 0 && n <= 1000) out.push(String(n));
+        continue;
+      }
+
+      if (UNITS[t] != null) {
+        out.push(String(UNITS[t]));
+      }
+    }
+
+    return out;
+  }
+
   window.SpeechProcessing = {
     detectDuplicateOrMixedTokens,
     stitchTokenDigits,
-    normalizeToNumber
+    normalizeToNumber,
+    extractNumberCandidates
   };
 })();
