@@ -8,3 +8,15 @@ tools/speech/speechCapture_deprecated_delete_if_found.html
 path/to/folder/
 docs/speechCapture/combine session logs/
 mathflash index *.html
+
+# --- SpeechCapture local/dev artifacts ---
+# Whisper session exports (generated during testing)
+docs/speechCapture/whisper\ session\ logs/
+
+# Local STT server runtime artifacts
+logs/
+tmp_uploads/
+
+# Local dependency/build trees
+node_modules/
+whisper.cpp/
