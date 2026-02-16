@@ -9,6 +9,10 @@
   let lastFinalTranscript = '';
   let lastLogTimestamp = '';
   let logLineCount = 0;
+  let eventSeq = 0;
+  let currentSessionId = null;
+  let currentProblemId = null;
+  const structuredEventLog = [];
 
   const urlParams = new URLSearchParams(window.location.search);
   const ENABLE_MIC_METER = urlParams.get('micmeter') !== '0';
@@ -106,6 +110,45 @@
         available: Boolean(whisperCapability.available),
         reason: whisperCapability.reason
       }
+    };
+  }
+
+  function makeId(prefix) {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function getCurrentEngineId() {
+    if (sttAdapterManager) return sttAdapterManager.getCurrentAdapterId();
+    if (sttEngineSelect && sttEngineSelect.value) return sttEngineSelect.value;
+    return 'unknown';
+  }
+
+  function emitEvent(eventType, payload = {}) {
+    const event = {
+      ts_ms: Date.now(),
+      ts_iso: new Date().toISOString(),
+      event_seq: eventSeq,
+      event_type: eventType,
+      session_id: currentSessionId,
+      problem_id: currentProblemId,
+      segment_id: null,
+      chunk_id: null,
+      engine: getCurrentEngineId(),
+      ...payload
+    };
+    eventSeq += 1;
+    structuredEventLog.push(event);
+  }
+
+  function getAdapterEventContext(overrides = {}) {
+    return {
+      session_id: currentSessionId,
+      problem_id: currentProblemId,
+      segment_id: null,
+      chunk_id: null,
+      engine: getCurrentEngineId(),
+      client_ts_ms: Date.now(),
+      ...overrides
     };
   }
 
@@ -234,6 +277,15 @@
     spaceCount += 1;
     if (problemCounter) problemCounter.textContent = String(spaceCount);
     const logIndex = spaceCount - 1;
+    currentProblemId = logIndex;
+    emitEvent('problem_shown', {
+      problem_index: logIndex,
+      operation,
+      left: currentFact ? currentFact.left : null,
+      right: currentFact ? currentFact.right : null,
+      expected_answer: currentFact ? currentFact.answer : null,
+      auto_advanced: Boolean(logAuto)
+    });
     if (logAuto) {
       logLine('AUTO-NEXT', `Problem ${logIndex} (Ans: ${currentAnswer})`);
     } else if (mode === MODE_LEARN && currentFact) {
@@ -345,6 +397,11 @@
       lastRmsLogTs = 0;
       micMeterErrorLogged = false;
       logLine('MIC_METER', `start (threshold=${MIC_RMS_THRESHOLD} hangover_ms=${MIC_HANGOVER_MS} interval_ms=${MIC_METER_INTERVAL_MS})`);
+      emitEvent('mic_meter_start', {
+        threshold: MIC_RMS_THRESHOLD,
+        hangover_ms: MIC_HANGOVER_MS,
+        interval_ms: MIC_METER_INTERVAL_MS
+      });
       meterTimerId = setInterval(() => {
         try {
           if (!analyser) return;
@@ -361,6 +418,7 @@
             if (!voiceActive) {
               voiceActive = true;
               logLine('MIC_VOICE', `on rms=${rms.toFixed(3)}`);
+              emitEvent('mic_voice_on', { rms });
               if (!voiceTimingLogged && currentProblemStartMs) {
                 voiceOnMs = now;
                 const tProcess = (voiceOnMs - currentProblemStartMs) / 1000;
@@ -371,6 +429,7 @@
           } else if (voiceActive && (now - lastVoiceTs) > MIC_HANGOVER_MS) {
             voiceActive = false;
             logLine('MIC_VOICE', `off rms=${rms.toFixed(3)}`);
+            emitEvent('mic_voice_off', { rms });
             if (!voiceTimingLogged && currentProblemStartMs && voiceOnMs) {
               const tSpeak = (Math.max(0, now - MIC_HANGOVER_MS) - voiceOnMs) / 1000;
               const logIndex = spaceCount - 1;
@@ -391,6 +450,10 @@
       }, MIC_METER_INTERVAL_MS);
     } catch (err) {
       logLine('MIC_METER', `gum_error name=${err && err.name ? err.name : 'unknown'} message=${err && err.message ? err.message : ''}`);
+      emitEvent('mic_meter_error', {
+        error_name: err && err.name ? err.name : 'unknown',
+        error_message: err && err.message ? err.message : ''
+      });
       await stopMicMeter();
     }
   }
@@ -419,6 +482,7 @@
     micMeterErrorLogged = false;
     if (ENABLE_MIC_METER) {
       logLine('MIC_METER', 'stop');
+      emitEvent('mic_meter_stop');
     }
   }
 
@@ -475,6 +539,10 @@
     // Auto-submit immediately
     const logIndex = spaceCount - 1;
     logLine('SUBMIT', `Problem ${logIndex} (${digit})`);
+    emitEvent('answer_submitted', {
+      problem_index: logIndex,
+      submitted_value: String(digit)
+    });
     awaitingSubmission = false;
     answeredCount += 1;
 
@@ -500,6 +568,10 @@
   function skipProblemFromRecognition(reasonText, abortAndReset) {
     const logIndex = spaceCount - 1;
     logLine('PROB_SKIP', `Problem ${logIndex} (${reasonText})`);
+    emitEvent('problem_skipped', {
+      problem_index: logIndex,
+      reason: reasonText
+    });
     abortAndReset();
     logLine('REC_RESET', 'after PROB_SKIP');
     awaitingSubmission = false;
@@ -519,6 +591,9 @@
   }
 
   function handleRecognitionInterimResult({ transcript }) {
+    emitEvent('stt_interim_result', {
+      transcript_raw: String(transcript || '')
+    });
     const interimCheck = speechProcessing.detectDuplicateOrMixedTokens(transcript);
     if (interimCheck?.type === 'duplicate') {
       interimDuplicateValue = interimCheck.value;
@@ -527,6 +602,10 @@
 
   function handleRecognitionFinalResult({ transcript, abortAndReset }) {
     const cleaned = transcript.trim().toLowerCase();
+    emitEvent('stt_final_result', {
+      transcript_raw: String(transcript || ''),
+      transcript_cleaned: cleaned
+    });
 
     if (
       interimDuplicateValue != null &&
@@ -599,6 +678,8 @@
 
     const adapterDeps = {
       logLine,
+      emitEvent,
+      getEventContext: getAdapterEventContext,
       getSessionActive: () => sessionActive,
       getMicOn: () => micOn,
       onAudioStart: handleRecognitionAudioStart,
@@ -633,6 +714,8 @@
   // -----------------------------
   function startSession() {
     sessionActive = true;
+    currentSessionId = makeId('sess');
+    currentProblemId = null;
     startEndBtn.textContent = 'End';
     setAnswerBoxEnabled(true);
     feed.textContent = '';
@@ -648,6 +731,16 @@
     const sourceLabel = micOn ? 'Voice' : 'Typed';
     const sttEngine = ensureSttAdapterManager().getCurrentAdapterId();
     logLine('ENV', `Browser=${env.browser} OS=${env.os} Source=${sourceLabel} STT=${sttEngine}`);
+    emitEvent('session_start', {
+      browser: env.browser,
+      os: env.os,
+      source: sourceLabel,
+      mode,
+      operation,
+      missing_value: missingValue,
+      on_error: onErrorMode,
+      stt_engine: sttEngine
+    });
     if (ENABLE_MIC_METER) startMicMeter();
     spaceCount = 0;
     answeredCount = 0;
@@ -702,6 +795,11 @@
     currentAnswer = null;
     currentFact = null;
     awaitingSubmission = false;
+    emitEvent('session_end', {
+      answered_count: answeredCount,
+      skipped_count: skippedCount
+    });
+    currentProblemId = null;
 
     stopRecognition();
   }
@@ -715,6 +813,7 @@
     micOn = !micOn;
     setTypedModeUI();
     logLine('MIC', micOn ? 'On (voice-only)' : 'Off (typed-only)');
+    emitEvent('mic_mode_changed', { mic_on: micOn });
 
     // Enforce mode immediately
     if (micOn) {
@@ -737,6 +836,7 @@
     modeSelect.addEventListener('change', () => {
       mode = modeSelect.value;
       logLine('MODE', `Mode set to ${mode}`);
+      emitEvent('mode_changed', { mode });
       if (sessionActive && mode === MODE_EVAL && blinkToggleSelect?.value === 'on') {
         const val = parseFloat(blinkRateInput?.value) || 1.0;
         startBlinkTimer(val);
@@ -781,6 +881,7 @@
     if (!currentIsAvailable && fallbackAdapterId) {
       manager.setAdapter(fallbackAdapterId);
       logLine('STT_INFO', `Adapter '${currentAdapterId}' unavailable; switched to '${fallbackAdapterId}'.`);
+      emitEvent('stt_engine_auto_switched', { from_engine: currentAdapterId, to_engine: fallbackAdapterId });
     }
 
     sttEngineSelect.value = selectedAdapterId;
@@ -797,6 +898,7 @@
       }
       manager.setAdapter(nextAdapterId);
       renderSttStatus(nextAdapterId);
+      emitEvent('stt_engine_changed', { stt_engine: nextAdapterId });
       if (sessionActive && micOn) {
         startRecognition();
       }
@@ -807,6 +909,7 @@
     operationSelect.addEventListener('change', () => {
       operation = operationSelect.value;
       logLine('OP', `Operation set to ${operation}`);
+      emitEvent('operation_changed', { operation });
       resetFacts();
       awaitingSubmission = false;
       currentFact = null;
@@ -822,6 +925,7 @@
     missingValueSelect.addEventListener('change', () => {
       missingValue = missingValueSelect.value;
       logLine('MISS', `Missing value set to ${missingValue}`);
+      emitEvent('missing_value_changed', { missing_value: missingValue });
       applyMissingDisplay();
     });
   }
@@ -830,6 +934,7 @@
     onErrorSelect.addEventListener('change', () => {
       onErrorMode = onErrorSelect.value;
       logLine('ON_ERROR', `On error set to ${onErrorMode}`);
+      emitEvent('on_error_changed', { on_error: onErrorMode });
     });
   }
 
@@ -937,6 +1042,19 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      if (structuredEventLog.length) {
+        const jsonl = structuredEventLog.map((e) => JSON.stringify(e)).join('\n') + '\n';
+        const eventsBlob = new Blob([jsonl], { type: 'application/x-ndjson' });
+        const eventsUrl = URL.createObjectURL(eventsBlob);
+        const eventsLink = document.createElement('a');
+        eventsLink.href = eventsUrl;
+        eventsLink.download = `speechCapture_events_${platform}_${date}.${time}.jsonl`;
+        document.body.appendChild(eventsLink);
+        eventsLink.click();
+        document.body.removeChild(eventsLink);
+        URL.revokeObjectURL(eventsUrl);
+      }
     });
   }
 

@@ -46,6 +46,7 @@
     let stream = null;
     let recorder = null;
     let chunkSeq = 0;
+    let segmentId = 0;
     let queue = [];
     let recordedChunks = [];
     let lastTranscript = '';
@@ -124,15 +125,43 @@
 
       while (started && queue.length > 0) {
         const item = queue.shift();
-        const { blob, seq } = item;
+        const { blob, seq, mimeType } = item;
+        const uploadStart = Date.now();
+        const context = typeof deps.getEventContext === 'function'
+          ? deps.getEventContext({ segment_id: segmentId, chunk_id: seq, chunk_size_bytes: blob.size })
+          : {};
         const form = new FormData();
         form.append('file', blob, `whisper-chunk-${seq}.webm`);
+        form.append('session_id', String(context.session_id || ''));
+        form.append('problem_id', String(context.problem_id ?? ''));
+        form.append('segment_id', String(context.segment_id ?? segmentId));
+        form.append('chunk_id', String(context.chunk_id ?? seq));
+        form.append('engine', String(context.engine || 'whisper'));
+        form.append('client_ts_ms', String(context.client_ts_ms || Date.now()));
+
+        if (typeof deps.emitEvent === 'function') {
+          deps.emitEvent('stt_chunk_upload_start', {
+            segment_id: segmentId,
+            chunk_id: seq,
+            chunk_size_bytes: blob.size,
+            chunk_mime_type: mimeType || (recorder ? recorder.mimeType : '')
+          });
+        }
 
         try {
           const res = await fetch(endpoint, {
             method: 'POST',
             body: form
           });
+
+          if (typeof deps.emitEvent === 'function') {
+            deps.emitEvent('stt_chunk_upload_end', {
+              segment_id: segmentId,
+              chunk_id: seq,
+              http_status: res.status,
+              elapsed_ms: Date.now() - uploadStart
+            });
+          }
 
           if (!res.ok) {
             deps.logLine('STT_ERR', `Whisper HTTP ${res.status} for chunk ${seq}`);
@@ -141,6 +170,13 @@
 
           const body = await res.json();
           const fullTranscript = cleanTranscript(body?.text || body?.transcript || '');
+          if (typeof deps.emitEvent === 'function') {
+            deps.emitEvent('stt_result_raw', {
+              segment_id: segmentId,
+              chunk_id: seq,
+              transcript_full: fullTranscript
+            });
+          }
           if (!fullTranscript) {
             lastTranscript = '';
             continue;
@@ -149,6 +185,14 @@
           const transcript = getTranscriptDelta(lastTranscript, fullTranscript);
           lastTranscript = fullTranscript;
           if (!transcript) continue;
+
+          if (typeof deps.emitEvent === 'function') {
+            deps.emitEvent('stt_result_delta', {
+              segment_id: segmentId,
+              chunk_id: seq,
+              transcript_delta: transcript
+            });
+          }
 
           deps.logLine('REC_RES', `i=${seq} final=true conf=n/a txt="${transcript}"`);
           deps.onFinalResult({
@@ -169,10 +213,11 @@
       if (!started || !blob || blob.size === 0) return;
       chunkSeq += 1;
       recordedChunks.push(blob);
+      const mimeType = (recorder && recorder.mimeType) ? recorder.mimeType : 'audio/webm';
       const cumulativeBlob = new Blob(recordedChunks, {
-        type: (recorder && recorder.mimeType) ? recorder.mimeType : 'audio/webm'
+        type: mimeType
       });
-      queue.push({ blob: cumulativeBlob, seq: chunkSeq });
+      queue.push({ blob: cumulativeBlob, seq: chunkSeq, mimeType });
       void processQueue();
     }
 
@@ -222,9 +267,17 @@
       };
 
       clearState();
+      segmentId += 1;
       started = true;
       recorder.start(timesliceMs);
       deps.logLine('STT_INFO', `Whisper adapter active (endpoint=${endpoint}, chunk_ms=${timesliceMs}).`);
+      if (typeof deps.emitEvent === 'function') {
+        deps.emitEvent('stt_capture_start', {
+          segment_id: segmentId,
+          endpoint,
+          chunk_ms: timesliceMs
+        });
+      }
     }
 
     function stop() {
@@ -241,6 +294,9 @@
 
       cleanupMedia();
       clearState();
+      if (typeof deps.emitEvent === 'function') {
+        deps.emitEvent('stt_capture_stop');
+      }
     }
 
     function reset() {
