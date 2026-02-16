@@ -45,13 +45,18 @@
     let started = false;
     let stream = null;
     let recorder = null;
+    let recorderMimeType = 'audio/webm';
     let chunkSeq = 0;
     let segmentId = 0;
     let activeProblemId = null;
+    let activeWindowId = 0;
+    let windowActive = false;
+    let acceptingChunks = false;
     let queue = [];
     let recordedChunks = [];
     let lastTranscript = '';
     let processing = false;
+    let restartingRecorder = false;
 
     const endpoint = DEFAULT_ENDPOINT;
     const timesliceMs = DEFAULT_TIMESLICE_MS;
@@ -67,6 +72,10 @@
       processing = false;
       chunkSeq = 0;
       activeProblemId = null;
+      activeWindowId = 0;
+      windowActive = false;
+      acceptingChunks = false;
+      restartingRecorder = false;
     }
 
     function normalizeProblemId(value) {
@@ -75,15 +84,11 @@
       return s === '' ? null : s;
     }
 
-    function getProblemKey(value) {
-      return value == null ? '__none__' : String(value);
-    }
-
     function startNewSegment(problemId, reason) {
       segmentId += 1;
       chunkSeq = 0;
       queue = [];
-      // Keep cumulative chunks so each upload remains a decodable container stream.
+      recordedChunks = [];
       lastTranscript = '';
       activeProblemId = normalizeProblemId(problemId);
       if (typeof deps.emitEvent === 'function') {
@@ -147,13 +152,152 @@
       }
     }
 
+    function waitForRecorderStop(targetRecorder) {
+      return new Promise((resolve) => {
+        if (!targetRecorder || targetRecorder.state === 'inactive') {
+          resolve();
+          return;
+        }
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          resolve();
+        };
+        targetRecorder.addEventListener('stop', finish, { once: true });
+        setTimeout(finish, 600);
+        try {
+          targetRecorder.stop();
+        } catch {
+          finish();
+        }
+      });
+    }
+
+    function attachRecorderHandlers(nextRecorder) {
+      nextRecorder.onstart = () => {
+        deps.logLine('REC', 'onstart');
+        deps.logLine('REC', 'onaudiostart');
+        deps.onAudioStart();
+      };
+
+      nextRecorder.onerror = (event) => {
+        const msg = event && event.error && event.error.message ? event.error.message : 'unknown recorder error';
+        deps.logLine('STT_ERR', `Whisper recorder error: ${msg}`);
+      };
+
+      nextRecorder.ondataavailable = (event) => {
+        enqueueChunk(event.data);
+      };
+
+      nextRecorder.onstop = () => {
+        deps.logLine('REC', 'onaudioend');
+        deps.logLine('REC', 'onend');
+      };
+    }
+
+    function createRecorderInstance() {
+      const nextRecorder = recorderMimeType
+        ? new MediaRecorder(stream, { mimeType: recorderMimeType })
+        : new MediaRecorder(stream);
+      attachRecorderHandlers(nextRecorder);
+      return nextRecorder;
+    }
+
+    async function restartRecorderForWindow() {
+      if (!started || !stream) return;
+      if (restartingRecorder) return;
+      restartingRecorder = true;
+      acceptingChunks = false;
+
+      const oldRecorder = recorder;
+      await waitForRecorderStop(oldRecorder);
+      if (oldRecorder === recorder) {
+        recorder = null;
+      }
+
+      if (!started || !stream) {
+        restartingRecorder = false;
+        return;
+      }
+
+      try {
+        recorder = createRecorderInstance();
+        recorder.start(timesliceMs);
+        acceptingChunks = windowActive;
+      } catch (err) {
+        deps.logLine('STT_ERR', `Whisper recorder restart failed: ${err && err.message ? err.message : String(err)}`);
+      } finally {
+        restartingRecorder = false;
+      }
+    }
+
+    function closeProblemWindow(reason, extra = {}, expectedWindowId = null) {
+      if (!windowActive) return;
+      if (expectedWindowId != null && expectedWindowId !== activeWindowId) return;
+      windowActive = false;
+      acceptingChunks = false;
+      if (typeof deps.emitEvent === 'function') {
+        deps.emitEvent('stt_problem_window_close', {
+          problem_id: activeProblemId,
+          segment_id: segmentId,
+          window_id: activeWindowId,
+          reason,
+          ...extra
+        });
+      }
+    }
+
+    function openProblemWindow(problemId, reason) {
+      closeProblemWindow('replaced_by_next_problem');
+      activeWindowId += 1;
+      startNewSegment(problemId, reason);
+      windowActive = true;
+      acceptingChunks = false;
+      if (typeof deps.emitEvent === 'function') {
+        deps.emitEvent('stt_problem_window_open', {
+          problem_id: activeProblemId,
+          segment_id: segmentId,
+          window_id: activeWindowId,
+          reason
+        });
+      }
+      void restartRecorderForWindow();
+    }
+
+    function openInitialWindowForBegin(reason) {
+      activeWindowId += 1;
+      startNewSegment(null, reason);
+      windowActive = true;
+      acceptingChunks = true;
+      if (typeof deps.emitEvent === 'function') {
+        deps.emitEvent('stt_problem_window_open', {
+          problem_id: activeProblemId,
+          segment_id: segmentId,
+          window_id: activeWindowId,
+          reason
+        });
+      }
+    }
+
     async function processQueue() {
       if (processing) return;
       processing = true;
 
       while (started && queue.length > 0) {
         const item = queue.shift();
-        const { blob, seq, mimeType, segmentId: itemSegmentId, context } = item;
+        const { blob, seq, mimeType, segmentId: itemSegmentId, context, windowId } = item;
+        if (windowId !== activeWindowId || !windowActive) {
+          if (typeof deps.emitEvent === 'function') {
+            deps.emitEvent('stt_chunk_ignored_stale_window', {
+              segment_id: itemSegmentId,
+              chunk_id: seq,
+              window_id: windowId,
+              current_window_id: activeWindowId
+            });
+          }
+          continue;
+        }
         const uploadStart = Date.now();
         const form = new FormData();
         form.append('file', blob, `whisper-chunk-${seq}.webm`);
@@ -249,20 +393,14 @@
     }
 
     function enqueueChunk(blob) {
-      if (!started || !blob || blob.size === 0) return;
+      if (!started || !windowActive || !acceptingChunks || !blob || blob.size === 0) return;
       const context = typeof deps.getEventContext === 'function'
         ? deps.getEventContext()
         : {};
-      const contextProblemId = normalizeProblemId(context.problem_id);
-      if (segmentId === 0) {
-        startNewSegment(contextProblemId, 'first_chunk');
-      } else if (getProblemKey(contextProblemId) !== getProblemKey(activeProblemId)) {
-        startNewSegment(contextProblemId, 'problem_changed_context');
-      }
 
       chunkSeq += 1;
       recordedChunks.push(blob);
-      const mimeType = (recorder && recorder.mimeType) ? recorder.mimeType : 'audio/webm';
+      const mimeType = (recorder && recorder.mimeType) ? recorder.mimeType : recorderMimeType;
       const cumulativeBlob = new Blob(recordedChunks, {
         type: mimeType
       });
@@ -271,9 +409,10 @@
         seq: chunkSeq,
         mimeType,
         segmentId,
+        windowId: activeWindowId,
         context: {
           ...context,
-          problem_id: contextProblemId,
+          problem_id: activeProblemId,
           segment_id: segmentId,
           chunk_id: chunkSeq
         }
@@ -296,40 +435,20 @@
         return;
       }
 
-      const mimeType = pickMimeType();
+      recorderMimeType = pickMimeType() || '';
 
       try {
-        recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        recorder = createRecorderInstance();
       } catch (err) {
         deps.logLine('STT_ERR', `Whisper MediaRecorder init failed: ${err && err.message ? err.message : String(err)}`);
         cleanupMedia();
         return;
       }
 
-      recorder.onstart = () => {
-        deps.logLine('REC', 'onstart');
-        deps.logLine('REC', 'onaudiostart');
-        deps.onAudioStart();
-      };
-
-      recorder.onerror = (event) => {
-        const msg = event && event.error && event.error.message ? event.error.message : 'unknown recorder error';
-        deps.logLine('STT_ERR', `Whisper recorder error: ${msg}`);
-      };
-
-      recorder.ondataavailable = (event) => {
-        enqueueChunk(event.data);
-      };
-
-      recorder.onstop = () => {
-        deps.logLine('REC', 'onaudioend');
-        deps.logLine('REC', 'onend');
-      };
-
       clearState();
-      startNewSegment(null, 'capture_start');
       started = true;
       recorder.start(timesliceMs);
+      openInitialWindowForBegin('await_begin');
       deps.logLine('STT_INFO', `Whisper adapter active (endpoint=${endpoint}, chunk_ms=${timesliceMs}).`);
       if (typeof deps.emitEvent === 'function') {
         deps.emitEvent('stt_capture_start', {
@@ -344,6 +463,7 @@
     function stop() {
       if (!started && !recorder && !stream) return;
       started = false;
+      closeProblemWindow('capture_stop');
 
       if (recorder && recorder.state !== 'inactive') {
         try {
@@ -368,14 +488,8 @@
       if (!started) return;
       if (eventName === 'problem_changed') {
         const nextProblemId = normalizeProblemId(payload && payload.problem_id);
-        startNewSegment(nextProblemId, 'problem_changed_notify');
+        openProblemWindow(nextProblemId, 'problem_changed_notify');
         return;
-      }
-      if (eventName === 'voice_boundary') {
-        const state = payload && payload.state;
-        if (state === 'off') {
-          startNewSegment(activeProblemId, 'voice_off_boundary');
-        }
       }
     }
 
