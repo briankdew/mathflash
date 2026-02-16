@@ -20,7 +20,7 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [x] Log raw/normalized transcript output.
     - [x] Log final response status and payload summary.
 
-4. [ ] **Establish problem boundaries and set boundary policy**
+4. [x] **Establish problem boundaries and set boundary policy**
    1. [x] **4.1 Introduce hard problem boundaries (first pass)**
        - [x] Add initial `await_begin` window so begin detection can bootstrap.
        - [x] Open per-problem windows on `problem_changed`.
@@ -28,10 +28,10 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
        - [x] Reject stale window/segment results.
        - [x] Prevent non-parseable final (e.g., `"Nice"`) from wedging the session.
 
-   2. [ ] **4.2 Complete boundary policy (utterance-final boundaries)**
-       - [ ] Close answer windows using `MIC_VOICE off + settle` (plus timeout fallback), not first parseable text.
-       - [ ] Submit from utterance-final candidate for the active problem.
-       - [ ] Keep begin-window behavior separate from answer-window behavior.
+   2. [x] **4.2 Complete boundary policy (utterance-final boundaries)**
+       - [x] Close answer windows using `MIC_VOICE off + settle` (plus timeout fallback), not first parseable text.
+       - [x] Submit from utterance-final candidate for the active problem.
+       - [x] Keep begin-window behavior separate from answer-window behavior.
 
 5. [ ] **A/B chunking strategy (now a priority)**
     - [ ] **Mode A**: fixed `chunk_ms` periodic uploads.
@@ -39,9 +39,10 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Compare accuracy, latency, request volume, and failure modes.
 
 6. [ ] **Submission and grading integrity rules**
-    - [ ] Do not silently coerce ambiguous values (`50` vs `15`, `60` vs `16`).
-    - [ ] Add suspicious-recognition flags (for analysis) without changing grading semantics.
+    - [x] Do not silently coerce ambiguous values (`50` vs `15`, `60` vs `16`).
+    - [x] Add suspicious-recognition flags (for analysis) without changing grading semantics.
     - [ ] Ensure one clear submission policy per mode (`learn` vs `eval/challenge`).
+    - [ ] `NOTE (deferred)`: finalize `eval/challenge` behavior after `learn` mode is fully tuned/stable.
 
 7. [ ] **Persist logs to structured files**
     - [x] JSONL outputs are in place (client session exports + server debug JSONL).
@@ -70,6 +71,7 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Standard quick set: `3 x 10` problems.
     - [ ] Standard full set: `5 x 10` problems.
     - [ ] Keep environment notes with each batch (`browser`, `mic`, `model`, `chunk mode`).
+    - [ ] Add a separate structured atypical-input protocol (nonsense audio, prolonged silence, intentional wrong answers).
 
 12. [ ] **Exit criteria before cleanup**
     - [ ] `>=95%` first-answer accuracy on standard quick set (`3 x 10`) for two consecutive runs.

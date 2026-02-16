@@ -3,6 +3,15 @@
   const DEFAULT_TIMESLICE_MS = 1200;
   const RESULT_SETTLE_MS = 700;
   const WINDOW_TIMEOUT_MS = 5000;
+  const CHUNK_MODE_PERIODIC = 'periodic';
+  const CHUNK_MODE_UTTERANCE = 'utterance';
+
+  function resolveChunkMode() {
+    const params = new URLSearchParams(window.location.search);
+    const value = String(params.get('whisperChunkMode') || '').trim().toLowerCase();
+    if (value === CHUNK_MODE_PERIODIC) return CHUNK_MODE_PERIODIC;
+    return CHUNK_MODE_UTTERANCE;
+  }
 
   function isWhisperBrowserSupported() {
     return Boolean(
@@ -66,6 +75,8 @@
 
     const endpoint = DEFAULT_ENDPOINT;
     const timesliceMs = DEFAULT_TIMESLICE_MS;
+    const chunkMode = resolveChunkMode();
+    const isUtteranceChunkMode = chunkMode === CHUNK_MODE_UTTERANCE;
 
     function abortAndReset() {
       stop();
@@ -325,6 +336,32 @@
       return nextRecorder;
     }
 
+    function startRecorderCapture(targetRecorder) {
+      if (!targetRecorder) return;
+      if (isUtteranceChunkMode) {
+        targetRecorder.start();
+      } else {
+        targetRecorder.start(timesliceMs);
+      }
+    }
+
+    function requestRecorderChunk(reason) {
+      if (!isUtteranceChunkMode) return;
+      if (!recorder || recorder.state !== 'recording') return;
+      try {
+        recorder.requestData();
+        if (typeof deps.emitEvent === 'function') {
+          deps.emitEvent('stt_chunk_request', {
+            segment_id: segmentId,
+            window_id: activeWindowId,
+            reason
+          });
+        }
+      } catch (err) {
+        deps.logLine('STT_ERR', `Whisper requestData failed: ${err && err.message ? err.message : String(err)}`);
+      }
+    }
+
     async function restartRecorderForWindow() {
       if (!started || !stream) return;
       if (restartingRecorder) return;
@@ -344,7 +381,7 @@
 
       try {
         recorder = createRecorderInstance();
-        recorder.start(timesliceMs);
+        startRecorderCapture(recorder);
         acceptingChunks = windowActive;
       } catch (err) {
         deps.logLine('STT_ERR', `Whisper recorder restart failed: ${err && err.message ? err.message : String(err)}`);
@@ -557,13 +594,16 @@
         : {};
 
       chunkSeq += 1;
-      recordedChunks.push(blob);
       const mimeType = (recorder && recorder.mimeType) ? recorder.mimeType : recorderMimeType;
-      const cumulativeBlob = new Blob(recordedChunks, {
-        type: mimeType
-      });
+      let uploadBlob = blob;
+      if (!isUtteranceChunkMode) {
+        recordedChunks.push(blob);
+        uploadBlob = new Blob(recordedChunks, {
+          type: mimeType
+        });
+      }
       queue.push({
-        blob: cumulativeBlob,
+        blob: uploadBlob,
         seq: chunkSeq,
         mimeType,
         segmentId,
@@ -605,14 +645,18 @@
 
       clearState();
       started = true;
-      recorder.start(timesliceMs);
+      startRecorderCapture(recorder);
       openInitialWindowForBegin('await_begin');
-      deps.logLine('STT_INFO', `Whisper adapter active (endpoint=${endpoint}, chunk_ms=${timesliceMs}).`);
+      deps.logLine(
+        'STT_INFO',
+        `Whisper adapter active (endpoint=${endpoint}, chunk_mode=${chunkMode}, chunk_ms=${timesliceMs}).`
+      );
       if (typeof deps.emitEvent === 'function') {
         deps.emitEvent('stt_capture_start', {
           segment_id: segmentId,
           problem_id: activeProblemId,
           endpoint,
+          chunk_mode: chunkMode,
           chunk_ms: timesliceMs
         });
       }
@@ -650,14 +694,19 @@
         return;
       }
       if (eventName === 'voice_boundary') {
-        if (activeProblemId == null || !windowActive) return;
+        if (!windowActive) return;
         const state = payload && payload.state;
         if (state === 'on') {
           voiceIsOn = true;
-          clearSettleTimer();
+          if (activeProblemId != null) {
+            clearSettleTimer();
+          }
         } else if (state === 'off') {
           voiceIsOn = false;
-          scheduleSettleFlush('voice_off');
+          requestRecorderChunk('voice_off');
+          if (activeProblemId != null) {
+            scheduleSettleFlush('voice_off');
+          }
         }
       }
     }

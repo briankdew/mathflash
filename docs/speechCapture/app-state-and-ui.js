@@ -767,7 +767,7 @@
         vosk: () => window.createVoskAdapter(adapterDeps),
         whisper: () => window.createWhisperAdapter(adapterDeps)
       },
-      defaultAdapterId: 'webspeech',
+      defaultAdapterId: 'whisper',
       logLine
     });
 
