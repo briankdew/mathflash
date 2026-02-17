@@ -17,7 +17,7 @@ const FFMPEG_BIN = process.env.FFMPEG_BIN || 'ffmpeg';
 const WHISPER_TIMEOUT_MS = Number(process.env.WHISPER_TIMEOUT_MS || 20000);
 const STT_DEBUG_ENABLED = process.env.STT_DEBUG !== '0';
 const STT_DEBUG_LOG_PATH = process.env.STT_DEBUG_LOG_PATH || path.join(__dirname, 'logs', 'stt-server-events.jsonl');
-const CLIENT_TEST_LOGS_DIR = process.env.CLIENT_TEST_LOGS_DIR || path.join(__dirname, 'docs', 'speechCapture', 'whisper session logs');
+const CLIENT_TEST_LOGS_DIR = process.env.CLIENT_TEST_LOGS_DIR || path.join(__dirname, 'docs', 'speechCapture', 'speechcapture-session-logs');
 
 // Serve your current frontend
 app.use(express.static(path.join(__dirname, 'docs/speechCapture')));

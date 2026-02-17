@@ -11,7 +11,7 @@ mathflash index *.html
 
 # --- SpeechCapture local/dev artifacts ---
 # Whisper session exports (generated during testing)
-docs/speechCapture/whisper\ session\ logs/
+docs/speechCapture/speechcapture-session-logs/
 
 # Local STT server runtime artifacts
 logs/

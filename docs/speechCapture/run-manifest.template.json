@@ -19,8 +19,8 @@
   "on_error_mode": "new",
   "notes": "Structured run. Quiet room. Normal speaking pace.",
   "files": {
-    "client_events_glob": "whisper session logs/speechCapture_events_*.jsonl",
-    "client_log_glob": "whisper session logs/speechCapture_log_*.txt",
-    "server_events_file": "whisper session logs/stt-server-events.jsonl"
+    "client_events_glob": "speechcapture-session-logs/speechCapture_events_*.jsonl",
+    "client_log_glob": "speechcapture-session-logs/speechCapture_log_*.txt",
+    "server_events_file": "speechcapture-session-logs/stt-server-events.jsonl"
   }
 }
