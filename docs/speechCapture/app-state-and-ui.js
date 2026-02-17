@@ -12,8 +12,13 @@
   let eventSeq = 0;
   let currentSessionId = null;
   let currentProblemId = null;
+  let testRunEnabled = false;
+  let testRunId = null;
+  let testRunSessionCount = 0;
+  let currentSessionRunIndex = null;
   const structuredEventLog = [];
   const sessionEventLog = [];
+  const TEST_RUN_LOG_ENDPOINT = '/api/logs/client-events';
 
   const urlParams = new URLSearchParams(window.location.search);
   const ENABLE_MIC_METER = urlParams.get('micmeter') !== '0';
@@ -47,6 +52,7 @@
   const operationSelect = document.getElementById('operationSelect');
   const missingValueSelect = document.getElementById('missingValueSelect');
   const onErrorSelect = document.getElementById('onErrorSelect');
+  const testRunToggle = document.getElementById('testRunToggle');
   const leftOperandValue = document.getElementById('leftOperandValue');
   const rightOperandValue = document.getElementById('rightOperandValue');
   const operatorBox = document.getElementById('operatorBox');
@@ -118,6 +124,12 @@
     return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   }
 
+  function makeRunId() {
+    const now = new Date();
+    const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+    return `run_${stamp}_${Math.random().toString(36).slice(2, 6)}`;
+  }
+
   function getCurrentEngineId() {
     if (sttAdapterManager) return sttAdapterManager.getCurrentAdapterId();
     if (sttEngineSelect && sttEngineSelect.value) return sttEngineSelect.value;
@@ -135,6 +147,9 @@
       segment_id: null,
       chunk_id: null,
       engine: getCurrentEngineId(),
+      test_run: testRunEnabled,
+      run_id: testRunEnabled ? testRunId : null,
+      session_index_in_run: testRunEnabled ? currentSessionRunIndex : null,
       ...payload
     };
     eventSeq += 1;
@@ -150,8 +165,49 @@
       chunk_id: null,
       engine: getCurrentEngineId(),
       client_ts_ms: Date.now(),
+      test_run: testRunEnabled,
+      run_id: testRunEnabled ? testRunId : null,
+      session_index_in_run: testRunEnabled ? currentSessionRunIndex : null,
       ...overrides
     };
+  }
+
+  function postSessionEventsToTestRunLog() {
+    if (!testRunEnabled || !testRunId || !sessionEventLog.length) return;
+    const events = sessionEventLog.slice();
+    const runId = testRunId;
+    const sessionId = currentSessionId;
+    const sessionIndex = currentSessionRunIndex;
+    void fetch(TEST_RUN_LOG_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        test_run: true,
+        run_id: runId,
+        session_id: sessionId,
+        session_index_in_run: sessionIndex,
+        events
+      })
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          let body = '';
+          try {
+            body = await res.text();
+          } catch {
+            body = '';
+          }
+          throw new Error(`HTTP ${res.status}${body ? ` ${body}` : ''}`);
+        }
+        return res.json().catch(() => ({}));
+      })
+      .then((body) => {
+        const file = body?.file ? ` -> ${body.file}` : '';
+        logLine('TEST_RUN', `Session events appended (${events.length})${file}`);
+      })
+      .catch((err) => {
+        logLine('TEST_RUN', `Failed to append session events: ${err && err.message ? err.message : String(err)}`);
+      });
   }
 
   function notifySttAdapter(eventName, payload = {}) {
@@ -790,6 +846,14 @@
     sessionActive = true;
     currentSessionId = makeId('sess');
     currentProblemId = null;
+    if (testRunToggle) testRunToggle.disabled = true;
+    if (testRunEnabled) {
+      if (!testRunId) testRunId = makeRunId();
+      testRunSessionCount += 1;
+      currentSessionRunIndex = testRunSessionCount;
+    } else {
+      currentSessionRunIndex = null;
+    }
     sessionEventLog.length = 0;
     startEndBtn.textContent = 'End';
     setAnswerBoxEnabled(true);
@@ -840,6 +904,9 @@
     lastFinalTranscript = '';
     resetFacts();
     logLine('SESSION', 'Start (active)');
+    if (testRunEnabled) {
+      logLine('TEST_RUN', `ON run_id=${testRunId} session_index=${currentSessionRunIndex}`);
+    }
     if (blinkToggleSelect?.value === 'on' && mode === MODE_EVAL) {
       startBlinkTimer(parseFloat(blinkRateInput?.value) || 1.0);
     }
@@ -850,6 +917,7 @@
   function endSession() {
     sessionActive = false;
     startEndBtn.textContent = 'Start';
+    if (testRunToggle) testRunToggle.disabled = false;
     setAnswerBoxEnabled(false);
     logLine('SESSION', 'End (idle)');
     stopBlinkTimer();
@@ -874,6 +942,8 @@
       answered_count: answeredCount,
       skipped_count: skippedCount
     });
+    postSessionEventsToTestRunLog();
+    currentSessionRunIndex = null;
     currentProblemId = null;
 
     stopRecognition();
@@ -1131,6 +1201,31 @@
         document.body.removeChild(eventsLink);
         URL.revokeObjectURL(eventsUrl);
       }
+    });
+  }
+
+  if (testRunToggle) {
+    testRunToggle.checked = testRunEnabled;
+    testRunToggle.disabled = sessionActive;
+    testRunToggle.addEventListener('change', () => {
+      if (sessionActive) {
+        testRunToggle.checked = testRunEnabled;
+        return;
+      }
+      testRunEnabled = Boolean(testRunToggle.checked);
+      if (testRunEnabled) {
+        testRunId = makeRunId();
+        testRunSessionCount = 0;
+        logLine('TEST_RUN', `ON run_id=${testRunId}`);
+      } else {
+        logLine('TEST_RUN', 'OFF');
+        testRunId = null;
+        testRunSessionCount = 0;
+      }
+      emitEvent('test_run_toggled', {
+        test_run_enabled: testRunEnabled,
+        run_id: testRunEnabled ? testRunId : null
+      });
     });
   }
 

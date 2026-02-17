@@ -9,6 +9,7 @@ const execFileAsync = promisify(execFile);
 
 const app = express();
 const upload = multer({ dest: 'tmp_uploads/' });
+app.use(express.json({ limit: '5mb' }));
 
 const WHISPER_CPP_BIN = process.env.WHISPER_CPP_BIN || path.join(__dirname, 'whisper.cpp', 'build', 'bin', 'whisper-cli');
 const WHISPER_MODEL = process.env.WHISPER_MODEL || path.join(__dirname, 'whisper.cpp', 'models', 'ggml-tiny.en.bin');
@@ -16,6 +17,7 @@ const FFMPEG_BIN = process.env.FFMPEG_BIN || 'ffmpeg';
 const WHISPER_TIMEOUT_MS = Number(process.env.WHISPER_TIMEOUT_MS || 20000);
 const STT_DEBUG_ENABLED = process.env.STT_DEBUG !== '0';
 const STT_DEBUG_LOG_PATH = process.env.STT_DEBUG_LOG_PATH || path.join(__dirname, 'logs', 'stt-server-events.jsonl');
+const CLIENT_TEST_LOGS_DIR = process.env.CLIENT_TEST_LOGS_DIR || path.join(__dirname, 'docs', 'speechCapture', 'whisper session logs');
 
 // Serve your current frontend
 app.use(express.static(path.join(__dirname, 'docs/speechCapture')));
@@ -35,6 +37,12 @@ function toNullableString(value) {
   if (value == null) return null;
   const s = String(value).trim();
   return s === '' ? null : s;
+}
+
+function sanitizeFilePart(value, fallback = 'run') {
+  const raw = toNullableString(value) || fallback;
+  const safe = raw.replace(/[^a-zA-Z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+  return safe || fallback;
 }
 
 function parseRequestContext(req) {
@@ -64,6 +72,25 @@ async function appendServerEvent(eventType, payload = {}) {
   } catch (err) {
     console.error('Failed writing STT debug log:', err && err.message ? err.message : err);
   }
+}
+
+async function appendClientTestEvents(runId, events) {
+  const safeRunId = sanitizeFilePart(runId, 'run');
+  const filePath = path.join(CLIENT_TEST_LOGS_DIR, `speechCapture_events_run_${safeRunId}.jsonl`);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+
+  const lines = events.map((event) => JSON.stringify({
+    ingest_ts_ms: Date.now(),
+    ingest_ts_iso: new Date().toISOString(),
+    ...event
+  }));
+
+  if (!lines.length) {
+    return filePath;
+  }
+
+  await fs.appendFile(filePath, `${lines.join('\n')}\n`, 'utf8');
+  return filePath;
 }
 
 async function convertToWav(inputPath, outputPath, context) {
@@ -219,10 +246,44 @@ app.post('/api/stt/whisper', upload.single('file'), async (req, res) => {
   }
 });
 
+app.post('/api/logs/client-events', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const isTestRun = body.test_run === true || String(body.test_run).toLowerCase() === 'true';
+    if (!isTestRun) {
+      return res.status(400).json({ error: 'test_run must be true' });
+    }
+
+    const runId = toNullableString(body.run_id);
+    const payload = body.events != null ? body.events : body.event;
+    const events = Array.isArray(payload) ? payload : (payload ? [payload] : []);
+    if (!events.length) {
+      return res.status(400).json({ error: 'Missing events payload' });
+    }
+
+    const normalizedEvents = events.map((event) => ({
+      ...event,
+      run_id: toNullableString(event?.run_id) || runId
+    }));
+
+    const filePath = await appendClientTestEvents(runId || normalizedEvents[0]?.run_id, normalizedEvents);
+    return res.json({
+      ok: true,
+      events_written: normalizedEvents.length,
+      file: filePath
+    });
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    console.error('Client event log write failed:', message);
+    return res.status(500).json({ error: 'Client event log write failed' });
+  }
+});
+
 app.listen(8001, () => {
   console.log('Server running on http://localhost:8001');
   console.log(`WHISPER_CPP_BIN=${WHISPER_CPP_BIN}`);
   console.log(`WHISPER_MODEL=${WHISPER_MODEL}`);
   console.log(`STT_DEBUG_ENABLED=${STT_DEBUG_ENABLED}`);
   console.log(`STT_DEBUG_LOG_PATH=${STT_DEBUG_LOG_PATH}`);
+  console.log(`CLIENT_TEST_LOGS_DIR=${CLIENT_TEST_LOGS_DIR}`);
 });

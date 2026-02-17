@@ -1,0 +1,26 @@
+{
+  "run_label": "2026-02-16_quick_3x10_utterance_tiny_en",
+  "run_type": "quick_3x10",
+  "date_iso": "2026-02-16",
+  "frontend_origin": "http://localhost:8001",
+  "browser": "Chrome",
+  "os": "ChromeOS",
+  "mic_setup": "built_in_mic",
+  "stt_engine": "whisper",
+  "chunk_mode": "utterance",
+  "whisper_model": "ggml-tiny.en.bin",
+  "whisper_bin": "whisper-cli",
+  "timeslice_ms": 1200,
+  "result_settle_ms": 700,
+  "window_timeout_ms": 5000,
+  "problem_count": 10,
+  "operation": "add",
+  "missing_value": "result",
+  "on_error_mode": "new",
+  "notes": "Structured run. Quiet room. Normal speaking pace.",
+  "files": {
+    "client_events_glob": "whisper session logs/speechCapture_events_*.jsonl",
+    "client_log_glob": "whisper session logs/speechCapture_log_*.txt",
+    "server_events_file": "whisper session logs/stt-server-events.jsonl"
+  }
+}

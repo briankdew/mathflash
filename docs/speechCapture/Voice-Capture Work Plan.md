@@ -80,3 +80,14 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Zero cross-problem bleed events in `50+` consecutive problems.
     - [ ] Stable begin detection.
     - [ ] Median/p90 latency within target.
+
+13. [ ] **Test-run QoL logging pipeline (server-backed)**
+    - [ ] Keep current manual `Download log` behavior for normal/non-test sessions.
+    - [x] Add server endpoint for client event ingestion/storage (test-run mode only).
+    - [x] Add visible `Test run` toggle near `Start` button:
+        - [x] `On` (green): append sessions into a shared run file/group.
+        - [x] `Off` (red): preserve current per-session manual export behavior.
+    - [x] Introduce `run_id` and `session_index_in_run` fields in client events for grouping.
+    - [ ] Keep current folder/file naming conventions initially; refine naming after usage feedback.
+    - [ ] Ensure logs remain engine-aware (`webspeech`, `vosk`, `whisper`) so cross-engine testing is comparable.
+    - [ ] Update analyzer to accept/filter by `run_id` when test-run mode is used.

@@ -89,6 +89,57 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
       opacity: 0;
     }
     .button-row { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .test-run-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .test-run-toggle input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+    .test-run-label { min-width: 62px; }
+    .test-run-switch {
+      width: 56px;
+      height: 30px;
+      border-radius: 16px;
+      background: #c43d3d;
+      border: 1px solid #7d1f1f;
+      position: relative;
+      transition: background-color 140ms ease, border-color 140ms ease;
+      display: inline-flex;
+      align-items: center;
+      padding: 2px;
+      box-sizing: border-box;
+    }
+    .test-run-knob {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+      transform: translateX(0);
+      transition: transform 140ms ease;
+      display: block;
+    }
+    .test-run-toggle input:checked + .test-run-switch {
+      background: #1f8f45;
+      border-color: #0f4f24;
+    }
+    .test-run-toggle input:checked + .test-run-switch .test-run-knob {
+      transform: translateX(26px);
+    }
+    .test-run-toggle input:disabled + .test-run-switch {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
     .begin-prompt {
       font-size: .9rem;
       font-weight: 400;
