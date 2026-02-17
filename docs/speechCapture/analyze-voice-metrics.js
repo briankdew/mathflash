@@ -48,9 +48,23 @@ function toFixedOrNA(value, digits = 1) {
   return Number(value).toFixed(digits);
 }
 
+function toNumberOrNull(value, digits = 3) {
+  if (value == null || Number.isNaN(value)) return null;
+  return Number(Number(value).toFixed(digits));
+}
+
+function csvCell(value) {
+  const text = value == null ? '' : String(value);
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
 function main() {
   const logsDir = process.argv[2] || 'whisper session logs';
   const filter = (process.argv[3] || '').trim();
+  const outPrefix = (process.argv[4] || '').trim();
   if (!fs.existsSync(logsDir)) {
     console.error(`Logs directory not found: ${logsDir}`);
     process.exit(1);
@@ -186,6 +200,7 @@ function main() {
     const submitted = firstSubmitByProblem.size;
     const problems = expectedByProblem.size;
     const accuracy = problems > 0 ? (100 * correct) / problems : 0;
+    const accuracySubmitted = submitted > 0 ? (100 * correct) / submitted : 0;
     const falseBeginRate = activeProblemFinals > 0 ? (100 * falseBeginCount) / activeProblemFinals : 0;
     const emptyFinalRate = totalFinals > 0 ? (100 * emptyFinalCount) / totalFinals : 0;
     const staleWrongRate = wrong > 0 ? (100 * staleWrong) / wrong : 0;
@@ -208,6 +223,7 @@ function main() {
       correct,
       wrong,
       accuracy,
+      accuracySubmitted,
       falseBeginRate,
       emptyFinalRate,
       staleWrongRate,
@@ -237,7 +253,8 @@ function main() {
   for (const s of sessions) {
     console.log(`[${s.chunkMode}] ${s.file}`);
     console.log(
-      `  problems=${s.problems} submitted=${s.submitted} correct=${s.correct} wrong=${s.wrong} acc=${toFixedOrNA(s.accuracy)}%`
+      `  problems=${s.problems} submitted=${s.submitted} correct=${s.correct} wrong=${s.wrong} ` +
+      `acc_shown=${toFixedOrNA(s.accuracy)}% acc_submitted=${toFixedOrNA(s.accuracySubmitted)}%`
     );
     console.log(
       `  false_begin_rate=${toFixedOrNA(s.falseBeginRate)}% empty_final_rate=${toFixedOrNA(s.emptyFinalRate)}% stale_wrong_rate=${toFixedOrNA(s.staleWrongRate)}%`
@@ -253,6 +270,7 @@ function main() {
     );
   }
 
+  const byModeSummary = [];
   console.log('\nBy chunk mode:');
   for (const [mode, list] of byMode.entries()) {
     const totals = list.reduce((acc, s) => {
@@ -293,9 +311,32 @@ function main() {
     });
 
     const acc = totals.problems > 0 ? (100 * totals.correct) / totals.problems : 0;
+    const accSubmitted = totals.submitted > 0 ? (100 * totals.correct) / totals.submitted : 0;
     const avg = (arr) => arr.length ? Math.round(arr.reduce((x, y) => x + y, 0) / arr.length) : null;
+    const modeSummary = {
+      chunk_mode: mode,
+      sessions: totals.sessions,
+      problems: totals.problems,
+      submitted: totals.submitted,
+      correct: totals.correct,
+      wrong: totals.wrong,
+      accuracy_pct: toNumberOrNull(acc, 3),
+      accuracy_submitted_pct: toNumberOrNull(accSubmitted, 3),
+      avg_false_begin_rate_pct: toNumberOrNull(totals.falseBeginSum / totals.sessions, 3),
+      avg_empty_final_rate_pct: toNumberOrNull(totals.emptyFinalSum / totals.sessions, 3),
+      avg_stale_wrong_rate_pct: toNumberOrNull(totals.staleWrongSum / totals.sessions, 3),
+      avg_numeric_wer_proxy: toNumberOrNull(totals.werSum / totals.sessions, 6),
+      avg_uploads_per_session: toNumberOrNull(totals.uploads / totals.sessions, 3),
+      avg_upload_p50_ms: avg(totals.uploadP50),
+      avg_upload_p90_ms: avg(totals.uploadP90),
+      avg_upload_max_ms: avg(totals.uploadMax),
+      server_ffmpeg_errors: totals.ffmpegErr,
+      server_whisper_errors: totals.whisperErr,
+      server_http_errors: totals.httpErr
+    };
+    byModeSummary.push(modeSummary);
     console.log(
-      `  ${mode}: sessions=${totals.sessions} acc=${toFixedOrNA(acc)}% ` +
+      `  ${mode}: sessions=${totals.sessions} acc_shown=${toFixedOrNA(acc)}% acc_submitted=${toFixedOrNA(accSubmitted)}% ` +
       `avg_false_begin=${toFixedOrNA(totals.falseBeginSum / totals.sessions)}% ` +
       `avg_empty_final=${toFixedOrNA(totals.emptyFinalSum / totals.sessions)}% ` +
       `avg_stale_wrong=${toFixedOrNA(totals.staleWrongSum / totals.sessions)}% ` +
@@ -304,6 +345,81 @@ function main() {
       `avg_upload_ms(p50/p90/max)=${avg(totals.uploadP50) ?? 'n/a'}/${avg(totals.uploadP90) ?? 'n/a'}/${avg(totals.uploadMax) ?? 'n/a'} ` +
       `server_err(ffmpeg/whisper/http)=${totals.ffmpegErr}/${totals.whisperErr}/${totals.httpErr}`
     );
+  }
+
+  if (outPrefix) {
+    const now = new Date().toISOString();
+    const sessionRows = sessions.map((s) => ({
+      file: s.file,
+      session_id: s.sessionId,
+      chunk_mode: s.chunkMode,
+      problems: s.problems,
+      submitted: s.submitted,
+      correct: s.correct,
+      wrong: s.wrong,
+      accuracy_pct: toNumberOrNull(s.accuracy, 3),
+      accuracy_submitted_pct: toNumberOrNull(s.accuracySubmitted, 3),
+      false_begin_rate_pct: toNumberOrNull(s.falseBeginRate, 3),
+      empty_final_rate_pct: toNumberOrNull(s.emptyFinalRate, 3),
+      stale_wrong_rate_pct: toNumberOrNull(s.staleWrongRate, 3),
+      numeric_wer_proxy: toNumberOrNull(s.numericWerProxy, 6),
+      stale_ignored: s.staleIgnored,
+      stale_final_ignored: s.staleFinalIgnored,
+      uploads: s.uploads,
+      upload_p50_ms: s.uploadP50,
+      upload_p90_ms: s.uploadP90,
+      upload_max_ms: s.uploadMax,
+      server_requests: s.server.requests,
+      server_responses: s.server.responses,
+      server_ffmpeg_errors: s.server.ffmpegErrors,
+      server_whisper_errors: s.server.whisperErrors,
+      server_http_errors: s.server.httpErrors
+    }));
+
+    const jsonPayload = {
+      generated_at_iso: now,
+      logs_dir: logsDir,
+      filter,
+      sessions: sessionRows,
+      by_chunk_mode: byModeSummary
+    };
+
+    const jsonPath = `${outPrefix}.json`;
+    fs.writeFileSync(jsonPath, `${JSON.stringify(jsonPayload, null, 2)}\n`, 'utf8');
+
+    const headers = [
+      'file',
+      'session_id',
+      'chunk_mode',
+      'problems',
+      'submitted',
+      'correct',
+      'wrong',
+      'accuracy_pct',
+      'accuracy_submitted_pct',
+      'false_begin_rate_pct',
+      'empty_final_rate_pct',
+      'stale_wrong_rate_pct',
+      'numeric_wer_proxy',
+      'stale_ignored',
+      'stale_final_ignored',
+      'uploads',
+      'upload_p50_ms',
+      'upload_p90_ms',
+      'upload_max_ms',
+      'server_requests',
+      'server_responses',
+      'server_ffmpeg_errors',
+      'server_whisper_errors',
+      'server_http_errors'
+    ];
+    const csvRows = [
+      headers.join(','),
+      ...sessionRows.map((row) => headers.map((h) => csvCell(row[h])).join(','))
+    ];
+    const csvPath = `${outPrefix}.csv`;
+    fs.writeFileSync(csvPath, `${csvRows.join('\n')}\n`, 'utf8');
+    console.log(`\nWrote summary files:\n  ${jsonPath}\n  ${csvPath}`);
   }
 }
 
