@@ -33,10 +33,11 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
        - [x] Submit from utterance-final candidate for the active problem.
        - [x] Keep begin-window behavior separate from answer-window behavior.
 
-5. [ ] **A/B chunking strategy (now a priority)**
-    - [ ] **Mode A**: fixed `chunk_ms` periodic uploads.
-    - [ ] **Mode B**: utterance-aligned dynamic chunk (voice-on to voice-off, single upload per answer window).
-    - [ ] Compare accuracy, latency, request volume, and failure modes.
+5. [x] **A/B chunking strategy (now a priority)**
+    - [x] **Mode A**: fixed `chunk_ms` periodic uploads.
+    - [x] **Mode B**: utterance-aligned dynamic chunk (voice-on to voice-off, single upload per answer window).
+    - [x] Compared accuracy, latency, request volume, and failure modes in structured `3 x 10` runs.
+    - [x] Selected **utterance** as default mode; kept **periodic** available as fallback via URL param.
 
 6. [ ] **Submission and grading integrity rules**
     - [x] Do not silently coerce ambiguous values (`50` vs `15`, `60` vs `16`).
