@@ -1166,41 +1166,23 @@
 
   if (downloadLogBtn) {
     downloadLogBtn.addEventListener('click', () => {
-      if (!feed.textContent) return;
-      const blob = new Blob([feed.textContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const env = detectPlatformInfo();
-      let platform = `${env.browser}_${env.os}`;
-      const sanitizePlatform = (value) => String(value || 'Unknown').replace(/[^A-Za-z0-9_]/g, '').slice(0, 20) || 'Unknown';
-      platform = sanitizePlatform(platform);
-      const now = new Date();
-      const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-      let time = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
-      if (lastLogTimestamp) {
-        const hhmm = lastLogTimestamp.slice(0, 5).replace(':', '');
-        if (/^\d{4}$/.test(hhmm)) time = hhmm;
-      }
-      a.download = `speechCapture_log_${platform}_${date}.${time}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      if (sessionEventLog.length) {
-        const jsonl = sessionEventLog.map((e) => JSON.stringify(e)).join('\n') + '\n';
-        const eventsBlob = new Blob([jsonl], { type: 'application/x-ndjson' });
-        const eventsUrl = URL.createObjectURL(eventsBlob);
-        const eventsLink = document.createElement('a');
-        eventsLink.href = eventsUrl;
-        const sessionSuffix = currentSessionId ? `_${currentSessionId}` : '';
-        eventsLink.download = `speechCapture_events_${platform}_${date}.${time}${sessionSuffix}.jsonl`;
-        document.body.appendChild(eventsLink);
-        eventsLink.click();
-        document.body.removeChild(eventsLink);
-        URL.revokeObjectURL(eventsUrl);
-      }
+      if (!sessionEventLog.length) return;
+      const runId = (testRunEnabled && testRunId) ? testRunId : makeRunId();
+      const eventsForDownload = sessionEventLog.map((event) => ({
+        ingest_ts_ms: Date.now(),
+        ingest_ts_iso: new Date().toISOString(),
+        ...event
+      }));
+      const jsonl = eventsForDownload.map((e) => JSON.stringify(e)).join('\n') + '\n';
+      const eventsBlob = new Blob([jsonl], { type: 'application/x-ndjson' });
+      const eventsUrl = URL.createObjectURL(eventsBlob);
+      const eventsLink = document.createElement('a');
+      eventsLink.href = eventsUrl;
+      eventsLink.download = `speechCapture_events_run_${runId}.jsonl`;
+      document.body.appendChild(eventsLink);
+      eventsLink.click();
+      document.body.removeChild(eventsLink);
+      URL.revokeObjectURL(eventsUrl);
     });
   }
 
