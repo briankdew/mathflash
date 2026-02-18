@@ -19,6 +19,7 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [x] Log `whisper-cli` start/end duration and status.
     - [x] Log raw/normalized transcript output.
     - [x] Log final response status and payload summary.
+    - [x] Treat recoverable invalid/tiny audio chunks as non-fatal (`200` with empty transcript) to prevent session wedges.
 
 4. [x] **Establish problem boundaries and set boundary policy**
    1. [x] **4.1 Introduce hard problem boundaries (first pass)**
@@ -34,10 +35,10 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
        - [x] Keep begin-window behavior separate from answer-window behavior.
 
 5. [x] **A/B chunking strategy (now a priority)**
-    - [x] **Mode A**: fixed `chunk_ms` periodic uploads.
-    - [x] **Mode B**: utterance-aligned dynamic chunk (voice-on to voice-off, single upload per answer window).
+    - [x] **Mode A**: fixed `chunk_ms` periodic uploads (`fixed`).
+    - [x] **Mode B**: utterance-aligned dynamic chunk (voice-on to voice-off, single upload per answer window) (`vad`).
     - [x] Compared accuracy, latency, request volume, and failure modes in structured `3 x 10` runs.
-    - [x] Selected **utterance** as default mode; kept **periodic** available as fallback via URL param.
+    - [x] Selected **utterance/vad** as default mode; kept **periodic/fixed** available as fallback via URL param.
 
 6. [ ] **Submission and grading integrity rules**
     - [x] Do not silently coerce ambiguous values (`50` vs `15`, `60` vs `16`).
@@ -57,10 +58,10 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
 
 9. [ ] **Track core tuning metrics per problem/run**
     - [x] `t_process`, `t_speak`, upload latency, first-answer accuracy.
-    - [ ] False begin rate.
-    - [ ] Wrong-answer-from-stale-audio rate.
-    - [ ] Empty/blank transcript rate.
-    - [ ] Numeric WER-style proxy (expected vs recognized answer tokens).
+    - [x] False begin rate.
+    - [x] Wrong-answer-from-stale-audio rate.
+    - [x] Empty/blank transcript rate.
+    - [x] Numeric WER-style proxy (expected vs recognized answer tokens).
 
 10. [ ] **Tune in this order**
     - [ ] Boundary quality first.
@@ -82,13 +83,14 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Median/p90 latency within target.
 
 13. [ ] **Test-run QoL logging pipeline (server-backed)**
-    - [ ] Keep current manual `Download log` behavior for normal/non-test sessions.
+    - [x] Keep manual `Download log` for normal/non-test sessions, but export a single run-format JSONL (matching test-run schema) for analysis portability.
     - [x] Add server endpoint for client event ingestion/storage (test-run mode only).
     - [x] Add visible `Test run` toggle near `Start` button:
         - [x] `On` (green): append sessions into a shared run file/group.
         - [x] `Off` (red): preserve current per-session manual export behavior.
     - [x] Introduce `run_id` and `session_index_in_run` fields in client events for grouping.
-    - [ ] Keep current folder/file naming conventions initially; refine naming after usage feedback.
+    - [x] Rename working log folder to `speechcapture-session-logs`.
+    - [ ] Continue phased adoption of standardized filename conventions (`ses`/`run`/`bat`/`svr` patterns).
     - [ ] Ensure logs remain engine-aware (`webspeech`, `vosk`, `whisper`) so cross-engine testing is comparable.
     - [ ] Update analyzer to accept/filter by `run_id` when test-run mode is used.
 
@@ -107,4 +109,5 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
 16. [ ] **Server log strategy (`svr`)**
     - [x] Near-term decision: keep a single append-only server debug log file for operational simplicity.
     - [x] Near-term requirement: ensure server events continue to include join keys needed for troubleshooting/analysis (for example `session_id`, `run_id`, `engine`).
+    - [x] Adopt standardized append-file naming pattern for server logs (`sc_log_svr-ymmdd.hhmm.ss.jsonl`).
     - [ ] Deferred enhancement: optional server-log rotation/splitting (for example per-run files) when workflow value outweighs added file-management overhead.
