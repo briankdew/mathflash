@@ -180,140 +180,156 @@ function main() {
 
   const sessions = [];
   for (const ef of eventFiles) {
-    const events = readJsonl(path.join(logsDir, ef)).sort((a, b) => (a.ts_ms || 0) - (b.ts_ms || 0));
-    const runIds = [...new Set(events.map((e) => String(e.run_id || '').trim()).filter(Boolean))];
-    if (runIdFilter && !runIds.includes(runIdFilter)) {
-      continue;
-    }
-    const sessionStart = events.find((e) => e.event_type === 'session_start') || {};
-    const sessionId = sessionStart.session_id || 'unknown_session';
-    const runId = runIds.length === 1 ? runIds[0] : (runIds.length ? 'mixd' : null);
-    const captureStart = events.find((e) => e.event_type === 'stt_capture_start') || {};
-    const chunkMode = captureStart.chunk_mode || 'periodic';
-    const engineToken = pickDescriptor(events.map((e) => toEngineToken(e.engine)), 'mixd', 'unkn');
-    const sourceToken = 'mic';
-
-    const expectedByProblem = new Map();
-    const firstSubmitByProblem = new Map();
-    const shownTsByProblem = new Map();
-    const submitTsByProblem = new Map();
-
-    let totalFinals = 0;
-    let activeProblemFinals = 0;
-    let falseBeginCount = 0;
-    let emptyFinalCount = 0;
-    let staleIgnored = 0;
-    let staleFinalIgnored = 0;
-
-    const uploadLatencies = [];
-    const staleEventTs = [];
-
-    for (const e of events) {
-      if (e.event_type === 'problem_shown') {
-        const idx = String(e.problem_index);
-        expectedByProblem.set(idx, String(e.expected_answer));
-        shownTsByProblem.set(idx, Number(e.ts_ms || 0));
-      }
-      if (e.event_type === 'answer_submitted') {
-        const idx = String(e.problem_index);
-        if (!firstSubmitByProblem.has(idx)) {
-          firstSubmitByProblem.set(idx, String(e.submitted_value));
-          submitTsByProblem.set(idx, Number(e.ts_ms || 0));
-        }
-      }
-
-      if (e.event_type === 'stt_final_result') {
-        totalFinals += 1;
-        const cleaned = String(e.transcript_cleaned || '').trim().toLowerCase();
-        if (cleaned.length === 0) emptyFinalCount += 1;
-        if (e.problem_id != null) {
-          activeProblemFinals += 1;
-          if (/\bbegin\b/.test(cleaned)) falseBeginCount += 1;
-        }
-      }
-
-      if (e.event_type === 'stt_final_ignored_stale') {
-        staleFinalIgnored += 1;
-        staleEventTs.push(Number(e.ts_ms || 0));
-      }
-      if (e.event_type === 'stt_result_ignored_stale_segment' || e.event_type === 'stt_result_ignored_stale_window') {
-        staleIgnored += 1;
-        staleEventTs.push(Number(e.ts_ms || 0));
-      }
-
-      if (e.event_type === 'stt_chunk_upload_end' && typeof e.elapsed_ms === 'number') {
-        uploadLatencies.push(e.elapsed_ms);
-      }
+    const fileEvents = readJsonl(path.join(logsDir, ef)).sort((a, b) => (a.ts_ms || 0) - (b.ts_ms || 0));
+    const eventsBySession = new Map();
+    for (const e of fileEvents) {
+      const sid = e.session_id ? String(e.session_id) : '__unknown__';
+      if (!eventsBySession.has(sid)) eventsBySession.set(sid, []);
+      eventsBySession.get(sid).push(e);
     }
 
-    uploadLatencies.sort((a, b) => a - b);
-
-    let correct = 0;
-    let wrong = 0;
-    let staleWrong = 0;
-    let editDistanceSum = 0;
-    let expectedChars = 0;
-    for (const [idx, exp] of expectedByProblem.entries()) {
-      const sub = firstSubmitByProblem.get(idx);
-      if (sub == null) continue;
-      if (sub === exp) {
-        correct += 1;
-      } else {
-        wrong += 1;
-      }
-      editDistanceSum += levenshtein(exp, sub);
-      expectedChars += String(exp).length;
-
-      if (sub !== exp) {
-        const start = shownTsByProblem.get(idx) || 0;
-        const end = submitTsByProblem.get(idx) || Number.MAX_SAFE_INTEGER;
-        const hasStaleDuringProblem = staleEventTs.some((ts) => ts >= start && ts <= end);
-        if (hasStaleDuringProblem) staleWrong += 1;
-      }
-    }
-
-    const submitted = firstSubmitByProblem.size;
-    const problems = expectedByProblem.size;
-    const accuracy = problems > 0 ? (100 * correct) / problems : 0;
-    const accuracySubmitted = submitted > 0 ? (100 * correct) / submitted : 0;
-    const falseBeginRate = activeProblemFinals > 0 ? (100 * falseBeginCount) / activeProblemFinals : 0;
-    const emptyFinalRate = totalFinals > 0 ? (100 * emptyFinalCount) / totalFinals : 0;
-    const staleWrongRate = wrong > 0 ? (100 * staleWrong) / wrong : 0;
-    const numericWerProxy = expectedChars > 0 ? editDistanceSum / expectedChars : 0;
-
-    const server = serverBySession.get(sessionId) || {
-      requests: 0,
-      responses: 0,
-      ffmpegErrors: 0,
-      whisperErrors: 0,
-      httpErrors: 0
-    };
-
-    sessions.push({
-      file: ef,
-      sessionId,
-      runId,
-      chunkMode,
-      engineToken,
-      sourceToken,
-      problems,
-      submitted,
-      correct,
-      wrong,
-      accuracy,
-      accuracySubmitted,
-      falseBeginRate,
-      emptyFinalRate,
-      staleWrongRate,
-      numericWerProxy,
-      staleIgnored,
-      staleFinalIgnored,
-      uploads: uploadLatencies.length,
-      uploadP50: median(uploadLatencies),
-      uploadP90: p90(uploadLatencies),
-      uploadMax: uploadLatencies.length ? uploadLatencies[uploadLatencies.length - 1] : null,
-      server
+    const sessionGroups = [...eventsBySession.entries()].sort((a, b) => {
+      const aTs = Number(a[1]?.[0]?.ts_ms || 0);
+      const bTs = Number(b[1]?.[0]?.ts_ms || 0);
+      return aTs - bTs;
     });
+
+    for (const [sidKey, events] of sessionGroups) {
+      const runIds = [...new Set(events.map((e) => String(e.run_id || '').trim()).filter(Boolean))];
+      if (runIdFilter && !runIds.includes(runIdFilter)) {
+        continue;
+      }
+
+      const sessionStart = events.find((e) => e.event_type === 'session_start') || {};
+      const sessionId = sessionStart.session_id || (sidKey === '__unknown__' ? 'unknown_session' : sidKey);
+      const runId = runIds.length === 1 ? runIds[0] : (runIds.length ? 'mixd' : null);
+      const captureStart = events.find((e) => e.event_type === 'stt_capture_start') || {};
+      const chunkMode = captureStart.chunk_mode || 'periodic';
+      const engineToken = pickDescriptor(events.map((e) => toEngineToken(e.engine)), 'mixd', 'unkn');
+      const sourceToken = 'mic';
+
+      const expectedByProblem = new Map();
+      const firstSubmitByProblem = new Map();
+      const shownTsByProblem = new Map();
+      const submitTsByProblem = new Map();
+
+      let totalFinals = 0;
+      let activeProblemFinals = 0;
+      let falseBeginCount = 0;
+      let emptyFinalCount = 0;
+      let staleIgnored = 0;
+      let staleFinalIgnored = 0;
+
+      const uploadLatencies = [];
+      const staleEventTs = [];
+
+      for (const e of events) {
+        if (e.event_type === 'problem_shown') {
+          const idx = String(e.problem_index);
+          expectedByProblem.set(idx, String(e.expected_answer));
+          shownTsByProblem.set(idx, Number(e.ts_ms || 0));
+        }
+        if (e.event_type === 'answer_submitted') {
+          const idx = String(e.problem_index);
+          if (!firstSubmitByProblem.has(idx)) {
+            firstSubmitByProblem.set(idx, String(e.submitted_value));
+            submitTsByProblem.set(idx, Number(e.ts_ms || 0));
+          }
+        }
+
+        if (e.event_type === 'stt_final_result') {
+          totalFinals += 1;
+          const cleaned = String(e.transcript_cleaned || '').trim().toLowerCase();
+          if (cleaned.length === 0) emptyFinalCount += 1;
+          if (e.problem_id != null) {
+            activeProblemFinals += 1;
+            if (/\bbegin\b/.test(cleaned)) falseBeginCount += 1;
+          }
+        }
+
+        if (e.event_type === 'stt_final_ignored_stale') {
+          staleFinalIgnored += 1;
+          staleEventTs.push(Number(e.ts_ms || 0));
+        }
+        if (e.event_type === 'stt_result_ignored_stale_segment' || e.event_type === 'stt_result_ignored_stale_window') {
+          staleIgnored += 1;
+          staleEventTs.push(Number(e.ts_ms || 0));
+        }
+
+        if (e.event_type === 'stt_chunk_upload_end' && typeof e.elapsed_ms === 'number') {
+          uploadLatencies.push(e.elapsed_ms);
+        }
+      }
+
+      uploadLatencies.sort((a, b) => a - b);
+
+      let correct = 0;
+      let wrong = 0;
+      let staleWrong = 0;
+      let editDistanceSum = 0;
+      let expectedChars = 0;
+      for (const [idx, exp] of expectedByProblem.entries()) {
+        const sub = firstSubmitByProblem.get(idx);
+        if (sub == null) continue;
+        if (sub === exp) {
+          correct += 1;
+        } else {
+          wrong += 1;
+        }
+        editDistanceSum += levenshtein(exp, sub);
+        expectedChars += String(exp).length;
+
+        if (sub !== exp) {
+          const start = shownTsByProblem.get(idx) || 0;
+          const end = submitTsByProblem.get(idx) || Number.MAX_SAFE_INTEGER;
+          const hasStaleDuringProblem = staleEventTs.some((ts) => ts >= start && ts <= end);
+          if (hasStaleDuringProblem) staleWrong += 1;
+        }
+      }
+
+      const submitted = firstSubmitByProblem.size;
+      const problems = expectedByProblem.size;
+      const accuracy = problems > 0 ? (100 * correct) / problems : 0;
+      const accuracySubmitted = submitted > 0 ? (100 * correct) / submitted : 0;
+      const falseBeginRate = activeProblemFinals > 0 ? (100 * falseBeginCount) / activeProblemFinals : 0;
+      const emptyFinalRate = totalFinals > 0 ? (100 * emptyFinalCount) / totalFinals : 0;
+      const staleWrongRate = wrong > 0 ? (100 * staleWrong) / wrong : 0;
+      const numericWerProxy = expectedChars > 0 ? editDistanceSum / expectedChars : 0;
+
+      const server = serverBySession.get(sessionId) || {
+        requests: 0,
+        responses: 0,
+        ffmpegErrors: 0,
+        whisperErrors: 0,
+        httpErrors: 0
+      };
+
+      sessions.push({
+        file: ef,
+        sessionId,
+        runId,
+        chunkMode,
+        engineToken,
+        sourceToken,
+        problems,
+        submitted,
+        correct,
+        wrong,
+        accuracy,
+        accuracySubmitted,
+        falseBeginRate,
+        emptyFinalRate,
+        staleWrongRate,
+        numericWerProxy,
+        staleIgnored,
+        staleFinalIgnored,
+        uploads: uploadLatencies.length,
+        uploadP50: median(uploadLatencies),
+        uploadP90: p90(uploadLatencies),
+        uploadMax: uploadLatencies.length ? uploadLatencies[uploadLatencies.length - 1] : null,
+        server
+      });
+    }
   }
 
   if (!sessions.length) {
