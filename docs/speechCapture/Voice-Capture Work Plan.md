@@ -103,3 +103,8 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Near-term (optional): add separate cohort summaries for `vad` vs `fixed` when both appear in the same selected set.
     - [ ] Deferred: cross-engine comparative reporting (`webspeech` vs `whisper` vs `vosk`) after sufficient structured data exists.
     - [ ] Deferred: `mic` vs `rec` comparative reporting after replay/audio-file workflows are implemented.
+
+16. [ ] **Server log strategy (`svr`)**
+    - [x] Near-term decision: keep a single append-only server debug log file for operational simplicity.
+    - [x] Near-term requirement: ensure server events continue to include join keys needed for troubleshooting/analysis (for example `session_id`, `run_id`, `engine`).
+    - [ ] Deferred enhancement: optional server-log rotation/splitting (for example per-run files) when workflow value outweighs added file-management overhead.
