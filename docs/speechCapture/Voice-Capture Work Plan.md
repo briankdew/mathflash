@@ -91,3 +91,8 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Keep current folder/file naming conventions initially; refine naming after usage feedback.
     - [ ] Ensure logs remain engine-aware (`webspeech`, `vosk`, `whisper`) so cross-engine testing is comparable.
     - [ ] Update analyzer to accept/filter by `run_id` when test-run mode is used.
+
+14. [ ] **Chunk-mode terminology alignment (`fixed` / `vad`)**
+    - [ ] Standardize chunk-mode naming to `fixed` and `vad` across UI labels.
+    - [ ] Standardize event/log/analyzer outputs to `fixed` and `vad`.
+    - [ ] Keep backward-compatible mapping from legacy names (`periodic` -> `fixed`, `utterance` -> `vad`) during transition.
