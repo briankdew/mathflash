@@ -16,7 +16,7 @@ const WHISPER_MODEL = process.env.WHISPER_MODEL || path.join(__dirname, 'whisper
 const FFMPEG_BIN = process.env.FFMPEG_BIN || 'ffmpeg';
 const WHISPER_TIMEOUT_MS = Number(process.env.WHISPER_TIMEOUT_MS || 20000);
 const STT_DEBUG_ENABLED = process.env.STT_DEBUG !== '0';
-const CLIENT_TEST_LOGS_DIR = process.env.CLIENT_TEST_LOGS_DIR || path.join(__dirname, 'docs', 'speechCapture', 'speechcapture-session-logs');
+const CLIENT_TEST_LOGS_DIR = process.env.CLIENT_TEST_LOGS_DIR || path.join(__dirname, 'docs', 'speechCapture', 'sc-session-logs');
 
 function makeShortStamp(date = new Date()) {
   const y = String(date.getFullYear()).slice(-1);
@@ -32,7 +32,7 @@ const STT_DEBUG_LOG_PATH = process.env.STT_DEBUG_LOG_PATH || path.join(
   __dirname,
   'docs',
   'speechCapture',
-  'speechcapture-session-logs',
+  'sc-session-logs',
   `sc_log_svr-${makeShortStamp()}.jsonl`
 );
 

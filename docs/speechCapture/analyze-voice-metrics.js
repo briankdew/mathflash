@@ -62,7 +62,7 @@ function csvCell(value) {
 }
 
 function main() {
-  const logsDir = process.argv[2] || 'speechcapture-session-logs';
+  const logsDir = process.argv[2] || 'sc-session-logs';
   const filter = (process.argv[3] || '').trim();
   const outPrefix = (process.argv[4] || '').trim();
   if (!fs.existsSync(logsDir)) {

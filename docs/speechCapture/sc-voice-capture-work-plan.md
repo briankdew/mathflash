@@ -89,7 +89,7 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
         - [x] `On` (green): append sessions into a shared run file/group.
         - [x] `Off` (red): preserve current per-session manual export behavior.
     - [x] Introduce `run_id` and `session_index_in_run` fields in client events for grouping.
-    - [x] Rename working log folder to `speechcapture-session-logs`.
+    - [x] Rename working log folder to `sc-session-logs`.
     - [ ] Continue phased adoption of standardized filename conventions (`ses`/`run`/`bat`/`svr` patterns).
     - [ ] Ensure logs remain engine-aware (`webspeech`, `vosk`, `whisper`) so cross-engine testing is comparable.
     - [ ] Update analyzer to accept/filter by `run_id` when test-run mode is used.
