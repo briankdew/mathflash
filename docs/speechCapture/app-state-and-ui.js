@@ -130,6 +130,74 @@
     return `run_${stamp}_${Math.random().toString(36).slice(2, 6)}`;
   }
 
+  function makeShortStamp(date = new Date()) {
+    const y = String(date.getFullYear()).slice(-1);
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    const ss = String(date.getSeconds()).padStart(2, '0');
+    return `${y}${mm}${dd}.${hh}${min}.${ss}`;
+  }
+
+  function sanitizeToken(value, fallback = 'unk') {
+    const token = String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return token || fallback;
+  }
+
+  function toEngineToken(engine) {
+    const e = sanitizeToken(engine, 'unknown');
+    if (e === 'webspeech') return 'wbsp';
+    if (e === 'whisper') return 'wspc';
+    if (e === 'vosk') return 'vosk';
+    if (e === 'unknown') return 'unkn';
+    return 'unkn';
+  }
+
+  function toChunkToken(chunkMode) {
+    const c = sanitizeToken(chunkMode, 'unknown');
+    if (c === 'periodic' || c === 'fixed' || c === 'fxd') return 'fxd';
+    if (c === 'utterance' || c === 'vad') return 'vad';
+    if (c === 'unknown') return 'unk';
+    return 'unk';
+  }
+
+  function pickDescriptor(values, mixedToken, unknownToken) {
+    const set = new Set(values.filter(Boolean));
+    if (!set.size) return unknownToken;
+    if (set.size === 1) return [...set][0];
+    return mixedToken;
+  }
+
+  function deriveSessionProblemCount(events) {
+    const keys = new Set();
+    for (const event of events) {
+      if (event.event_type !== 'problem_shown') continue;
+      const idx = event.problem_index;
+      if (idx == null) continue;
+      keys.add(String(idx));
+    }
+    return keys.size;
+  }
+
+  function deriveSessionChunkToken(events) {
+    const chunkTokens = events
+      .filter((e) => e.event_type === 'stt_capture_start')
+      .map((e) => toChunkToken(e.chunk_mode));
+    return pickDescriptor(chunkTokens, 'mxd', 'unk');
+  }
+
+  function deriveSessionEngineToken(events) {
+    const engineTokens = events.map((e) => toEngineToken(e.engine));
+    return pickDescriptor(engineTokens, 'mixd', 'unkn');
+  }
+
+  function deriveSessionUid(sessionId) {
+    const tail = String(sessionId || '').replace(/[^a-zA-Z0-9]/g, '').slice(-4).toLowerCase();
+    if (tail.length === 4) return tail;
+    return Math.random().toString(36).slice(2, 6);
+  }
+
   function getCurrentEngineId() {
     if (sttAdapterManager) return sttAdapterManager.getCurrentAdapterId();
     if (sttEngineSelect && sttEngineSelect.value) return sttEngineSelect.value;
@@ -1167,7 +1235,13 @@
   if (downloadLogBtn) {
     downloadLogBtn.addEventListener('click', () => {
       if (!sessionEventLog.length) return;
-      const runId = (testRunEnabled && testRunId) ? testRunId : makeRunId();
+      const stamp = makeShortStamp();
+      const uid = deriveSessionUid(currentSessionId);
+      const sessionCount = 1;
+      const problemCount = deriveSessionProblemCount(sessionEventLog);
+      const engine = deriveSessionEngineToken(sessionEventLog);
+      const chunk = deriveSessionChunkToken(sessionEventLog);
+      const source = 'mic';
       const eventsForDownload = sessionEventLog.map((event) => ({
         ingest_ts_ms: Date.now(),
         ingest_ts_iso: new Date().toISOString(),
@@ -1178,7 +1252,7 @@
       const eventsUrl = URL.createObjectURL(eventsBlob);
       const eventsLink = document.createElement('a');
       eventsLink.href = eventsUrl;
-      eventsLink.download = `speechCapture_events_run_${runId}.jsonl`;
+      eventsLink.download = `sc_log_ses-${stamp}-${uid}_s${sessionCount}_p${problemCount}_${engine}_${chunk}_${source}.jsonl`;
       document.body.appendChild(eventsLink);
       eventsLink.click();
       document.body.removeChild(eventsLink);

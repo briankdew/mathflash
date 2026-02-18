@@ -62,6 +62,100 @@ function sanitizeFilePart(value, fallback = 'run') {
   return safe || fallback;
 }
 
+function readJsonlLines(text) {
+  return String(text || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+function toEngineToken(engine) {
+  const e = sanitizeFilePart(String(engine || '').toLowerCase(), 'unknown');
+  if (e === 'webspeech') return 'wbsp';
+  if (e === 'whisper') return 'wspc';
+  if (e === 'vosk') return 'vosk';
+  return 'unkn';
+}
+
+function toChunkToken(chunkMode) {
+  const c = sanitizeFilePart(String(chunkMode || '').toLowerCase(), 'unknown');
+  if (c === 'periodic' || c === 'fixed' || c === 'fxd') return 'fxd';
+  if (c === 'utterance' || c === 'vad') return 'vad';
+  return 'unk';
+}
+
+function pickDescriptor(values, mixedToken, unknownToken) {
+  const set = new Set(values.filter(Boolean));
+  if (!set.size) return unknownToken;
+  if (set.size === 1) return [...set][0];
+  return mixedToken;
+}
+
+function parseRunIdParts(runId) {
+  const raw = String(runId || '');
+  const match = /^run_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_([a-z0-9]{2,})$/i.exec(raw);
+  if (match) {
+    const y = match[1].slice(-1);
+    const mm = match[2];
+    const dd = match[3];
+    const hh = match[4];
+    const min = match[5];
+    const ss = match[6];
+    const uid = sanitizeFilePart(match[7], 'run').slice(0, 4).padEnd(4, '0');
+    return { stamp: `${y}${mm}${dd}.${hh}${min}.${ss}`, uid };
+  }
+  return {
+    stamp: makeShortStamp(),
+    uid: sanitizeFilePart(raw, 'run').slice(-4).padStart(4, '0')
+  };
+}
+
+function deriveRunSummary(events) {
+  const sessionIds = new Set();
+  const problemKeys = new Set();
+  const engineTokens = [];
+  const chunkTokens = [];
+  const sourceTokens = [];
+
+  for (const event of events) {
+    const sid = toNullableString(event?.session_id);
+    if (sid) sessionIds.add(sid);
+
+    if (event?.event_type === 'problem_shown' && event?.problem_index != null) {
+      const pKey = `${sid || 'unknown'}:${String(event.problem_index)}`;
+      problemKeys.add(pKey);
+    }
+
+    engineTokens.push(toEngineToken(event?.engine));
+
+    if (event?.event_type === 'stt_capture_start') {
+      chunkTokens.push(toChunkToken(event?.chunk_mode));
+    }
+
+    const src = sanitizeFilePart(String(event?.source || event?.audio_source || 'mic').toLowerCase(), 'mic');
+    if (src === 'mic' || src === 'rec') {
+      sourceTokens.push(src);
+    } else {
+      sourceTokens.push('unk');
+    }
+  }
+
+  const sessions = sessionIds.size;
+  const problems = problemKeys.size;
+  const engine = pickDescriptor(engineTokens, 'mixd', 'unkn');
+  const chunk = pickDescriptor(chunkTokens, 'mxd', 'unk');
+  const source = pickDescriptor(sourceTokens, 'mxd', 'unk');
+  return { sessions, problems, engine, chunk, source };
+}
+
 function parseRequestContext(req) {
   const b = req.body || {};
   return {
@@ -102,22 +196,50 @@ async function appendServerEvent(eventType, payload = {}) {
 }
 
 async function appendClientTestEvents(runId, events) {
-  const safeRunId = sanitizeFilePart(runId, 'run');
-  const filePath = path.join(CLIENT_TEST_LOGS_DIR, `speechCapture_events_run_${safeRunId}.jsonl`);
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  const parts = parseRunIdParts(runId);
+  await fs.mkdir(CLIENT_TEST_LOGS_DIR, { recursive: true });
+
+  const prefix = `sc_log_run-${parts.stamp}-${parts.uid}_`;
+  const dirFiles = await fs.readdir(CLIENT_TEST_LOGS_DIR).catch(() => []);
+  const priorFile = dirFiles
+    .filter((name) => name.startsWith(prefix) && name.endsWith('.jsonl'))
+    .sort()
+    .at(-1);
+
+  let priorEvents = [];
+  let priorPath = null;
+  if (priorFile) {
+    priorPath = path.join(CLIENT_TEST_LOGS_DIR, priorFile);
+    const priorText = await fs.readFile(priorPath, 'utf8').catch(() => '');
+    priorEvents = readJsonlLines(priorText);
+  }
 
   const lines = events.map((event) => JSON.stringify({
     ingest_ts_ms: Date.now(),
     ingest_ts_iso: new Date().toISOString(),
     ...event
   }));
+  const newEvents = lines.map((line) => JSON.parse(line));
+  const summary = deriveRunSummary([...priorEvents, ...newEvents]);
+  const targetName =
+    `sc_log_run-${parts.stamp}-${parts.uid}` +
+    `_s${summary.sessions}_p${summary.problems}_${summary.engine}_${summary.chunk}_${summary.source}.jsonl`;
+  const targetPath = path.join(CLIENT_TEST_LOGS_DIR, targetName);
 
-  if (!lines.length) {
-    return filePath;
+  if (priorPath && priorPath !== targetPath) {
+    await fs.rename(priorPath, targetPath).catch(async () => {
+      const text = await fs.readFile(priorPath, 'utf8').catch(() => '');
+      await fs.writeFile(targetPath, text, 'utf8');
+      await fs.unlink(priorPath).catch(() => {});
+    });
   }
 
-  await fs.appendFile(filePath, `${lines.join('\n')}\n`, 'utf8');
-  return filePath;
+  if (!lines.length) {
+    return targetPath;
+  }
+
+  await fs.appendFile(targetPath, `${lines.join('\n')}\n`, 'utf8');
+  return targetPath;
 }
 
 async function convertToWav(inputPath, outputPath, context) {

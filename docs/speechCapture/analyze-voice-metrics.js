@@ -61,10 +61,48 @@ function csvCell(value) {
   return text;
 }
 
+function makeShortStamp(date = new Date()) {
+  const y = String(date.getFullYear()).slice(-1);
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  const ss = String(date.getSeconds()).padStart(2, '0');
+  return `${y}${mm}${dd}.${hh}${min}.${ss}`;
+}
+
+function randomUid() {
+  return Math.random().toString(36).slice(2, 6);
+}
+
+function pickDescriptor(values, mixedToken, unknownToken) {
+  const set = new Set((values || []).filter(Boolean));
+  if (!set.size) return unknownToken;
+  if (set.size === 1) return [...set][0];
+  return mixedToken;
+}
+
+function toEngineToken(engine) {
+  const e = String(engine || '').toLowerCase();
+  if (e === 'webspeech') return 'wbsp';
+  if (e === 'whisper') return 'wspc';
+  if (e === 'vosk') return 'vosk';
+  return 'unkn';
+}
+
+function toChunkToken(chunkMode) {
+  const c = String(chunkMode || '').toLowerCase();
+  if (c === 'periodic' || c === 'fixed' || c === 'fxd') return 'fxd';
+  if (c === 'utterance' || c === 'vad') return 'vad';
+  return 'unk';
+}
+
 function main() {
   const logsDir = process.argv[2] || 'sc-session-logs';
   const filter = (process.argv[3] || '').trim();
-  const outPrefix = (process.argv[4] || '').trim();
+  const outPrefixRaw = (process.argv[4] || '').trim();
+  const autoOut = outPrefixRaw.toLowerCase() === 'auto';
+  const outPrefix = autoOut ? '' : outPrefixRaw;
   if (!fs.existsSync(logsDir)) {
     console.error(`Logs directory not found: ${logsDir}`);
     process.exit(1);
@@ -72,7 +110,10 @@ function main() {
 
   const allFiles = fs.readdirSync(logsDir);
   const eventFiles = allFiles
-    .filter((name) => /^speechCapture_events_.*\.jsonl$/.test(name))
+    .filter((name) =>
+      /^speechCapture_events_.*\.jsonl$/.test(name) ||
+      /^sc_log_(?:ses|run)-.*\.jsonl$/.test(name)
+    )
     .filter((name) => (filter ? name.includes(filter) : true))
     .sort();
   const serverFiles = allFiles
@@ -120,6 +161,8 @@ function main() {
     const sessionId = sessionStart.session_id || 'unknown_session';
     const captureStart = events.find((e) => e.event_type === 'stt_capture_start') || {};
     const chunkMode = captureStart.chunk_mode || 'periodic';
+    const engineToken = pickDescriptor(events.map((e) => toEngineToken(e.engine)), 'mixd', 'unkn');
+    const sourceToken = 'mic';
 
     const expectedByProblem = new Map();
     const firstSubmitByProblem = new Map();
@@ -221,6 +264,8 @@ function main() {
       file: ef,
       sessionId,
       chunkMode,
+      engineToken,
+      sourceToken,
       problems,
       submitted,
       correct,
@@ -350,7 +395,19 @@ function main() {
     );
   }
 
-  if (outPrefix) {
+  const derivedOutPrefix = (() => {
+    if (!autoOut) return outPrefix;
+    const stamp = makeShortStamp();
+    const uid = randomUid();
+    const totalSessions = sessions.length;
+    const totalProblems = sessions.reduce((sum, s) => sum + (s.problems || 0), 0);
+    const batchEngine = pickDescriptor(sessions.map((s) => s.engineToken), 'mixd', 'unkn');
+    const batchChunk = pickDescriptor(sessions.map((s) => toChunkToken(s.chunkMode)), 'mxd', 'unk');
+    const batchSource = pickDescriptor(sessions.map((s) => s.sourceToken || 'mic'), 'mxd', 'unk');
+    return path.join(logsDir, `sc_rpt_bat-${stamp}-${uid}_s${totalSessions}_p${totalProblems}_${batchEngine}_${batchChunk}_${batchSource}`);
+  })();
+
+  if (derivedOutPrefix) {
     const now = new Date().toISOString();
     const sessionRows = sessions.map((s) => ({
       file: s.file,
@@ -387,7 +444,7 @@ function main() {
       by_chunk_mode: byModeSummary
     };
 
-    const jsonPath = `${outPrefix}.json`;
+    const jsonPath = `${derivedOutPrefix}.json`;
     fs.writeFileSync(jsonPath, `${JSON.stringify(jsonPayload, null, 2)}\n`, 'utf8');
 
     const headers = [
@@ -420,7 +477,7 @@ function main() {
       headers.join(','),
       ...sessionRows.map((row) => headers.map((h) => csvCell(row[h])).join(','))
     ];
-    const csvPath = `${outPrefix}.csv`;
+    const csvPath = `${derivedOutPrefix}.csv`;
     fs.writeFileSync(csvPath, `${csvRows.join('\n')}\n`, 'utf8');
     console.log(`\nWrote summary files:\n  ${jsonPath}\n  ${csvPath}`);
   }
