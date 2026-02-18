@@ -96,3 +96,10 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Standardize chunk-mode naming to `fixed` and `vad` across UI labels.
     - [ ] Standardize event/log/analyzer outputs to `fixed` and `vad`.
     - [ ] Keep backward-compatible mapping from legacy names (`periodic` -> `fixed`, `utterance` -> `vad`) during transition.
+
+15. [ ] **Analyzer evolution (skeleton, phased)**
+    - [ ] Near-term: accept mixed input sets containing any combination of `ses` and `run` files in one analysis pass.
+    - [ ] Near-term: preserve current report behavior when `stt/chunk/source` descriptors are homogeneous.
+    - [ ] Near-term (optional): add separate cohort summaries for `vad` vs `fixed` when both appear in the same selected set.
+    - [ ] Deferred: cross-engine comparative reporting (`webspeech` vs `whisper` vs `vosk`) after sufficient structured data exists.
+    - [ ] Deferred: `mic` vs `rec` comparative reporting after replay/audio-file workflows are implemented.
