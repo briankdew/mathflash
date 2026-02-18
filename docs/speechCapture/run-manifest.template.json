@@ -21,6 +21,6 @@
   "files": {
     "client_events_glob": "speechcapture-session-logs/speechCapture_events_*.jsonl",
     "client_log_glob": "speechcapture-session-logs/speechCapture_log_*.txt",
-    "server_events_file": "speechcapture-session-logs/stt-server-events.jsonl"
+    "server_events_file": "speechcapture-session-logs/sc_log_svr-*.jsonl"
   }
 }

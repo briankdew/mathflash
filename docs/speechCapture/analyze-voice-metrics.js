@@ -76,7 +76,10 @@ function main() {
     .filter((name) => (filter ? name.includes(filter) : true))
     .sort();
   const serverFiles = allFiles
-    .filter((name) => /^stt-server-events(?: \(\d+\))?\.jsonl$/.test(name))
+    .filter((name) =>
+      /^stt-server-events(?: \(\d+\))?\.jsonl$/.test(name) ||
+      /^sc_log_svr-\d{5}\.\d{4}\.\d{2}\.jsonl$/.test(name)
+    )
     .sort();
 
   if (!eventFiles.length) {

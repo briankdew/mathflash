@@ -16,8 +16,25 @@ const WHISPER_MODEL = process.env.WHISPER_MODEL || path.join(__dirname, 'whisper
 const FFMPEG_BIN = process.env.FFMPEG_BIN || 'ffmpeg';
 const WHISPER_TIMEOUT_MS = Number(process.env.WHISPER_TIMEOUT_MS || 20000);
 const STT_DEBUG_ENABLED = process.env.STT_DEBUG !== '0';
-const STT_DEBUG_LOG_PATH = process.env.STT_DEBUG_LOG_PATH || path.join(__dirname, 'logs', 'stt-server-events.jsonl');
 const CLIENT_TEST_LOGS_DIR = process.env.CLIENT_TEST_LOGS_DIR || path.join(__dirname, 'docs', 'speechCapture', 'speechcapture-session-logs');
+
+function makeShortStamp(date = new Date()) {
+  const y = String(date.getFullYear()).slice(-1);
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  const ss = String(date.getSeconds()).padStart(2, '0');
+  return `${y}${mm}${dd}.${hh}${min}.${ss}`;
+}
+
+const STT_DEBUG_LOG_PATH = process.env.STT_DEBUG_LOG_PATH || path.join(
+  __dirname,
+  'docs',
+  'speechCapture',
+  'speechcapture-session-logs',
+  `sc_log_svr-${makeShortStamp()}.jsonl`
+);
 
 // Serve your current frontend
 app.use(express.static(path.join(__dirname, 'docs/speechCapture')));
@@ -55,6 +72,16 @@ function parseRequestContext(req) {
     engine: toNullableString(b.engine) || 'whisper',
     client_ts_ms: toNullableString(b.client_ts_ms)
   };
+}
+
+function isRecoverableAudioInputError(errorMessage) {
+  const msg = String(errorMessage || '').toLowerCase();
+  return (
+    msg.includes('invalid data found when processing input') ||
+    msg.includes('error reading header') ||
+    msg.includes('could not find codec parameters') ||
+    msg.includes('end of file')
+  );
 }
 
 async function appendServerEvent(eventType, payload = {}) {
@@ -217,6 +244,19 @@ app.post('/api/stt/whisper', upload.single('file'), async (req, res) => {
     };
 
     await appendServerEvent('request_received', requestContext);
+
+    if (Number(req.file.size || 0) < 1024) {
+      await appendServerEvent('response_sent', {
+        ...requestContext,
+        status_code: 200,
+        elapsed_ms: Date.now() - requestStart,
+        transcript_raw: '',
+        transcript_normalized: '',
+        skipped_reason: 'tiny_upload'
+      });
+      return res.json({ text: '' });
+    }
+
     const { rawText, normalizedText } = await transcribeWithWhisper(req.file.path, requestContext);
 
     await appendServerEvent('response_sent', {
@@ -230,6 +270,21 @@ app.post('/api/stt/whisper', upload.single('file'), async (req, res) => {
     res.json({ text: String(normalizedText || '').trim() });
   } catch (err) {
     const errorMessage = err && err.message ? err.message : String(err);
+    if (isRecoverableAudioInputError(errorMessage)) {
+      await appendServerEvent('response_sent', {
+        request_id: requestId,
+        ...context,
+        status_code: 200,
+        elapsed_ms: Date.now() - requestStart,
+        transcript_raw: '',
+        transcript_normalized: '',
+        skipped_reason: 'recoverable_audio_input_error',
+        error_message: errorMessage
+      });
+      console.warn('Recoverable audio input error (returning empty transcript):', errorMessage);
+      return res.json({ text: '' });
+    }
+
     await appendServerEvent('response_sent', {
       request_id: requestId,
       ...context,
