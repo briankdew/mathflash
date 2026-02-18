@@ -140,9 +140,11 @@ function deriveRunSummary(events) {
       chunkTokens.push(toChunkToken(event?.chunk_mode));
     }
 
-    const src = sanitizeFilePart(String(event?.source || event?.audio_source || 'mic').toLowerCase(), 'mic');
-    if (src === 'mic' || src === 'rec') {
-      sourceTokens.push(src);
+    const srcRaw = sanitizeFilePart(String(event?.source || event?.audio_source || 'mic').toLowerCase(), 'mic');
+    if (srcRaw === 'mic' || srcRaw === 'voice') {
+      sourceTokens.push('mic');
+    } else if (srcRaw === 'rec' || srcRaw === 'recording' || srcRaw === 'file') {
+      sourceTokens.push('rec');
     } else {
       sourceTokens.push('unk');
     }

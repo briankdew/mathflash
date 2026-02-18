@@ -97,10 +97,34 @@ function toChunkToken(chunkMode) {
   return 'unk';
 }
 
+function parseCliArgs(argv) {
+  const positional = [];
+  let runIdFilter = '';
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '--run-id') {
+      runIdFilter = String(argv[i + 1] || '').trim();
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith('--run-id=')) {
+      runIdFilter = String(arg.slice('--run-id='.length) || '').trim();
+      continue;
+    }
+    positional.push(arg);
+  }
+
+  return {
+    logsDir: positional[0] || 'sc-session-logs',
+    filter: String(positional[1] || '').trim(),
+    outPrefixRaw: String(positional[2] || '').trim(),
+    runIdFilter
+  };
+}
+
 function main() {
-  const logsDir = process.argv[2] || 'sc-session-logs';
-  const filter = (process.argv[3] || '').trim();
-  const outPrefixRaw = (process.argv[4] || '').trim();
+  const { logsDir, filter, outPrefixRaw, runIdFilter } = parseCliArgs(process.argv.slice(2));
   const autoOut = outPrefixRaw.toLowerCase() === 'auto';
   const outPrefix = autoOut ? '' : outPrefixRaw;
   if (!fs.existsSync(logsDir)) {
@@ -157,8 +181,13 @@ function main() {
   const sessions = [];
   for (const ef of eventFiles) {
     const events = readJsonl(path.join(logsDir, ef)).sort((a, b) => (a.ts_ms || 0) - (b.ts_ms || 0));
+    const runIds = [...new Set(events.map((e) => String(e.run_id || '').trim()).filter(Boolean))];
+    if (runIdFilter && !runIds.includes(runIdFilter)) {
+      continue;
+    }
     const sessionStart = events.find((e) => e.event_type === 'session_start') || {};
     const sessionId = sessionStart.session_id || 'unknown_session';
+    const runId = runIds.length === 1 ? runIds[0] : (runIds.length ? 'mixd' : null);
     const captureStart = events.find((e) => e.event_type === 'stt_capture_start') || {};
     const chunkMode = captureStart.chunk_mode || 'periodic';
     const engineToken = pickDescriptor(events.map((e) => toEngineToken(e.engine)), 'mixd', 'unkn');
@@ -263,6 +292,7 @@ function main() {
     sessions.push({
       file: ef,
       sessionId,
+      runId,
       chunkMode,
       engineToken,
       sourceToken,
@@ -286,6 +316,11 @@ function main() {
     });
   }
 
+  if (!sessions.length) {
+    console.log('No sessions matched the current filter criteria.');
+    return;
+  }
+
   const byMode = new Map();
   for (const s of sessions) {
     if (!byMode.has(s.chunkMode)) {
@@ -296,6 +331,7 @@ function main() {
 
   console.log(`Analyzed ${sessions.length} session(s) from: ${logsDir}`);
   if (filter) console.log(`File filter: ${filter}`);
+  if (runIdFilter) console.log(`Run-id filter: ${runIdFilter}`);
   console.log('');
 
   for (const s of sessions) {
@@ -395,6 +431,51 @@ function main() {
     );
   }
 
+  const byRun = new Map();
+  for (const s of sessions) {
+    const key = s.runId || 'none';
+    if (!byRun.has(key)) byRun.set(key, []);
+    byRun.get(key).push(s);
+  }
+
+  const byRunSummary = [];
+  console.log('\nBy run_id:');
+  for (const [runId, list] of byRun.entries()) {
+    const totals = list.reduce((acc, s) => {
+      acc.sessions += 1;
+      acc.problems += s.problems;
+      acc.submitted += s.submitted;
+      acc.correct += s.correct;
+      acc.uploads += s.uploads;
+      if (s.uploadP50 != null) acc.uploadP50.push(s.uploadP50);
+      if (s.uploadP90 != null) acc.uploadP90.push(s.uploadP90);
+      if (s.uploadMax != null) acc.uploadMax.push(s.uploadMax);
+      return acc;
+    }, { sessions: 0, problems: 0, submitted: 0, correct: 0, uploads: 0, uploadP50: [], uploadP90: [], uploadMax: [] });
+    const accShown = totals.problems > 0 ? (100 * totals.correct) / totals.problems : 0;
+    const accSubmitted = totals.submitted > 0 ? (100 * totals.correct) / totals.submitted : 0;
+    const avg = (arr) => arr.length ? Math.round(arr.reduce((x, y) => x + y, 0) / arr.length) : null;
+    const row = {
+      run_id: runId,
+      sessions: totals.sessions,
+      problems: totals.problems,
+      submitted: totals.submitted,
+      correct: totals.correct,
+      accuracy_pct: toNumberOrNull(accShown, 3),
+      accuracy_submitted_pct: toNumberOrNull(accSubmitted, 3),
+      avg_uploads_per_session: toNumberOrNull(totals.uploads / totals.sessions, 3),
+      avg_upload_p50_ms: avg(totals.uploadP50),
+      avg_upload_p90_ms: avg(totals.uploadP90),
+      avg_upload_max_ms: avg(totals.uploadMax)
+    };
+    byRunSummary.push(row);
+    console.log(
+      `  ${runId}: sessions=${row.sessions} problems=${row.problems} submitted=${row.submitted} ` +
+      `acc_shown=${toFixedOrNA(accShown)}% acc_submitted=${toFixedOrNA(accSubmitted)}% ` +
+      `avg_upload_ms(p50/p90/max)=${row.avg_upload_p50_ms ?? 'n/a'}/${row.avg_upload_p90_ms ?? 'n/a'}/${row.avg_upload_max_ms ?? 'n/a'}`
+    );
+  }
+
   const derivedOutPrefix = (() => {
     if (!autoOut) return outPrefix;
     const stamp = makeShortStamp();
@@ -412,6 +493,7 @@ function main() {
     const sessionRows = sessions.map((s) => ({
       file: s.file,
       session_id: s.sessionId,
+      run_id: s.runId,
       chunk_mode: s.chunkMode,
       problems: s.problems,
       submitted: s.submitted,
@@ -440,8 +522,10 @@ function main() {
       generated_at_iso: now,
       logs_dir: logsDir,
       filter,
+      run_id_filter: runIdFilter || null,
       sessions: sessionRows,
-      by_chunk_mode: byModeSummary
+      by_chunk_mode: byModeSummary,
+      by_run_id: byRunSummary
     };
 
     const jsonPath = `${derivedOutPrefix}.json`;
@@ -450,6 +534,7 @@ function main() {
     const headers = [
       'file',
       'session_id',
+      'run_id',
       'chunk_mode',
       'problems',
       'submitted',

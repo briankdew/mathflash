@@ -90,9 +90,9 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
         - [x] `Off` (red): preserve current per-session manual export behavior.
     - [x] Introduce `run_id` and `session_index_in_run` fields in client events for grouping.
     - [x] Rename working log folder to `sc-session-logs`.
-    - [ ] Continue phased adoption of standardized filename conventions (`ses`/`run`/`bat`/`svr` patterns).
-    - [ ] Ensure logs remain engine-aware (`webspeech`, `vosk`, `whisper`) so cross-engine testing is comparable.
-    - [ ] Update analyzer to accept/filter by `run_id` when test-run mode is used.
+    - [x] Continue phased adoption of standardized filename conventions (`ses`/`run`/`bat`/`svr` patterns).
+    - [x] Ensure logs remain engine-aware (`webspeech`, `vosk`, `whisper`) so cross-engine testing is comparable.
+    - [x] Update analyzer to accept/filter by `run_id` when test-run mode is used.
 
 14. [ ] **Chunk-mode terminology alignment (`fixed` / `vad`)**
     - [ ] Standardize chunk-mode naming to `fixed` and `vad` across UI labels.
@@ -100,8 +100,8 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Keep backward-compatible mapping from legacy names (`periodic` -> `fixed`, `utterance` -> `vad`) during transition.
 
 15. [ ] **Analyzer evolution (skeleton, phased)**
-    - [ ] Near-term: accept mixed input sets containing any combination of `ses` and `run` files in one analysis pass.
-    - [ ] Near-term: preserve current report behavior when `stt/chunk/source` descriptors are homogeneous.
+    - [x] Near-term: accept mixed input sets containing any combination of `ses` and `run` files in one analysis pass.
+    - [x] Near-term: preserve current report behavior when `stt/chunk/source` descriptors are homogeneous.
     - [ ] Near-term (optional): add separate cohort summaries for `vad` vs `fixed` when both appear in the same selected set.
     - [ ] Deferred: cross-engine comparative reporting (`webspeech` vs `whisper` vs `vosk`) after sufficient structured data exists.
     - [ ] Deferred: `mic` vs `rec` comparative reporting after replay/audio-file workflows are implemented.
