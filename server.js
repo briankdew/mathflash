@@ -120,7 +120,8 @@ function parseRunIdParts(runId) {
 
 function deriveRunSummary(events) {
   const sessionIds = new Set();
-  const problemKeys = new Set();
+  const observedProblemIndexesBySession = new Map();
+  const selectedProblemCountBySession = new Map();
   const engineTokens = [];
   const chunkTokens = [];
   const sourceTokens = [];
@@ -130,8 +131,18 @@ function deriveRunSummary(events) {
     if (sid) sessionIds.add(sid);
 
     if (event?.event_type === 'problem_shown' && event?.problem_index != null) {
-      const pKey = `${sid || 'unknown'}:${String(event.problem_index)}`;
-      problemKeys.add(pKey);
+      const sidKey = sid || 'unknown';
+      if (!observedProblemIndexesBySession.has(sidKey)) {
+        observedProblemIndexesBySession.set(sidKey, new Set());
+      }
+      observedProblemIndexesBySession.get(sidKey).add(String(event.problem_index));
+    }
+
+    if (event?.event_type === 'session_start') {
+      const selected = Number(event?.selected_problem_count);
+      if (sid && Number.isFinite(selected) && selected > 0) {
+        selectedProblemCountBySession.set(sid, selected);
+      }
     }
 
     engineTokens.push(toEngineToken(event?.engine));
@@ -151,7 +162,21 @@ function deriveRunSummary(events) {
   }
 
   const sessions = sessionIds.size;
-  const problems = problemKeys.size;
+  let problems = 0;
+  if (sessions > 0) {
+    for (const sid of sessionIds) {
+      if (selectedProblemCountBySession.has(sid)) {
+        problems += selectedProblemCountBySession.get(sid);
+      } else {
+        const observed = observedProblemIndexesBySession.get(sid);
+        problems += observed ? observed.size : 0;
+      }
+    }
+  } else {
+    for (const indexes of observedProblemIndexesBySession.values()) {
+      problems += indexes.size;
+    }
+  }
   const engine = pickDescriptor(engineTokens, 'mixd', 'unkn');
   const chunk = pickDescriptor(chunkTokens, 'mxd', 'unk');
   const source = pickDescriptor(sourceTokens, 'mxd', 'unk');

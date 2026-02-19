@@ -217,6 +217,10 @@ function main() {
       const sessionStart = events.find((e) => e.event_type === 'session_start') || {};
       const sessionId = sessionStart.session_id || (sidKey === '__unknown__' ? 'unknown_session' : sidKey);
       const runId = runIds.length === 1 ? runIds[0] : (runIds.length ? 'mixd' : null);
+      const selectedProblemCountRaw = Number(sessionStart.selected_problem_count);
+      const selectedProblemCount = (Number.isFinite(selectedProblemCountRaw) && selectedProblemCountRaw > 0)
+        ? selectedProblemCountRaw
+        : null;
       const captureStart = events.find((e) => e.event_type === 'stt_capture_start') || {};
       const chunkModeRaw = captureStart.chunk_mode || 'periodic';
       const chunkMode = normalizeChunkMode(chunkModeRaw);
@@ -330,6 +334,7 @@ function main() {
         file: ef,
         sessionId,
         runId,
+        selectedProblemCount,
         chunkModeRaw,
         chunkMode,
         engineToken,
@@ -520,7 +525,9 @@ function main() {
     const stamp = makeShortStamp();
     const uid = randomUid();
     const totalSessions = sessions.length;
-    const totalProblems = sessions.reduce((sum, s) => sum + (s.problems || 0), 0);
+    const totalProblems = sessions.reduce((sum, s) => (
+      sum + (s.selectedProblemCount != null ? s.selectedProblemCount : (s.problems || 0))
+    ), 0);
     const batchEngine = pickDescriptor(sessions.map((s) => s.engineToken), 'mixd', 'unkn');
     const batchChunk = pickDescriptor(sessions.map((s) => toChunkToken(s.chunkMode)), 'mxd', 'unk');
     const batchSource = pickDescriptor(sessions.map((s) => s.sourceToken || 'mic'), 'mxd', 'unk');
@@ -533,6 +540,7 @@ function main() {
       file: s.file,
       session_id: s.sessionId,
       run_id: s.runId,
+      selected_problem_count: s.selectedProblemCount,
       source: s.sourceToken,
       chunk_mode_raw: s.chunkModeRaw,
       chunk_mode: s.chunkMode,
@@ -576,6 +584,7 @@ function main() {
       'file',
       'session_id',
       'run_id',
+      'selected_problem_count',
       'source',
       'chunk_mode_raw',
       'chunk_mode',

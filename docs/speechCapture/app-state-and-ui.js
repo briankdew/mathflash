@@ -180,6 +180,13 @@
     return keys.size;
   }
 
+  function deriveSessionSelectedProblemCount(events) {
+    const sessionStart = events.find((e) => e.event_type === 'session_start') || {};
+    const selected = parseInt(sessionStart.selected_problem_count, 10);
+    if (Number.isFinite(selected) && selected > 0) return selected;
+    return deriveSessionProblemCount(events);
+  }
+
   function deriveSessionChunkToken(events) {
     const chunkTokens = events
       .filter((e) => e.event_type === 'stt_capture_start')
@@ -952,11 +959,15 @@
     const env = detectPlatformInfo();
     const sourceLabel = micOn ? 'Voice' : 'Typed';
     const sttEngine = ensureSttAdapterManager().getCurrentAdapterId();
+    const selectedProblemCount = parseInt(problemCountInput?.value, 10);
     logLine('ENV', `Browser=${env.browser} OS=${env.os} Source=${sourceLabel} STT=${sttEngine}`);
     emitEvent('session_start', {
       browser: env.browser,
       os: env.os,
       source: sourceLabel,
+      selected_problem_count: (Number.isFinite(selectedProblemCount) && selectedProblemCount > 0)
+        ? selectedProblemCount
+        : null,
       mode,
       operation,
       missing_value: missingValue,
@@ -1253,7 +1264,7 @@
       const stamp = makeShortStamp();
       const uid = deriveSessionUid(currentSessionId);
       const sessionCount = 1;
-      const problemCount = deriveSessionProblemCount(sessionEventLog);
+      const problemCount = deriveSessionSelectedProblemCount(sessionEventLog);
       const engine = deriveSessionEngineToken(sessionEventLog);
       const chunk = deriveSessionChunkToken(sessionEventLog);
       const source = deriveSessionSourceToken(sessionEventLog);
