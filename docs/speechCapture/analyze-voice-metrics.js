@@ -97,6 +97,20 @@ function toChunkToken(chunkMode) {
   return 'unk';
 }
 
+function normalizeChunkMode(chunkMode) {
+  const c = String(chunkMode || '').toLowerCase();
+  if (c === 'periodic' || c === 'fixed' || c === 'fxd') return 'fixed';
+  if (c === 'utterance' || c === 'vad') return 'vad';
+  return 'unknown';
+}
+
+function toSourceToken(source) {
+  const s = String(source || '').toLowerCase();
+  if (s === 'voice' || s === 'mic' || s === 'microphone') return 'mic';
+  if (s === 'rec' || s === 'recording' || s === 'file') return 'rec';
+  return 'unk';
+}
+
 function parseCliArgs(argv) {
   const positional = [];
   let runIdFilter = '';
@@ -204,9 +218,17 @@ function main() {
       const sessionId = sessionStart.session_id || (sidKey === '__unknown__' ? 'unknown_session' : sidKey);
       const runId = runIds.length === 1 ? runIds[0] : (runIds.length ? 'mixd' : null);
       const captureStart = events.find((e) => e.event_type === 'stt_capture_start') || {};
-      const chunkMode = captureStart.chunk_mode || 'periodic';
+      const chunkModeRaw = captureStart.chunk_mode || 'periodic';
+      const chunkMode = normalizeChunkMode(chunkModeRaw);
       const engineToken = pickDescriptor(events.map((e) => toEngineToken(e.engine)), 'mixd', 'unkn');
-      const sourceToken = 'mic';
+      const sourceValues = events
+        .map((e) => e.source || e.audio_source || null)
+        .filter((v) => v != null && String(v).trim() !== '');
+      const sourceToken = pickDescriptor(
+        sourceValues.map((v) => toSourceToken(v)),
+        'mxd',
+        'unk'
+      );
 
       const expectedByProblem = new Map();
       const firstSubmitByProblem = new Map();
@@ -308,6 +330,7 @@ function main() {
         file: ef,
         sessionId,
         runId,
+        chunkModeRaw,
         chunkMode,
         engineToken,
         sourceToken,
@@ -510,6 +533,8 @@ function main() {
       file: s.file,
       session_id: s.sessionId,
       run_id: s.runId,
+      source: s.sourceToken,
+      chunk_mode_raw: s.chunkModeRaw,
       chunk_mode: s.chunkMode,
       problems: s.problems,
       submitted: s.submitted,
@@ -551,6 +576,8 @@ function main() {
       'file',
       'session_id',
       'run_id',
+      'source',
+      'chunk_mode_raw',
       'chunk_mode',
       'problems',
       'submitted',

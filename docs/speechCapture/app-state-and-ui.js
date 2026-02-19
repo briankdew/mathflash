@@ -187,6 +187,21 @@
     return pickDescriptor(chunkTokens, 'mxd', 'unk');
   }
 
+  function toSourceToken(source) {
+    const s = sanitizeToken(source, 'unknown');
+    if (s === 'voice' || s === 'mic' || s === 'microphone') return 'mic';
+    if (s === 'rec' || s === 'recording' || s === 'file') return 'rec';
+    return 'unk';
+  }
+
+  function deriveSessionSourceToken(events) {
+    const sourceTokens = events
+      .map((e) => e.source || e.audio_source || null)
+      .filter((v) => v != null && String(v).trim() !== '')
+      .map((v) => toSourceToken(v));
+    return pickDescriptor(sourceTokens, 'mxd', 'unk');
+  }
+
   function deriveSessionEngineToken(events) {
     const engineTokens = events.map((e) => toEngineToken(e.engine));
     return pickDescriptor(engineTokens, 'mixd', 'unkn');
@@ -1241,7 +1256,7 @@
       const problemCount = deriveSessionProblemCount(sessionEventLog);
       const engine = deriveSessionEngineToken(sessionEventLog);
       const chunk = deriveSessionChunkToken(sessionEventLog);
-      const source = 'mic';
+      const source = deriveSessionSourceToken(sessionEventLog);
       const eventsForDownload = sessionEventLog.map((event) => ({
         ingest_ts_ms: Date.now(),
         ingest_ts_iso: new Date().toISOString(),
