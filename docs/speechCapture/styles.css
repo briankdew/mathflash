@@ -194,3 +194,84 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
       background: #fafafa;
       overflow-y: scroll;
     }
+    .vaa-section {
+      margin-top: 16px;
+      border: 1px solid #c9c9c9;
+      border-radius: 8px;
+      padding: 10px;
+      background: #f5f5f5;
+    }
+    .vaa-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .vaa-title {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+    .vaa-controls-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .vaa-status {
+      font-size: 0.82rem;
+      color: #444;
+    }
+    .vaa-panel.is-hidden {
+      display: none;
+    }
+    .vaa-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      font-size: 0.9rem;
+    }
+    .vaa-table th,
+    .vaa-table td {
+      border: 1px solid #b5b5b5;
+      padding: 5px 6px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    .vaa-table th:first-child,
+    .vaa-table th:nth-child(6),
+    .vaa-table th:nth-child(7),
+    .vaa-table td:first-child,
+    .vaa-table td:nth-child(6),
+    .vaa-table td:nth-child(7) {
+      text-align: center;
+      width: 58px;
+    }
+    .vaa-analyze-archive-cell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .vaa-chain-indicator {
+      font-size: 0.75rem;
+      color: #b70000;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      user-select: none;
+    }
+    .vaa-view-pane {
+      margin-top: 8px;
+      border: 1px solid #cfcfcf;
+      border-radius: 6px;
+      background: #fbfbfb;
+      padding: 8px;
+      min-height: 140px;
+      max-height: 320px;
+      overflow: auto;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.35;
+    }

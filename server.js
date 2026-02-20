@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs/promises');
+const os = require('os');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 
@@ -17,6 +18,7 @@ const FFMPEG_BIN = process.env.FFMPEG_BIN || 'ffmpeg';
 const WHISPER_TIMEOUT_MS = Number(process.env.WHISPER_TIMEOUT_MS || 20000);
 const STT_DEBUG_ENABLED = process.env.STT_DEBUG !== '0';
 const CLIENT_TEST_LOGS_DIR = process.env.CLIENT_TEST_LOGS_DIR || path.join(__dirname, 'docs', 'speechCapture', 'sc-session-logs');
+const ANALYZER_SCRIPT_PATH = path.join(__dirname, 'docs', 'speechCapture', 'analyze-voice-metrics.js');
 
 function makeShortStamp(date = new Date()) {
   const y = String(date.getFullYear()).slice(-1);
@@ -203,6 +205,122 @@ function isRecoverableAudioInputError(errorMessage) {
     msg.includes('could not find codec parameters') ||
     msg.includes('end of file')
   );
+}
+
+function sanitizeLogFilename(name) {
+  const file = path.basename(String(name || '').trim());
+  if (!file || file === '.' || file === '..') return null;
+  if (/[\\/]/.test(file)) return null;
+  return file;
+}
+
+function decodeShortStamp(stamp) {
+  const m = /^(\d)(\d{2})(\d{2})\.(\d{2})(\d{2})(?:\.(\d{2}))?$/.exec(String(stamp || ''));
+  if (!m) return null;
+  const yDigit = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  const hour = Number(m[4]);
+  const minute = Number(m[5]);
+  const second = Number(m[6] || '0');
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const nowYear = new Date().getFullYear();
+  let year = Math.floor(nowYear / 10) * 10 + yDigit;
+  if (year - nowYear > 5) year -= 10;
+  if (nowYear - year > 5) year += 10;
+  const dt = new Date(year, month - 1, day, hour, minute, second);
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt;
+}
+
+function formatDisplayDate(dateObj) {
+  if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) return 'Unknown';
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).format(dateObj);
+}
+
+function parseScFileMeta(filename) {
+  const ext = path.extname(filename).slice(1).toUpperCase();
+  const scopeMatch = /^sc_[^_]+_([a-z]{3})-/.exec(filename);
+  const scopeKey = scopeMatch ? scopeMatch[1].toLowerCase() : 'unknown';
+  const scopeMap = { ses: 'Session', run: 'Run', bat: 'Batch', svr: 'Server' };
+  const scope = scopeMap[scopeKey] || 'Unknown';
+  const stampMatch = /-(\d{5}\.\d{4}(?:\.\d{2})?)/.exec(filename);
+  const stamp = stampMatch ? stampMatch[1] : null;
+  const dt = stamp ? decodeShortStamp(stamp) : null;
+  const analyzeAllowed = (scopeKey === 'ses' || scopeKey === 'run') && ext === 'JSONL';
+  return {
+    filename,
+    scope_key: scopeKey,
+    scope,
+    scope_stamp: stamp,
+    scope_date_time: dt ? formatDisplayDate(dt) : (stamp || 'Unknown'),
+    file_type: ext || 'UNKNOWN',
+    analyze_allowed: analyzeAllowed
+  };
+}
+
+async function listSessionLogFiles() {
+  await fs.mkdir(CLIENT_TEST_LOGS_DIR, { recursive: true });
+  const entries = await fs.readdir(CLIENT_TEST_LOGS_DIR, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    const fullPath = path.join(CLIENT_TEST_LOGS_DIR, entry.name);
+    const stat = await fs.stat(fullPath).catch(() => null);
+    if (!stat) continue;
+    const meta = parseScFileMeta(entry.name);
+    files.push({
+      ...meta,
+      size_bytes: stat.size,
+      modified_ts_ms: stat.mtimeMs
+    });
+  }
+  files.sort((a, b) => b.modified_ts_ms - a.modified_ts_ms);
+  return files;
+}
+
+function inferArchiveFolderName(filename) {
+  const stampMatch = /-(\d{5})\./.exec(filename);
+  const prefix = stampMatch ? stampMatch[1] : 'misc';
+  return `sc_log_and_rpt_archive_${prefix}`;
+}
+
+async function ensureUniquePath(targetPath) {
+  let candidate = targetPath;
+  let n = 1;
+  while (true) {
+    try {
+      await fs.access(candidate);
+      const dir = path.dirname(targetPath);
+      const ext = path.extname(targetPath);
+      const base = path.basename(targetPath, ext);
+      candidate = path.join(dir, `${base}_${String(n).padStart(2, '0')}${ext}`);
+      n += 1;
+    } catch {
+      return candidate;
+    }
+  }
+}
+
+async function moveFileSafe(srcPath, dstPath) {
+  try {
+    await fs.rename(srcPath, dstPath);
+  } catch (err) {
+    if (err && err.code === 'EXDEV') {
+      await fs.copyFile(srcPath, dstPath);
+      await fs.unlink(srcPath).catch(() => {});
+      return;
+    }
+    throw err;
+  }
 }
 
 async function appendServerEvent(eventType, payload = {}) {
@@ -480,6 +598,129 @@ app.post('/api/logs/client-events', async (req, res) => {
     const message = err && err.message ? err.message : String(err);
     console.error('Client event log write failed:', message);
     return res.status(500).json({ error: 'Client event log write failed' });
+  }
+});
+
+app.get('/api/logs/sessions', async (_req, res) => {
+  try {
+    const files = await listSessionLogFiles();
+    return res.json({ ok: true, files });
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    console.error('List session logs failed:', message);
+    return res.status(500).json({ error: 'List session logs failed' });
+  }
+});
+
+app.get('/api/logs/file', async (req, res) => {
+  try {
+    const file = sanitizeLogFilename(req.query?.name);
+    if (!file) return res.status(400).json({ error: 'Missing or invalid filename' });
+    const fullPath = path.join(CLIENT_TEST_LOGS_DIR, file);
+    const data = await fs.readFile(fullPath, 'utf8');
+    const ext = path.extname(file).toLowerCase();
+    if (ext === '.json') {
+      try {
+        const parsed = JSON.parse(data);
+        return res.json({ ok: true, filename: file, text: JSON.stringify(parsed, null, 2) });
+      } catch {
+        return res.json({ ok: true, filename: file, text: data });
+      }
+    }
+    return res.json({ ok: true, filename: file, text: data });
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    console.error('Read session log file failed:', message);
+    return res.status(500).json({ error: 'Read session log file failed' });
+  }
+});
+
+app.post('/api/logs/analyze', async (req, res) => {
+  let tempDir = null;
+  try {
+    const body = req.body || {};
+    const filenamesRaw = Array.isArray(body.filenames) ? body.filenames : [];
+    const filenames = filenamesRaw.map(sanitizeLogFilename).filter(Boolean);
+    if (!filenames.length) {
+      return res.status(400).json({ error: 'Missing filenames payload' });
+    }
+
+    const eligible = filenames.filter((name) => {
+      const meta = parseScFileMeta(name);
+      return meta.analyze_allowed;
+    });
+    if (!eligible.length) {
+      return res.status(400).json({ error: 'No analyzable ses/run files selected' });
+    }
+
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sc-analyze-'));
+    for (const file of eligible) {
+      const src = path.join(CLIENT_TEST_LOGS_DIR, file);
+      const dst = path.join(tempDir, file);
+      await fs.copyFile(src, dst);
+    }
+
+    await execFileAsync(
+      process.execPath,
+      [ANALYZER_SCRIPT_PATH, tempDir, '', 'auto'],
+      { timeout: WHISPER_TIMEOUT_MS * 6 }
+    );
+
+    const tempFiles = await fs.readdir(tempDir);
+    const outputs = tempFiles.filter((name) => /^sc_rpt_bat-.*\.(json|csv)$/.test(name)).sort();
+    const moved = [];
+    for (const output of outputs) {
+      const src = path.join(tempDir, output);
+      const dstBase = path.join(CLIENT_TEST_LOGS_DIR, output);
+      const dst = await ensureUniquePath(dstBase);
+      await moveFileSafe(src, dst);
+      moved.push(path.basename(dst));
+    }
+
+    return res.json({
+      ok: true,
+      analyzed_files: eligible,
+      output_files: moved
+    });
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    console.error('Analyze selected files failed:', message);
+    return res.status(500).json({ error: 'Analyze selected files failed' });
+  } finally {
+    if (tempDir) {
+      await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+});
+
+app.post('/api/logs/archive', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const filenamesRaw = Array.isArray(body.filenames) ? body.filenames : [];
+    const filenames = filenamesRaw.map(sanitizeLogFilename).filter(Boolean);
+    if (!filenames.length) {
+      return res.status(400).json({ error: 'Missing filenames payload' });
+    }
+
+    const moved = [];
+    for (const file of filenames) {
+      const src = path.join(CLIENT_TEST_LOGS_DIR, file);
+      const archiveFolder = path.join(CLIENT_TEST_LOGS_DIR, inferArchiveFolderName(file));
+      await fs.mkdir(archiveFolder, { recursive: true });
+      const dstBase = path.join(archiveFolder, file);
+      const dst = await ensureUniquePath(dstBase);
+      await moveFileSafe(src, dst);
+      moved.push({
+        filename: file,
+        archived_to: dst
+      });
+    }
+
+    return res.json({ ok: true, archived: moved });
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    console.error('Archive selected files failed:', message);
+    return res.status(500).json({ error: 'Archive selected files failed' });
   }
 });
 

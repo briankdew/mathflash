@@ -48,7 +48,8 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
 
 7. [ ] **Persist logs to structured files**
     - [x] JSONL outputs are in place (client session exports + server debug JSONL).
-    - [ ] Optional: standardize filenames/rotation for easier batch analysis.
+    - [x] Standardized filename patterns are in place for `ses` / `run` / `bat` / `svr` files.
+    - [ ] Optional: add explicit rotation policy and/or rotation tooling for easier long-running batch management.
     - [ ] Optional: add single run-manifest file linking client/server logs.
 
 8. [ ] **Add replay/tuning loop**
@@ -96,7 +97,7 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
 
 14. [ ] **Chunk-mode terminology alignment (`fixed` / `vad`)**
     - [ ] Standardize chunk-mode naming to `fixed` and `vad` across UI labels.
-    - [ ] Standardize event/log/analyzer outputs to `fixed` and `vad`.
+    - [ ] Standardize event/log/analyzer outputs to `fixed` and `vad` (partial done: analyzer output + batch naming done; event payload naming still in transition).
     - [ ] Keep backward-compatible mapping from legacy names (`periodic` -> `fixed`, `utterance` -> `vad`) during transition.
 
 15. [ ] **Analyzer evolution (skeleton, phased)**
@@ -111,3 +112,13 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [x] Near-term requirement: ensure server events continue to include join keys needed for troubleshooting/analysis (for example `session_id`, `run_id`, `engine`).
     - [x] Adopt standardized append-file naming pattern for server logs (`sc_log_svr-ymmdd.hhmm.ss.jsonl`).
     - [ ] Deferred enhancement: optional server-log rotation/splitting (for example per-run files) when workflow value outweighs added file-management overhead.
+
+17. [ ] **Analyzer UI (file-select workflow)**
+    - [ ] Add UI control below the log feed: `Select session logs to analyze`.
+    - [ ] On click, show analyzable files from `sc-session-logs` with checkbox selection.
+    - [ ] Support selecting one or more files and two primary actions:
+      - [ ] `Analyze`: run analysis on selected files.
+      - [ ] `Archive`: move selected files into archive folder (create if missing).
+    - [ ] Present analysis results in a dedicated view (new tab/window or in-app panel).
+    - [ ] Provide download actions for analyzer outputs (`.json` and `.csv`).
+    - [ ] Keep behavior engine-aware and source-aware so mixed cohorts remain comparable.

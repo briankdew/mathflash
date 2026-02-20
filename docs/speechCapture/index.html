@@ -93,6 +93,34 @@
 
   <div id="feed" class="feed-window" aria-label="Real-time input feed"></div>
 
+  <section class="vaa-section" aria-label="View Analyze Archive utility">
+    <div class="vaa-header-row">
+      <h2 class="vaa-title">View, Analyze &amp; Archive</h2>
+      <button id="vaaProcessBtn" class="small-button">Process selected items</button>
+    </div>
+    <div class="vaa-controls-row">
+      <button id="vaaLoadBtn" class="small-button">Select session logs to analyze</button>
+      <span id="vaaStatus" class="vaa-status"></span>
+    </div>
+    <div id="vaaPanel" class="vaa-panel is-hidden">
+      <table class="vaa-table">
+        <thead>
+          <tr>
+            <th>View</th>
+            <th>Filename</th>
+            <th>Scope</th>
+            <th>Scope Date &amp; Time</th>
+            <th>File type</th>
+            <th>Analyze</th>
+            <th>Archive</th>
+          </tr>
+        </thead>
+        <tbody id="vaaTableBody"></tbody>
+      </table>
+      <div id="vaaViewPane" class="vaa-view-pane">No files selected to view.</div>
+    </div>
+  </section>
+
 <script src="speech-processing.js"></script>
 <script src="adapters/stt-adapter-manager.js"></script>
 <script src="adapters/webspeech.js"></script>

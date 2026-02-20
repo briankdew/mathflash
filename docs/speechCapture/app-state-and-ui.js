@@ -19,6 +19,10 @@
   const structuredEventLog = [];
   const sessionEventLog = [];
   const TEST_RUN_LOG_ENDPOINT = '/api/logs/client-events';
+  const LOGS_LIST_ENDPOINT = '/api/logs/sessions';
+  const LOGS_FILE_ENDPOINT = '/api/logs/file';
+  const LOGS_ANALYZE_ENDPOINT = '/api/logs/analyze';
+  const LOGS_ARCHIVE_ENDPOINT = '/api/logs/archive';
 
   const urlParams = new URLSearchParams(window.location.search);
   const ENABLE_MIC_METER = urlParams.get('micmeter') !== '0';
@@ -41,6 +45,12 @@
   const answerInput = document.getElementById('answerInput');
   const feed = document.getElementById('feed');
   const downloadLogBtn = document.getElementById('downloadLogBtn');
+  const vaaLoadBtn = document.getElementById('vaaLoadBtn');
+  const vaaProcessBtn = document.getElementById('vaaProcessBtn');
+  const vaaPanel = document.getElementById('vaaPanel');
+  const vaaTableBody = document.getElementById('vaaTableBody');
+  const vaaViewPane = document.getElementById('vaaViewPane');
+  const vaaStatus = document.getElementById('vaaStatus');
   const blinkDot = document.getElementById('blinkDot');
   const blinkRateInput = document.getElementById('blinkRateInput');
   const problemCounter = document.getElementById('problemCounter');
@@ -338,6 +348,8 @@
   let lastVoiceTs = 0;
   let lastRmsLogTs = 0;
   let micMeterErrorLogged = false;
+  let vaaFiles = [];
+  const vaaSelection = new Map();
 
   function resetFacts() {
     factQueue = shuffle(buildFacts());
@@ -929,6 +941,241 @@
     sttAdapterManager.stop();
   }
 
+  function setVaaStatus(text) {
+    if (!vaaStatus) return;
+    vaaStatus.textContent = text || '';
+  }
+
+  function getVaaSelection(filename) {
+    if (!vaaSelection.has(filename)) {
+      vaaSelection.set(filename, { view: false, analyze: false, archive: false });
+    }
+    return vaaSelection.get(filename);
+  }
+
+  function makeSafeHtml(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getVaaScopeRank(scopeKey) {
+    const key = String(scopeKey || '').toLowerCase();
+    if (key === 'ses' || key === 'run') return 0;
+    if (key === 'bat') return 1;
+    if (key === 'svr') return 2;
+    return 9;
+  }
+
+  function sortVaaFiles(files) {
+    return [...files].sort((a, b) => {
+      const scopeDiff = getVaaScopeRank(a.scope_key) - getVaaScopeRank(b.scope_key);
+      if (scopeDiff !== 0) return scopeDiff;
+      const aTs = Number(a.modified_ts_ms || 0);
+      const bTs = Number(b.modified_ts_ms || 0);
+      if (aTs !== bTs) return bTs - aTs;
+      return String(a.filename || '').localeCompare(String(b.filename || ''));
+    });
+  }
+
+  async function loadVaaFiles() {
+    try {
+      setVaaStatus('Loading files...');
+      const res = await fetch(LOGS_LIST_ENDPOINT);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      vaaFiles = sortVaaFiles(Array.isArray(body.files) ? body.files : []);
+      const keep = new Set(vaaFiles.map((f) => f.filename));
+      for (const key of [...vaaSelection.keys()]) {
+        if (!keep.has(key)) vaaSelection.delete(key);
+      }
+      renderVaaTable();
+      await refreshVaaViewPane();
+      setVaaStatus(`Loaded ${vaaFiles.length} file(s).`);
+    } catch (err) {
+      setVaaStatus(`Load failed: ${err && err.message ? err.message : String(err)}`);
+    }
+  }
+
+  function renderVaaTable() {
+    if (!vaaTableBody) return;
+    if (!vaaFiles.length) {
+      vaaTableBody.innerHTML = '<tr><td colspan="7">No files found.</td></tr>';
+      return;
+    }
+    vaaTableBody.innerHTML = vaaFiles.map((file, idx) => {
+      const s = getVaaSelection(file.filename);
+      const canAnalyze = Boolean(file.analyze_allowed);
+      const arrow = (s.analyze && s.archive) ? '<span class="vaa-chain-indicator" title="Analyze then Archive">&#9654;</span>' : '';
+      return `
+        <tr data-idx="${idx}">
+          <td><input type="checkbox" class="vaa-view" ${s.view ? 'checked' : ''}></td>
+          <td>${makeSafeHtml(file.filename)}</td>
+          <td>${makeSafeHtml(file.scope)}</td>
+          <td>${makeSafeHtml(file.scope_date_time)}</td>
+          <td>${makeSafeHtml(file.file_type)}</td>
+          <td>
+            <span class="vaa-analyze-archive-cell">
+              <input type="checkbox" class="vaa-analyze" ${s.analyze ? 'checked' : ''} ${canAnalyze ? '' : 'disabled'}>
+              ${arrow}
+            </span>
+          </td>
+          <td><input type="checkbox" class="vaa-archive" ${s.archive ? 'checked' : ''}></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function refreshVaaViewPane() {
+    if (!vaaViewPane) return;
+    const selected = vaaFiles
+      .filter((f) => getVaaSelection(f.filename).view)
+      .map((f) => f.filename);
+    if (!selected.length) {
+      vaaViewPane.textContent = 'No files selected to view.';
+      return;
+    }
+
+    vaaViewPane.textContent = 'Loading selected file(s)...';
+    const blocks = [];
+    for (const filename of selected) {
+      try {
+        const res = await fetch(`${LOGS_FILE_ENDPOINT}?name=${encodeURIComponent(filename)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const body = await res.json();
+        const text = String(body.text || '').trim();
+        blocks.push(`===== ${filename} =====\n${text || '[empty]'}`);
+      } catch (err) {
+        blocks.push(`===== ${filename} =====\n[load failed] ${err && err.message ? err.message : String(err)}`);
+      }
+    }
+    vaaViewPane.textContent = blocks.join('\n\n');
+  }
+
+  async function processVaaSelection() {
+    const analyzeTargets = [];
+    const archiveTargets = [];
+    let blockedArchiveWhileView = 0;
+    for (const file of vaaFiles) {
+      const s = getVaaSelection(file.filename);
+      if (s.analyze && file.analyze_allowed) analyzeTargets.push(file.filename);
+      if (s.archive) {
+        if (s.view) {
+          blockedArchiveWhileView += 1;
+        } else {
+          archiveTargets.push(file.filename);
+        }
+      }
+    }
+    if (!analyzeTargets.length && !archiveTargets.length) {
+      setVaaStatus('No Analyze/Archive selections to process.');
+      return;
+    }
+    if (archiveTargets.length) {
+      const ok = window.confirm(`Archive ${archiveTargets.length} selected file(s)?`);
+      if (!ok) {
+        setVaaStatus('Archive canceled.');
+        return;
+      }
+    }
+
+    const newlyGenerated = [];
+    try {
+      setVaaStatus('Processing selections...');
+      if (analyzeTargets.length) {
+        const resAnalyze = await fetch(LOGS_ANALYZE_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filenames: analyzeTargets })
+        });
+        const bodyAnalyze = await resAnalyze.json().catch(() => ({}));
+        if (!resAnalyze.ok) throw new Error(bodyAnalyze.error || `Analyze failed (HTTP ${resAnalyze.status})`);
+        if (Array.isArray(bodyAnalyze.output_files)) {
+          newlyGenerated.push(...bodyAnalyze.output_files);
+        }
+      }
+
+      if (archiveTargets.length) {
+        const resArchive = await fetch(LOGS_ARCHIVE_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filenames: archiveTargets })
+        });
+        const bodyArchive = await resArchive.json().catch(() => ({}));
+        if (!resArchive.ok) throw new Error(bodyArchive.error || `Archive failed (HTTP ${resArchive.status})`);
+      }
+
+      for (const sel of vaaSelection.values()) {
+        sel.analyze = false;
+        sel.archive = false;
+      }
+
+      await loadVaaFiles();
+      for (const filename of newlyGenerated) {
+        const sel = getVaaSelection(filename);
+        sel.view = true;
+      }
+      renderVaaTable();
+      await refreshVaaViewPane();
+      const blockedNote = blockedArchiveWhileView > 0 ? ` blocked_archive_view=${blockedArchiveWhileView}` : '';
+      setVaaStatus(`Done. Analyze=${analyzeTargets.length} Archive=${archiveTargets.length}${blockedNote}`);
+      logLine('VAA', `Process complete (analyze=${analyzeTargets.length}, archive=${archiveTargets.length}${blockedNote})`);
+    } catch (err) {
+      setVaaStatus(`Process failed: ${err && err.message ? err.message : String(err)}`);
+    }
+  }
+
+  function bindVaaEvents() {
+    if (vaaLoadBtn) {
+      vaaLoadBtn.addEventListener('click', async () => {
+        if (vaaPanel) vaaPanel.classList.remove('is-hidden');
+        await loadVaaFiles();
+      });
+    }
+    if (vaaProcessBtn) {
+      vaaProcessBtn.addEventListener('click', () => {
+        void processVaaSelection();
+      });
+    }
+    if (vaaTableBody) {
+      vaaTableBody.addEventListener('change', (ev) => {
+        const target = ev.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        const row = target.closest('tr');
+        if (!row) return;
+        const idx = Number(row.getAttribute('data-idx'));
+        const file = vaaFiles[idx];
+        if (!file) return;
+        const sel = getVaaSelection(file.filename);
+        if (target.classList.contains('vaa-view')) {
+          sel.view = target.checked;
+          if (target.checked) {
+            if (sel.archive) {
+              sel.archive = false;
+            }
+            setVaaStatus("View selected: Archive cleared for this file. Re-select archive to proceed.");
+          }
+          void refreshVaaViewPane();
+        } else if (target.classList.contains('vaa-analyze')) {
+          sel.analyze = target.checked;
+        } else if (target.classList.contains('vaa-archive')) {
+          if (target.checked && sel.view) {
+            target.checked = false;
+            sel.archive = false;
+            setVaaStatus("You must de-select 'View' before you can select 'Archive.'");
+            renderVaaTable();
+            return;
+          }
+          sel.archive = target.checked;
+        }
+        renderVaaTable();
+      });
+    }
+  }
+
   // -----------------------------
   // UI Events
   // -----------------------------
@@ -1310,6 +1557,8 @@
       });
     });
   }
+
+  bindVaaEvents();
 
   document.addEventListener('keydown', (e) => {
     if (e.code !== 'Space') return;
