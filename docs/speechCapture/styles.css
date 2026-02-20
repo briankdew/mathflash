@@ -226,19 +226,54 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
     .vaa-panel.is-hidden {
       display: none;
     }
+    .vaa-table-wrap,
+    .vaa-view-wrap {
+      overflow-x: auto;
+    }
     .vaa-table {
       width: 100%;
+      min-width: 710px;
       border-collapse: collapse;
       background: #fff;
-      font-size: 0.9rem;
+      table-layout: fixed;
+      font-family: Arial, sans-serif;
+      font-size: 9pt;
+      font-weight: 400;
     }
     .vaa-table th,
     .vaa-table td {
       border: 1px solid #b5b5b5;
-      padding: 5px 6px;
+      padding: 0 3px;
       text-align: left;
       vertical-align: middle;
     }
+    .vaa-table th {
+      height: 20px;
+      font-weight: 700;
+      text-align: center;
+      background: #d9d9d9;
+    }
+    .vaa-table td {
+      height: 30px;
+      font-weight: 400;
+    }
+    .vaa-table td:nth-child(2) {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .vaa-table td:nth-child(3),
+    .vaa-table td:nth-child(5) {
+      text-align: center;
+      font-size: 8pt;
+    }
+    .vaa-col-view { width: 4.93%; }
+    .vaa-col-filename { width: 51.13%; }
+    .vaa-col-scope { width: 6.20%; }
+    .vaa-col-timestamp { width: 19.86%; }
+    .vaa-col-type { width: 6.62%; }
+    .vaa-col-analyze { width: 5.63%; }
+    .vaa-col-archive { width: 5.63%; }
     .vaa-table th:first-child,
     .vaa-table th:nth-child(6),
     .vaa-table th:nth-child(7),
@@ -246,7 +281,6 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
     .vaa-table td:nth-child(6),
     .vaa-table td:nth-child(7) {
       text-align: center;
-      width: 58px;
     }
     .vaa-analyze-archive-cell {
       display: inline-flex;
@@ -267,6 +301,9 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
       border-radius: 6px;
       background: #fbfbfb;
       padding: 8px;
+      width: 100%;
+      min-width: 710px;
+      box-sizing: border-box;
       min-height: 140px;
       max-height: 320px;
       overflow: auto;

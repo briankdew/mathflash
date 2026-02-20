@@ -970,6 +970,15 @@
     return 9;
   }
 
+  function getVaaScopeLabel(scopeKey) {
+    const key = String(scopeKey || '').toLowerCase();
+    if (key === 'ses') return 'SES';
+    if (key === 'run') return 'RUN';
+    if (key === 'bat') return 'BAT';
+    if (key === 'svr') return 'SVR';
+    return String(scopeKey || '').toUpperCase();
+  }
+
   function sortVaaFiles(files) {
     return [...files].sort((a, b) => {
       const scopeDiff = getVaaScopeRank(a.scope_key) - getVaaScopeRank(b.scope_key);
@@ -1014,7 +1023,7 @@
         <tr data-idx="${idx}">
           <td><input type="checkbox" class="vaa-view" ${s.view ? 'checked' : ''}></td>
           <td>${makeSafeHtml(file.filename)}</td>
-          <td>${makeSafeHtml(file.scope)}</td>
+          <td>${makeSafeHtml(getVaaScopeLabel(file.scope_key || file.scope))}</td>
           <td>${makeSafeHtml(file.scope_date_time)}</td>
           <td>${makeSafeHtml(file.file_type)}</td>
           <td>

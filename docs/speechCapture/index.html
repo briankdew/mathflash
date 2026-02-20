@@ -103,21 +103,34 @@
       <span id="vaaStatus" class="vaa-status"></span>
     </div>
     <div id="vaaPanel" class="vaa-panel is-hidden">
-      <table class="vaa-table">
-        <thead>
-          <tr>
-            <th>View</th>
-            <th>Filename</th>
-            <th>Scope</th>
-            <th>Scope Date &amp; Time</th>
-            <th>File type</th>
-            <th>Analyze</th>
-            <th>Archive</th>
-          </tr>
-        </thead>
-        <tbody id="vaaTableBody"></tbody>
-      </table>
-      <div id="vaaViewPane" class="vaa-view-pane">No files selected to view.</div>
+      <div class="vaa-table-wrap">
+        <table class="vaa-table">
+          <colgroup>
+            <col class="vaa-col-view">
+            <col class="vaa-col-filename">
+            <col class="vaa-col-scope">
+            <col class="vaa-col-timestamp">
+            <col class="vaa-col-type">
+            <col class="vaa-col-analyze">
+            <col class="vaa-col-archive">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>View</th>
+              <th>Filename</th>
+              <th>Scope</th>
+              <th>Timestamp</th>
+              <th>Type</th>
+              <th>Alyz</th>
+              <th>Achv</th>
+            </tr>
+          </thead>
+          <tbody id="vaaTableBody"></tbody>
+        </table>
+      </div>
+      <div class="vaa-view-wrap">
+        <div id="vaaViewPane" class="vaa-view-pane">No files selected to view.</div>
+      </div>
     </div>
   </section>
 
