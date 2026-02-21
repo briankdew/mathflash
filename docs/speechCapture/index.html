@@ -94,42 +94,48 @@
   <div id="feed" class="feed-window" aria-label="Real-time input feed"></div>
 
   <section class="vaa-section" aria-label="View Analyze Archive utility">
-    <div class="vaa-header-row">
-      <h2 class="vaa-title">View, Analyze &amp; Archive</h2>
-      <button id="vaaProcessBtn" class="small-button">Process selected items</button>
-    </div>
-    <div class="vaa-controls-row">
-      <button id="vaaLoadBtn" class="small-button">Select session logs to analyze</button>
-      <span id="vaaStatus" class="vaa-status"></span>
-    </div>
-    <div id="vaaPanel" class="vaa-panel is-hidden">
-      <div class="vaa-table-wrap">
-        <table class="vaa-table">
-          <colgroup>
-            <col class="vaa-col-view">
-            <col class="vaa-col-filename">
-            <col class="vaa-col-scope">
-            <col class="vaa-col-timestamp">
-            <col class="vaa-col-type">
-            <col class="vaa-col-analyze">
-            <col class="vaa-col-archive">
-          </colgroup>
-          <thead>
-            <tr>
-              <th>View</th>
-              <th>Filename</th>
-              <th>Scope</th>
-              <th>Timestamp</th>
-              <th>Type</th>
-              <th>Alyz</th>
-              <th>Achv</th>
-            </tr>
-          </thead>
-          <tbody id="vaaTableBody"></tbody>
-        </table>
+    <div class="vaa-inner">
+      <div class="vaa-header-wrap">
+        <div class="vaa-header-row">
+          <div class="vaa-title">View, Analyze &amp; Archive</div>
+          <div id="vaaStatus" class="vaa-status" aria-live="polite"></div>
+          <div class="vaa-header-actions">
+            <button id="vaaProcessBtn">Process selected items</button>
+          </div>
+        </div>
       </div>
-      <div class="vaa-view-wrap">
-        <div id="vaaViewPane" class="vaa-view-pane">No files selected to view.</div>
+      <div id="vaaPanel" class="vaa-panel">
+        <div class="vaa-table-wrap">
+          <table class="vaa-table">
+            <colgroup>
+              <col class="vaa-col-view">
+              <col class="vaa-col-filename">
+              <col class="vaa-col-scope">
+              <col class="vaa-col-timestamp">
+              <col class="vaa-col-type">
+              <col class="vaa-col-analyze">
+              <col class="vaa-col-archive">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>View</th>
+                <th class="vaa-filename-header">
+                  <button id="vaaLoadBtn" class="vaa-load-btn" title="Load available files" aria-label="Load available files">🗘</button>
+                  <span>Filename</span>
+                </th>
+                <th>Scope</th>
+                <th>Timestamp</th>
+                <th>Type</th>
+                <th>Alyz</th>
+                <th>Achv</th>
+              </tr>
+            </thead>
+            <tbody id="vaaTableBody"></tbody>
+          </table>
+        </div>
+        <div class="vaa-view-wrap">
+          <div id="vaaViewPane" class="vaa-view-pane">No files selected to view.</div>
+        </div>
       </div>
     </div>
   </section>

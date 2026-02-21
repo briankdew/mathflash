@@ -350,6 +350,7 @@
   let micMeterErrorLogged = false;
   let vaaFiles = [];
   const vaaSelection = new Map();
+  let vaaStatusTimer = null;
 
   function resetFacts() {
     factQueue = shuffle(buildFacts());
@@ -941,9 +942,31 @@
     sttAdapterManager.stop();
   }
 
-  function setVaaStatus(text) {
+  function setVaaStatus(text, options = {}) {
     if (!vaaStatus) return;
-    vaaStatus.textContent = text || '';
+    const message = String(text || '');
+    const type = options.type === 'warning' ? 'warning' : 'info';
+    const duration = options.duration === 'persistent' ? 'persistent' : 'temporary';
+
+    if (vaaStatusTimer) {
+      clearTimeout(vaaStatusTimer);
+      vaaStatusTimer = null;
+    }
+
+    vaaStatus.classList.remove('is-warning', 'is-info', 'is-fading');
+    vaaStatus.classList.add(type === 'warning' ? 'is-warning' : 'is-info');
+    vaaStatus.textContent = message;
+
+    if (!message || duration === 'persistent') return;
+
+    vaaStatusTimer = setTimeout(() => {
+      vaaStatus.classList.add('is-fading');
+      window.setTimeout(() => {
+        if (!vaaStatus.classList.contains('is-fading')) return;
+        vaaStatus.textContent = '';
+        vaaStatus.classList.remove('is-fading', 'is-warning', 'is-info');
+      }, 280);
+    }, 10000);
   }
 
   function getVaaSelection(filename) {
@@ -992,7 +1015,7 @@
 
   async function loadVaaFiles() {
     try {
-      setVaaStatus('Loading files...');
+      setVaaStatus('Loading files...', { type: 'info', duration: 'temporary' });
       const res = await fetch(LOGS_LIST_ENDPOINT);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = await res.json();
@@ -1003,9 +1026,9 @@
       }
       renderVaaTable();
       await refreshVaaViewPane();
-      setVaaStatus(`Loaded ${vaaFiles.length} file(s).`);
+      setVaaStatus(`Loaded ${vaaFiles.length} file(s).`, { type: 'info', duration: 'temporary' });
     } catch (err) {
-      setVaaStatus(`Load failed: ${err && err.message ? err.message : String(err)}`);
+      setVaaStatus(`Load failed: ${err && err.message ? err.message : String(err)}`, { type: 'warning', duration: 'temporary' });
     }
   }
 
@@ -1080,20 +1103,20 @@
       }
     }
     if (!analyzeTargets.length && !archiveTargets.length) {
-      setVaaStatus('No Analyze/Archive selections to process.');
+      setVaaStatus('No Analyze/Archive selections to process.', { type: 'warning', duration: 'temporary' });
       return;
     }
     if (archiveTargets.length) {
       const ok = window.confirm(`Archive ${archiveTargets.length} selected file(s)?`);
       if (!ok) {
-        setVaaStatus('Archive canceled.');
+        setVaaStatus('Archive canceled.', { type: 'info', duration: 'temporary' });
         return;
       }
     }
 
     const newlyGenerated = [];
     try {
-      setVaaStatus('Processing selections...');
+      setVaaStatus('Processing selections...', { type: 'info', duration: 'temporary' });
       if (analyzeTargets.length) {
         const resAnalyze = await fetch(LOGS_ANALYZE_ENDPOINT, {
           method: 'POST',
@@ -1130,17 +1153,16 @@
       renderVaaTable();
       await refreshVaaViewPane();
       const blockedNote = blockedArchiveWhileView > 0 ? ` blocked_archive_view=${blockedArchiveWhileView}` : '';
-      setVaaStatus(`Done. Analyze=${analyzeTargets.length} Archive=${archiveTargets.length}${blockedNote}`);
+      setVaaStatus(`Items processed: Analyze=${analyzeTargets.length}, Archive=${archiveTargets.length}${blockedNote ? ` (${blockedNote.trim()})` : ''}`, { type: 'info', duration: 'temporary' });
       logLine('VAA', `Process complete (analyze=${analyzeTargets.length}, archive=${archiveTargets.length}${blockedNote})`);
     } catch (err) {
-      setVaaStatus(`Process failed: ${err && err.message ? err.message : String(err)}`);
+      setVaaStatus(`Process failed: ${err && err.message ? err.message : String(err)}`, { type: 'warning', duration: 'temporary' });
     }
   }
 
   function bindVaaEvents() {
     if (vaaLoadBtn) {
       vaaLoadBtn.addEventListener('click', async () => {
-        if (vaaPanel) vaaPanel.classList.remove('is-hidden');
         await loadVaaFiles();
       });
     }
@@ -1165,7 +1187,7 @@
             if (sel.archive) {
               sel.archive = false;
             }
-            setVaaStatus("View selected: Archive cleared for this file. Re-select archive to proceed.");
+            setVaaStatus("'Archive' de-selected to view file. To archive, reselect after viewing.", { type: 'warning', duration: 'temporary' });
           }
           void refreshVaaViewPane();
         } else if (target.classList.contains('vaa-analyze')) {
@@ -1174,7 +1196,7 @@
           if (target.checked && sel.view) {
             target.checked = false;
             sel.archive = false;
-            setVaaStatus("You must de-select 'View' before you can select 'Archive.'");
+            setVaaStatus("You must de-select 'View' before you can select 'Archive.'", { type: 'warning', duration: 'temporary' });
             renderVaaTable();
             return;
           }
@@ -1568,6 +1590,8 @@
   }
 
   bindVaaEvents();
+  renderVaaTable();
+  setVaaStatus('Click 🗘 to load available files.', { type: 'info', duration: 'persistent' });
 
   document.addEventListener('keydown', (e) => {
     if (e.code !== 'Space') return;
