@@ -360,6 +360,9 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
       justify-content: center;
       gap: 4px;
     }
+    .vaa-archive {
+      accent-color: #cc0000;
+    }
     .vaa-chain-indicator {
       font-size: 0.75rem;
       color: #b70000;
