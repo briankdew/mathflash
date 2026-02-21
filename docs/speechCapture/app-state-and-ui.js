@@ -1042,8 +1042,12 @@
       const s = getVaaSelection(file.filename);
       const canAnalyze = Boolean(file.analyze_allowed);
       const arrow = (s.analyze && s.archive) ? '<span class="vaa-chain-indicator" title="Analyze then Archive">&#9654;</span>' : '';
+      const rowClasses = [
+        s.analyze ? 'vaa-row-analyze' : '',
+        s.archive ? 'vaa-row-archive' : ''
+      ].filter(Boolean).join(' ');
       return `
-        <tr data-idx="${idx}">
+        <tr data-idx="${idx}" class="${rowClasses}">
           <td><input type="checkbox" class="vaa-view" ${s.view ? 'checked' : ''}></td>
           <td>${makeSafeHtml(file.filename)}</td>
           <td>${makeSafeHtml(getVaaScopeLabel(file.scope_key || file.scope))}</td>
@@ -1163,7 +1167,9 @@
   function bindVaaEvents() {
     if (vaaLoadBtn) {
       vaaLoadBtn.addEventListener('click', async () => {
+        vaaSelection.clear();
         await loadVaaFiles();
+        await refreshVaaViewPane();
       });
     }
     if (vaaProcessBtn) {

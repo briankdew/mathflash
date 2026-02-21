@@ -294,6 +294,16 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
       height: 30px;
       font-weight: 400;
     }
+    .vaa-table tr.vaa-row-analyze td {
+      background: #efefef;
+    }
+    .vaa-table tr.vaa-row-archive td:nth-child(2),
+    .vaa-table tr.vaa-row-archive td:nth-child(3),
+    .vaa-table tr.vaa-row-archive td:nth-child(4),
+    .vaa-table tr.vaa-row-archive td:nth-child(5),
+    .vaa-table tr.vaa-row-archive td:nth-child(7) {
+      color: #cc0000;
+    }
     .vaa-table td:nth-child(2) {
       white-space: nowrap;
       overflow: hidden;
