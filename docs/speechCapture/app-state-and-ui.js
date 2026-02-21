@@ -1186,8 +1186,8 @@
           if (target.checked) {
             if (sel.archive) {
               sel.archive = false;
+              setVaaStatus("'Archive' de-selected to view file. To archive, reselect after viewing.", { type: 'warning', duration: 'temporary' });
             }
-            setVaaStatus("'Archive' de-selected to view file. To archive, reselect after viewing.", { type: 'warning', duration: 'temporary' });
           }
           void refreshVaaViewPane();
         } else if (target.classList.contains('vaa-analyze')) {
