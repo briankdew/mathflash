@@ -57,7 +57,7 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Re-run same audio through different Whisper settings/models.
     - [ ] Compare metrics without re-recording speech.
 
-9. [ ] **Track core tuning metrics per problem/run**
+9. [x] **Track core tuning metrics per problem/run**
     - [x] `t_process`, `t_speak`, upload latency, first-answer accuracy.
     - [x] False begin rate.
     - [x] Wrong-answer-from-stale-audio rate.
@@ -83,7 +83,7 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Stable begin detection.
     - [ ] Median/p90 latency within target.
 
-13. [ ] **Test-run QoL logging pipeline (server-backed)**
+13. [x] **Test-run QoL logging pipeline (server-backed)**
     - [x] Keep manual `Download log` for normal/non-test sessions, but export a single run-format JSONL (matching test-run schema) for analysis portability.
     - [x] Add server endpoint for client event ingestion/storage (test-run mode only).
     - [x] Add visible `Test run` toggle near `Start` button:
@@ -113,12 +113,21 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [x] Adopt standardized append-file naming pattern for server logs (`sc_log_svr-ymmdd.hhmm.ss.jsonl`).
     - [ ] Deferred enhancement: optional server-log rotation/splitting (for example per-run files) when workflow value outweighs added file-management overhead.
 
-17. [ ] **Analyzer UI (file-select workflow)**
-    - [ ] Add UI control below the log feed: `Select session logs to analyze`.
-    - [ ] On click, show analyzable files from `sc-session-logs` with checkbox selection.
-    - [ ] Support selecting one or more files and two primary actions:
-      - [ ] `Analyze`: run analysis on selected files.
-      - [ ] `Archive`: move selected files into archive folder (create if missing).
-    - [ ] Present analysis results in a dedicated view (new tab/window or in-app panel).
-    - [ ] Provide download actions for analyzer outputs (`.json` and `.csv`).
-    - [ ] Keep behavior engine-aware and source-aware so mixed cohorts remain comparable.
+17. [x] **Analyzer UI (file-select workflow)**
+    - [x] Added in-app VAA panel below the log feed with file-table workflow.
+    - [x] Load and display files from `sc-session-logs` with row-level selection controls.
+    - [x] Support one or more selected files and two primary actions:
+      - [x] `Analyze`: run analysis on selected `ses/run` files.
+      - [x] `Archive`: move selected files into archive folder (create if missing).
+    - [x] Keep behavior engine-aware/source-aware via filename descriptors and analyzer grouping.
+    - [x] Added UI safety/flow behavior:
+      - [x] Block archive when `View` is active for that row.
+      - [x] Auto-clear `Archive` when `View` is selected for the same row.
+      - [x] Clear action selections on refresh/load and after processing.
+    - [x] Added VAA visual refinements:
+      - [x] Fixed-width synchronized header/table/view layout baseline.
+      - [x] Custom `View` open/closed SVG icons.
+      - [x] `Alyz -> Achv` process-arrow indicator.
+      - [x] Message-area styling with informative/warning + temporary/persistent behavior.
+    - [ ] Optional enhancement: show passive "new files available" notice (polling-based) before manual refresh.
+    - [ ] Optional enhancement: richer in-app analysis summary pane (currently workflow is file-based output generation + view/export from files).
