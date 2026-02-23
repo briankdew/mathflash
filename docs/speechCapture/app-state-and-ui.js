@@ -23,6 +23,9 @@
   const LOGS_FILE_ENDPOINT = '/api/logs/file';
   const LOGS_ANALYZE_ENDPOINT = '/api/logs/analyze';
   const LOGS_ARCHIVE_ENDPOINT = '/api/logs/archive';
+  const VAA_VIEW_OPEN_ICON = 'sc-assets/icons/view-open.svg';
+  const VAA_VIEW_CLOSED_ICON = 'sc-assets/icons/view-closed.svg';
+  const VAA_PROCESS_ARROW_ICON = 'sc-assets/icons/process-arrow.svg';
 
   const urlParams = new URLSearchParams(window.location.search);
   const ENABLE_MIC_METER = urlParams.get('micmeter') !== '0';
@@ -1041,14 +1044,30 @@
     vaaTableBody.innerHTML = vaaFiles.map((file, idx) => {
       const s = getVaaSelection(file.filename);
       const canAnalyze = Boolean(file.analyze_allowed);
-      const arrow = (s.analyze && s.archive) ? '<span class="vaa-chain-indicator" title="Analyze then Archive">&#9654;</span>' : '';
+      const arrow = (s.analyze && s.archive)
+        ? `<img class="vaa-chain-indicator" src="${VAA_PROCESS_ARROW_ICON}" alt="" aria-hidden="true">`
+        : '';
       const rowClasses = [
         s.analyze ? 'vaa-row-analyze' : '',
         s.archive ? 'vaa-row-archive' : ''
       ].filter(Boolean).join(' ');
       return `
         <tr data-idx="${idx}" class="${rowClasses}">
-          <td><input type="checkbox" class="vaa-view" ${s.view ? 'checked' : ''}></td>
+          <td>
+            <button
+              type="button"
+              class="vaa-view-toggle"
+              title="${s.view ? 'Hide file view' : 'View file'}"
+              aria-label="${s.view ? 'Hide file view' : 'View file'}"
+              aria-pressed="${s.view ? 'true' : 'false'}"
+            >
+              <img
+                class="vaa-view-icon"
+                src="${s.view ? VAA_VIEW_OPEN_ICON : VAA_VIEW_CLOSED_ICON}"
+                alt=""
+              >
+            </button>
+          </td>
           <td>${makeSafeHtml(file.filename)}</td>
           <td>${makeSafeHtml(getVaaScopeLabel(file.scope_key || file.scope))}</td>
           <td>${makeSafeHtml(file.scope_date_time)}</td>
@@ -1178,6 +1197,26 @@
       });
     }
     if (vaaTableBody) {
+      vaaTableBody.addEventListener('click', (ev) => {
+        const target = ev.target;
+        if (!(target instanceof Element)) return;
+        const btn = target.closest('.vaa-view-toggle');
+        if (!(btn instanceof HTMLButtonElement)) return;
+        const row = btn.closest('tr');
+        if (!row) return;
+        const idx = Number(row.getAttribute('data-idx'));
+        const file = vaaFiles[idx];
+        if (!file) return;
+        const sel = getVaaSelection(file.filename);
+        const nextView = !sel.view;
+        sel.view = nextView;
+        if (nextView && sel.archive) {
+          sel.archive = false;
+          setVaaStatus("'Archive' de-selected to view file. To archive, reselect after viewing.", { type: 'warning', duration: 'temporary' });
+        }
+        renderVaaTable();
+        void refreshVaaViewPane();
+      });
       vaaTableBody.addEventListener('change', (ev) => {
         const target = ev.target;
         if (!(target instanceof HTMLInputElement)) return;
@@ -1187,16 +1226,7 @@
         const file = vaaFiles[idx];
         if (!file) return;
         const sel = getVaaSelection(file.filename);
-        if (target.classList.contains('vaa-view')) {
-          sel.view = target.checked;
-          if (target.checked) {
-            if (sel.archive) {
-              sel.archive = false;
-              setVaaStatus("'Archive' de-selected to view file. To archive, reselect after viewing.", { type: 'warning', duration: 'temporary' });
-            }
-          }
-          void refreshVaaViewPane();
-        } else if (target.classList.contains('vaa-analyze')) {
+        if (target.classList.contains('vaa-analyze')) {
           sel.analyze = target.checked;
         } else if (target.classList.contains('vaa-archive')) {
           if (target.checked && sel.view) {

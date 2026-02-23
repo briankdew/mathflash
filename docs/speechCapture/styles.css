@@ -248,8 +248,23 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
       font-size: 9pt;
       font-weight: 400;
       text-align: center;
+      line-height: 1.1;
+      min-height: 40px;
+      margin: 5px 0;
+      padding: 0 10px;
+      box-sizing: border-box;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: center;
+      white-space: normal;
       opacity: 1;
       transition: opacity 260ms ease;
+    }
+    .vaa-status:not(:empty) {
+      border: 1px solid #dad8cc;
+      background: #f2f1e9;
     }
     .vaa-status.is-info {
       color: #434343;
@@ -280,7 +295,7 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
     .vaa-table th,
     .vaa-table td {
       border: 1px solid #b5b5b5;
-      padding: 0 3px;
+      padding: 3px;
       text-align: left;
       vertical-align: middle;
     }
@@ -313,6 +328,26 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
     .vaa-table td:nth-child(5) {
       text-align: center;
       font-size: 8pt;
+    }
+    .vaa-view-toggle {
+      width: 24px;
+      height: 24px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      margin: 0 auto;
+      display: block;
+      line-height: 0;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+    .vaa-view-icon {
+      width: 24px;
+      height: 24px;
+      display: block;
+      pointer-events: none;
     }
     .vaa-col-view { width: 4.93%; }
     .vaa-col-filename { width: 51.13%; }
@@ -354,21 +389,32 @@ button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-ra
     .vaa-table td:nth-child(7) {
       text-align: center;
     }
+    .vaa-table td:first-child {
+      line-height: 0;
+    }
     .vaa-analyze-archive-cell {
+      position: relative;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      width: 100%;
+      min-height: 24px;
+    }
+    .vaa-analyze {
+      accent-color: #000000;
     }
     .vaa-archive {
       accent-color: #cc0000;
     }
     .vaa-chain-indicator {
-      font-size: 0.75rem;
-      color: #b70000;
-      font-weight: 700;
-      letter-spacing: 0.02em;
+      position: absolute;
+      right: 0;
+      transform: translate(calc(50% + 3px), 0%);
+      width: 24px;
+      height: 11px;
+      object-fit: contain;
       user-select: none;
+      pointer-events: none;
     }
     .vaa-view-pane {
       margin-top: 8px;
