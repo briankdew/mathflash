@@ -242,6 +242,8 @@ function main() {
       let totalFinals = 0;
       let activeProblemFinals = 0;
       let falseBeginCount = 0;
+      let beginWindowFinals = 0;
+      let beginWindowNonBeginFinals = 0;
       let emptyFinalCount = 0;
       let staleIgnored = 0;
       let staleFinalIgnored = 0;
@@ -270,6 +272,9 @@ function main() {
           if (e.problem_id != null) {
             activeProblemFinals += 1;
             if (/\bbegin\b/.test(cleaned)) falseBeginCount += 1;
+          } else {
+            beginWindowFinals += 1;
+            if (!/\bbegin\b/.test(cleaned)) beginWindowNonBeginFinals += 1;
           }
         }
 
@@ -321,6 +326,7 @@ function main() {
       const emptyFinalRate = totalFinals > 0 ? (100 * emptyFinalCount) / totalFinals : 0;
       const staleWrongRate = wrong > 0 ? (100 * staleWrong) / wrong : 0;
       const numericWerProxy = expectedChars > 0 ? editDistanceSum / expectedChars : 0;
+      const beginGateFailCount = problems === 0 ? 1 : 0;
 
       const server = serverBySession.get(sessionId) || {
         requests: 0,
@@ -349,6 +355,9 @@ function main() {
         emptyFinalRate,
         staleWrongRate,
         numericWerProxy,
+        beginGateFailCount,
+        beginWindowFinals,
+        beginWindowNonBeginFinals,
         staleIgnored,
         staleFinalIgnored,
         uploads: uploadLatencies.length,
@@ -391,6 +400,9 @@ function main() {
       `  numeric_wer_proxy=${toFixedOrNA(s.numericWerProxy, 3)} stale_ignored=${s.staleIgnored} stale_final_ignored=${s.staleFinalIgnored}`
     );
     console.log(
+      `  begin_gate_fail=${s.beginGateFailCount} begin_window_finals=${s.beginWindowFinals} begin_window_non_begin_finals=${s.beginWindowNonBeginFinals}`
+    );
+    console.log(
       `  uploads=${s.uploads} upload_ms(p50/p90/max)=${s.uploadP50 ?? 'n/a'}/${s.uploadP90 ?? 'n/a'}/${s.uploadMax ?? 'n/a'}`
     );
     console.log(
@@ -411,6 +423,9 @@ function main() {
       acc.emptyFinalSum += s.emptyFinalRate;
       acc.staleWrongSum += s.staleWrongRate;
       acc.werSum += s.numericWerProxy;
+      acc.beginGateFail += s.beginGateFailCount;
+      acc.beginWindowFinals += s.beginWindowFinals;
+      acc.beginWindowNonBeginFinals += s.beginWindowNonBeginFinals;
       acc.uploads += s.uploads;
       if (s.uploadP50 != null) acc.uploadP50.push(s.uploadP50);
       if (s.uploadP90 != null) acc.uploadP90.push(s.uploadP90);
@@ -429,6 +444,9 @@ function main() {
       emptyFinalSum: 0,
       staleWrongSum: 0,
       werSum: 0,
+      beginGateFail: 0,
+      beginWindowFinals: 0,
+      beginWindowNonBeginFinals: 0,
       uploads: 0,
       uploadP50: [],
       uploadP90: [],
@@ -454,6 +472,10 @@ function main() {
       avg_empty_final_rate_pct: toNumberOrNull(totals.emptyFinalSum / totals.sessions, 3),
       avg_stale_wrong_rate_pct: toNumberOrNull(totals.staleWrongSum / totals.sessions, 3),
       avg_numeric_wer_proxy: toNumberOrNull(totals.werSum / totals.sessions, 6),
+      begin_gate_fail_count: totals.beginGateFail,
+      begin_gate_fail_rate_pct: toNumberOrNull((100 * totals.beginGateFail) / totals.sessions, 3),
+      begin_window_finals: totals.beginWindowFinals,
+      begin_window_non_begin_finals: totals.beginWindowNonBeginFinals,
       avg_uploads_per_session: toNumberOrNull(totals.uploads / totals.sessions, 3),
       avg_upload_p50_ms: avg(totals.uploadP50),
       avg_upload_p90_ms: avg(totals.uploadP90),
@@ -469,6 +491,7 @@ function main() {
       `avg_empty_final=${toFixedOrNA(totals.emptyFinalSum / totals.sessions)}% ` +
       `avg_stale_wrong=${toFixedOrNA(totals.staleWrongSum / totals.sessions)}% ` +
       `avg_wer_proxy=${toFixedOrNA(totals.werSum / totals.sessions, 3)} ` +
+      `begin_gate_fail_rate=${toFixedOrNA((100 * totals.beginGateFail) / totals.sessions)}% ` +
       `avg_uploads=${toFixedOrNA(totals.uploads / totals.sessions)} ` +
       `avg_upload_ms(p50/p90/max)=${avg(totals.uploadP50) ?? 'n/a'}/${avg(totals.uploadP90) ?? 'n/a'}/${avg(totals.uploadMax) ?? 'n/a'} ` +
       `server_err(ffmpeg/whisper/http)=${totals.ffmpegErr}/${totals.whisperErr}/${totals.httpErr}`
@@ -554,6 +577,9 @@ function main() {
       empty_final_rate_pct: toNumberOrNull(s.emptyFinalRate, 3),
       stale_wrong_rate_pct: toNumberOrNull(s.staleWrongRate, 3),
       numeric_wer_proxy: toNumberOrNull(s.numericWerProxy, 6),
+      begin_gate_fail_count: s.beginGateFailCount,
+      begin_window_finals: s.beginWindowFinals,
+      begin_window_non_begin_finals: s.beginWindowNonBeginFinals,
       stale_ignored: s.staleIgnored,
       stale_final_ignored: s.staleFinalIgnored,
       uploads: s.uploads,
@@ -598,6 +624,9 @@ function main() {
       'empty_final_rate_pct',
       'stale_wrong_rate_pct',
       'numeric_wer_proxy',
+      'begin_gate_fail_count',
+      'begin_window_finals',
+      'begin_window_non_begin_finals',
       'stale_ignored',
       'stale_final_ignored',
       'uploads',

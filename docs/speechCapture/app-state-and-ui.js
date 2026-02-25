@@ -862,6 +862,20 @@
       return;
     }
 
+    if (waitingForBegin && cleaned) {
+      emitEvent('stt_begin_rejected_non_begin_final', {
+        transcript_raw: String(transcript || ''),
+        transcript_cleaned: cleaned,
+        source_problem_id,
+        source_segment_id,
+        source_chunk_id
+      });
+      notifySttAdapter('await_begin_retry', {
+        reason: 'non_begin_final',
+        transcript: cleaned
+      });
+    }
+
     if (!awaitingSubmission) {
       emitEvent('stt_final_ignored_no_active_problem', {
         transcript_raw: String(transcript || ''),
@@ -1172,6 +1186,7 @@
 
       await loadVaaFiles();
       for (const filename of newlyGenerated) {
+        if (!String(filename).toLowerCase().endsWith('.json')) continue;
         const sel = getVaaSelection(filename);
         sel.view = true;
       }

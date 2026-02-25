@@ -444,6 +444,25 @@
       }
     }
 
+    function rotateBeginWindow(reason) {
+      closeProblemWindow('await_begin_rotate', { rotate_reason: reason });
+      activeWindowId += 1;
+      startNewSegment(null, `await_begin:${reason}`);
+      windowActive = true;
+      acceptingChunks = false;
+      voiceIsOn = false;
+      resetWindowResultState();
+      if (typeof deps.emitEvent === 'function') {
+        deps.emitEvent('stt_problem_window_open', {
+          problem_id: activeProblemId,
+          segment_id: segmentId,
+          window_id: activeWindowId,
+          reason: `await_begin:${reason}`
+        });
+      }
+      void restartRecorderForWindow();
+    }
+
     async function processQueue() {
       if (processing) return;
       processing = true;
@@ -691,6 +710,12 @@
       if (eventName === 'problem_changed') {
         const nextProblemId = normalizeProblemId(payload && payload.problem_id);
         openProblemWindow(nextProblemId, 'problem_changed_notify');
+        return;
+      }
+      if (eventName === 'await_begin_retry') {
+        if (activeProblemId == null && windowActive) {
+          rotateBeginWindow('non_begin_final');
+        }
         return;
       }
       if (eventName === 'voice_boundary') {
