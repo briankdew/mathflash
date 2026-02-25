@@ -132,14 +132,21 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
     - [ ] Optional enhancement: show passive "new files available" notice (polling-based) before manual refresh.
     - [ ] Optional enhancement: richer in-app analysis summary pane (currently workflow is file-based output generation + view/export from files).
 
-18. [ ] **Run-Only Client Log Outputs (homogenize `ses` -> `run`)**
-    - [ ] Keep current test-run behavior: with `Test run = On`, append sessions to one open/pending `run` JSONL in `sc-session-logs`.
-    - [ ] Change non-test behavior: with `Test run = Off`, auto-write one local `run` JSONL to `sc-session-logs` (single-session run).
-    - [ ] Change `Download log` export naming to `run` format (still exported to Downloads as a copy).
-    - [ ] Ensure every exported/analyzable client log includes at least one `run_id` and one `session_id`.
-    - [ ] Stop generating new `ses` files in normal flow (legacy `ses` read support can remain in analyzer for backward compatibility).
-    - [ ] Verify VAA list/analyze/archive still behaves correctly for run-only outputs.
-    - [ ] Add regression checks:
-      - [ ] `Test run On`: multi-session appends to one run file.
-      - [ ] `Test run Off`: one session creates one run file in `sc-session-logs`.
-      - [ ] `Download log`: copy appears in Downloads with `run` naming.
+18. [x] **Run-Only Client Log Outputs (homogenize `ses` -> `run`)**
+    - [x] Keep current test-run behavior: with `Test run = On`, append sessions to one open/pending `run` JSONL in `sc-session-logs`.
+    - [x] Change non-test behavior: with `Test run = Off`, auto-write one local `run` JSONL to `sc-session-logs` (single-session run).
+    - [x] Change `Download log` export naming to `run` format (still exported to Downloads as a copy).
+    - [x] Ensure every exported/analyzable client log includes at least one `run_id` and one `session_id`.
+    - [x] Stop generating new `ses` files in normal flow (legacy `ses` read support can remain in analyzer for backward compatibility).
+    - [x] Verify VAA list/analyze/archive still behaves correctly for run-only outputs.
+    - [x] Add regression checks:
+      - [x] `Test run On`: multi-session appends to one run file.
+      - [x] `Test run Off`: one session creates one run file in `sc-session-logs`.
+      - [x] `Download log`: copy appears in Downloads with `run` naming.
+
+19. [x] **Begin-Gate Reliability + Diagnostics**
+    - [x] Add begin-window rejection handling for non-begin finals so a failed first utterance does not wedge session start.
+    - [x] Rotate/reset begin segment/window after non-begin final (`await_begin_retry`) to allow immediate retry.
+    - [x] Add explicit begin-gate events for diagnostics (`stt_begin_rejected_non_begin_final` and retry/open lifecycle visibility).
+    - [x] Add analyzer/session metrics for begin-gate failures (`begin_gate_fail_count`, begin-window final/non-begin counts).
+    - [x] Add by-cohort reporting for begin-gate reliability (`begin_gate_fail_rate_pct` in chunk-mode summary).
