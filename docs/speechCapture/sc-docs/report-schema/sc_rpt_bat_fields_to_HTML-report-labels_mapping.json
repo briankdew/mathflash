@@ -1,0 +1,85 @@
+MACHINE FIELD NAME: REVISED DEFINITION >> HTML REPORT LABEL NAME: HTML REPORT DEFINITION
+
+[REPORT METADATA]
+
+{"generated_at_iso": "UTC timestamp when the analysis report was generated"} >> {"report_generation_time_UTC":"[same]"}
+
+{"logs_dir": "directory path from which the analyzer loaded log files for this report"} >> {"report_input_logs_directory":"[same]"}
+
+[SCOPE SUMMARY]
+
+NEW! {"runs": "count of total runs included in the report"} >> {"run_count":"[same]"}
+
+{"sessions": "count of total sessions included in the report"} >> {"session_count":"[same]"}
+
+[SOURCE IDENTIFIERS]
+
+{"file": "source log filename for this session entry in the report"} >> {"source_file_n": "source log filename for run n and/or session n in the report"}
+
+{"run_id": "unique identifier for this run"} >> {"run_n_id": "unique identifier for run n in the report"}
+
+{"session_id": "unique identifier for this session"} >> {"session_n_id": "unique identifier for session n in this report"}
+
+[USER SETTINGS]
+
+{"selected_problem_count": "number of problems selected in settings for this session"} >> {"selected_problems":"[same]"}
+
+NEW! {"stt_engine": "speech-to-text engine used for voice input transcription"} >> {"stt_engine": "speech-to-text engine used for voice input transcription"}
+
+[USER PERFORMANCE]
+
+{"submitted": "count of problems submitted for answer evaluation"} >> {"submitted_count": "[same]"}
+
+{"correct": "count of submitted problems with correct answers"} >> {"correct_count"}
+
+{"wrong": "count of submitted problems with wrong answers"} >> {"wrong_count": "[same]"}
+
+{"accuracy_submitted_pct": "percent of correct problems per submitted problems"} >> {"user_accuracy_pct": "[same]"}
+
+[SESSION THROUGHPUT]
+
+{"problems": "count of distinct problems shown in this session (by problem index)"} >> {"problems_presented": "count of problems presented to the user"}
+
+{"accuracy_pct": "percent of shown problems that reached submission"} >> {"submitted_efficiency_pct": "percent of submitted problems per problems presented"}
+
+[STT SETTINGS]
+
+{"source": "normalized audio input source token (mic, rec, or unk)"} >> {"audio_source": "input audio source used for speech capture"}
+
+{"chunk_mode": "normalized chunking mode token used in analysis (vad, fixed, or unknown)"} >> {"chunk_mode": "chunking mode used for speech capture"}
+
+[VOICE RECOGNITION QUALITY]
+
+{"false_begin_rate_pct": "percent of active-problem final transcript containing the "begin" token"} >> {"begin_in_final_pct": "percent of problems with "Begin" in final transcript"}
+
+{"empty_final_rate_pct": "percent of empty final transcripts"} >> {"empty_final_transcript_pct":"[same]"}
+
+{"stale_wrong_rate_pct": "percent of wrong submissions occurring in windows where stale-ignore events were present"} >> {"stale_contamination_rate_pct": "percent of wrong problems with stale interim transcripts"}
+
+{"numeric_wer_proxy": "edit-distance error score between expected and submitted numeric answers (lower is better)"} >> {"numeric_transcript_WER_score": "proxy transcript quality metric based on spoken numeric 'word error rate'"}
+
+{"stale_ignored": "count of stale non-final STT result events ignored"} >> {"stale_interim_ignored":"count of stale interim transcript events ignored"}
+
+{"stale_final_ignored": "count of stale final STT result events ignored"} >> {"stale_final_ignored": "count of stale final transcript events ignored"}
+
+[AUDIO UPLOAD PERFORMANCE]
+
+{"uploads": "count of completed audio chunk upload events with measured elapsed latency"} >> {"audio_upload_requests": "count of audio chunk upload events"}
+
+{"upload_p50_ms": "50th percentile audio chunk upload latency"} >> {"audio_upload_latency_p50_ms": "50th percentile audio chunk upload latency"}
+
+{"upload_p90_ms": "90th percentile audio chunk upload latency"} >> {"audio_upload_latency_p90_ms": "90th percentile audio chunk upload latency"}
+
+{"upload_max_ms": "maximum audio chunk upload latency"} >> {"audio_upload_latency_max_ms": "maximum audio chunk upload latency"}
+
+[SERVER HEALTH]
+
+{"server_requests": "count of server request events recorded"} >> {"server_requests": "count of server request events recorded"}
+
+{"server_responses": "count of server response events recorded"} >> {"server_responses": "count of server response events recorded"}
+
+{"server_ffmpeg_errors": "count of ffmpeg processing errors"} >> {"server_ffmpeg_errors": "count of ffmpeg processing errors"}
+
+{"server_whisper_errors": "count of Whisper transcription errors"} >> {"server_whisper_errors": "count of Whisper transcription errors"}
+
+{"server_http_errors": "count of HTTP/server status errors"} >> {"server_http_errors": "count of HTTP/server status errors"}
