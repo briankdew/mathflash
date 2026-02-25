@@ -16,6 +16,7 @@
   let testRunId = null;
   let testRunSessionCount = 0;
   let currentSessionRunIndex = null;
+  let currentSessionRunId = null;
   const structuredEventLog = [];
   const sessionEventLog = [];
   const TEST_RUN_LOG_ENDPOINT = '/api/logs/client-events';
@@ -251,8 +252,8 @@
       chunk_id: null,
       engine: getCurrentEngineId(),
       test_run: testRunEnabled,
-      run_id: testRunEnabled ? testRunId : null,
-      session_index_in_run: testRunEnabled ? currentSessionRunIndex : null,
+      run_id: currentSessionRunId,
+      session_index_in_run: currentSessionRunIndex,
       ...payload
     };
     eventSeq += 1;
@@ -269,23 +270,24 @@
       engine: getCurrentEngineId(),
       client_ts_ms: Date.now(),
       test_run: testRunEnabled,
-      run_id: testRunEnabled ? testRunId : null,
-      session_index_in_run: testRunEnabled ? currentSessionRunIndex : null,
+      run_id: currentSessionRunId,
+      session_index_in_run: currentSessionRunIndex,
       ...overrides
     };
   }
 
-  function postSessionEventsToTestRunLog() {
-    if (!testRunEnabled || !testRunId || !sessionEventLog.length) return;
+  function postSessionEventsToRunLog() {
+    if (!currentSessionRunId || !sessionEventLog.length) return;
     const events = sessionEventLog.slice();
-    const runId = testRunId;
+    const runId = currentSessionRunId;
     const sessionId = currentSessionId;
     const sessionIndex = currentSessionRunIndex;
+    const logKind = testRunEnabled ? 'TEST_RUN' : 'RUN_LOG';
     void fetch(TEST_RUN_LOG_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        test_run: true,
+        test_run: testRunEnabled,
         run_id: runId,
         session_id: sessionId,
         session_index_in_run: sessionIndex,
@@ -306,10 +308,10 @@
       })
       .then((body) => {
         const file = body?.file ? ` -> ${body.file}` : '';
-        logLine('TEST_RUN', `Session events appended (${events.length})${file}`);
+        logLine(logKind, `Session events appended (${events.length})${file}`);
       })
       .catch((err) => {
-        logLine('TEST_RUN', `Failed to append session events: ${err && err.message ? err.message : String(err)}`);
+        logLine(logKind, `Failed to append session events: ${err && err.message ? err.message : String(err)}`);
       });
   }
 
@@ -1253,10 +1255,12 @@
     if (testRunToggle) testRunToggle.disabled = true;
     if (testRunEnabled) {
       if (!testRunId) testRunId = makeRunId();
+      currentSessionRunId = testRunId;
       testRunSessionCount += 1;
       currentSessionRunIndex = testRunSessionCount;
     } else {
-      currentSessionRunIndex = null;
+      currentSessionRunId = makeRunId();
+      currentSessionRunIndex = 1;
     }
     sessionEventLog.length = 0;
     startEndBtn.textContent = 'End';
@@ -1314,6 +1318,8 @@
     logLine('SESSION', 'Start (active)');
     if (testRunEnabled) {
       logLine('TEST_RUN', `ON run_id=${testRunId} session_index=${currentSessionRunIndex}`);
+    } else {
+      logLine('RUN_LOG', `run_id=${currentSessionRunId} session_index=${currentSessionRunIndex}`);
     }
     if (blinkToggleSelect?.value === 'on' && mode === MODE_EVAL) {
       startBlinkTimer(parseFloat(blinkRateInput?.value) || 1.0);
@@ -1350,7 +1356,8 @@
       answered_count: answeredCount,
       skipped_count: skippedCount
     });
-    postSessionEventsToTestRunLog();
+    postSessionEventsToRunLog();
+    currentSessionRunId = null;
     currentSessionRunIndex = null;
     currentProblemId = null;
 
@@ -1592,7 +1599,7 @@
       const eventsUrl = URL.createObjectURL(eventsBlob);
       const eventsLink = document.createElement('a');
       eventsLink.href = eventsUrl;
-      eventsLink.download = `sc_log_ses-${stamp}-${uid}_s${sessionCount}_p${problemCount}_${engine}_${chunk}_${source}.jsonl`;
+      eventsLink.download = `sc_log_run-${stamp}-${uid}_s${sessionCount}_p${problemCount}_${engine}_${chunk}_${source}.jsonl`;
       document.body.appendChild(eventsLink);
       eventsLink.click();
       document.body.removeChild(eventsLink);

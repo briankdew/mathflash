@@ -571,10 +571,6 @@ app.post('/api/stt/whisper', upload.single('file'), async (req, res) => {
 app.post('/api/logs/client-events', async (req, res) => {
   try {
     const body = req.body || {};
-    const isTestRun = body.test_run === true || String(body.test_run).toLowerCase() === 'true';
-    if (!isTestRun) {
-      return res.status(400).json({ error: 'test_run must be true' });
-    }
 
     const runId = toNullableString(body.run_id);
     const payload = body.events != null ? body.events : body.event;
