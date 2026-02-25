@@ -104,6 +104,13 @@ function normalizeChunkMode(chunkMode) {
   return 'unknown';
 }
 
+function toSkipReasonToken(reason) {
+  const r = String(reason || '').trim().toLowerCase();
+  if (r === 'empty final=true detected') return 'empty_final';
+  if (r === 'non-numeric symbol detected') return 'non_numeric_symbol';
+  return 'other';
+}
+
 function toSourceToken(source) {
   const s = String(source || '').toLowerCase();
   if (s === 'voice' || s === 'mic' || s === 'microphone') return 'mic';
@@ -247,6 +254,12 @@ function main() {
       let emptyFinalCount = 0;
       let staleIgnored = 0;
       let staleFinalIgnored = 0;
+      let skippedByReason = {
+        empty_final: 0,
+        non_numeric_symbol: 0,
+        other: 0
+      };
+      let skippedEvents = 0;
 
       const uploadLatencies = [];
       const staleEventTs = [];
@@ -290,9 +303,20 @@ function main() {
         if (e.event_type === 'stt_chunk_upload_end' && typeof e.elapsed_ms === 'number') {
           uploadLatencies.push(e.elapsed_ms);
         }
+        if (e.event_type === 'problem_skipped') {
+          skippedEvents += 1;
+          const token = toSkipReasonToken(e.reason);
+          skippedByReason[token] += 1;
+        }
       }
 
       uploadLatencies.sort((a, b) => a - b);
+
+      const sessionEnd = [...events].reverse().find((e) => e.event_type === 'session_end') || {};
+      const skippedCountRaw = Number(sessionEnd.skipped_count);
+      const skippedCount = Number.isFinite(skippedCountRaw) && skippedCountRaw >= 0
+        ? skippedCountRaw
+        : skippedEvents;
 
       let correct = 0;
       let wrong = 0;
@@ -360,6 +384,11 @@ function main() {
         beginWindowNonBeginFinals,
         staleIgnored,
         staleFinalIgnored,
+        skippedCount,
+        skippedEmptyFinalCount: skippedByReason.empty_final,
+        skippedNonNumericSymbolCount: skippedByReason.non_numeric_symbol,
+        skippedOtherCount: skippedByReason.other,
+        skippedEvents,
         uploads: uploadLatencies.length,
         uploadP50: median(uploadLatencies),
         uploadP90: p90(uploadLatencies),
@@ -403,6 +432,9 @@ function main() {
       `  begin_gate_fail=${s.beginGateFailCount} begin_window_finals=${s.beginWindowFinals} begin_window_non_begin_finals=${s.beginWindowNonBeginFinals}`
     );
     console.log(
+      `  skipped=${s.skippedCount} skip_reasons(empty/non_numeric/other)=${s.skippedEmptyFinalCount}/${s.skippedNonNumericSymbolCount}/${s.skippedOtherCount}`
+    );
+    console.log(
       `  uploads=${s.uploads} upload_ms(p50/p90/max)=${s.uploadP50 ?? 'n/a'}/${s.uploadP90 ?? 'n/a'}/${s.uploadMax ?? 'n/a'}`
     );
     console.log(
@@ -426,6 +458,10 @@ function main() {
       acc.beginGateFail += s.beginGateFailCount;
       acc.beginWindowFinals += s.beginWindowFinals;
       acc.beginWindowNonBeginFinals += s.beginWindowNonBeginFinals;
+      acc.skipped += s.skippedCount;
+      acc.skippedEmptyFinal += s.skippedEmptyFinalCount;
+      acc.skippedNonNumericSymbol += s.skippedNonNumericSymbolCount;
+      acc.skippedOther += s.skippedOtherCount;
       acc.uploads += s.uploads;
       if (s.uploadP50 != null) acc.uploadP50.push(s.uploadP50);
       if (s.uploadP90 != null) acc.uploadP90.push(s.uploadP90);
@@ -447,6 +483,10 @@ function main() {
       beginGateFail: 0,
       beginWindowFinals: 0,
       beginWindowNonBeginFinals: 0,
+      skipped: 0,
+      skippedEmptyFinal: 0,
+      skippedNonNumericSymbol: 0,
+      skippedOther: 0,
       uploads: 0,
       uploadP50: [],
       uploadP90: [],
@@ -476,6 +516,11 @@ function main() {
       begin_gate_fail_rate_pct: toNumberOrNull((100 * totals.beginGateFail) / totals.sessions, 3),
       begin_window_finals: totals.beginWindowFinals,
       begin_window_non_begin_finals: totals.beginWindowNonBeginFinals,
+      skipped_count: totals.skipped,
+      skipped_rate_pct: totals.problems > 0 ? toNumberOrNull((100 * totals.skipped) / totals.problems, 3) : 0,
+      skipped_empty_final_count: totals.skippedEmptyFinal,
+      skipped_non_numeric_symbol_count: totals.skippedNonNumericSymbol,
+      skipped_other_count: totals.skippedOther,
       avg_uploads_per_session: toNumberOrNull(totals.uploads / totals.sessions, 3),
       avg_upload_p50_ms: avg(totals.uploadP50),
       avg_upload_p90_ms: avg(totals.uploadP90),
@@ -492,6 +537,7 @@ function main() {
       `avg_stale_wrong=${toFixedOrNA(totals.staleWrongSum / totals.sessions)}% ` +
       `avg_wer_proxy=${toFixedOrNA(totals.werSum / totals.sessions, 3)} ` +
       `begin_gate_fail_rate=${toFixedOrNA((100 * totals.beginGateFail) / totals.sessions)}% ` +
+      `skipped=${totals.skipped} ` +
       `avg_uploads=${toFixedOrNA(totals.uploads / totals.sessions)} ` +
       `avg_upload_ms(p50/p90/max)=${avg(totals.uploadP50) ?? 'n/a'}/${avg(totals.uploadP90) ?? 'n/a'}/${avg(totals.uploadMax) ?? 'n/a'} ` +
       `server_err(ffmpeg/whisper/http)=${totals.ffmpegErr}/${totals.whisperErr}/${totals.httpErr}`
@@ -513,12 +559,13 @@ function main() {
       acc.problems += s.problems;
       acc.submitted += s.submitted;
       acc.correct += s.correct;
+      acc.skipped += s.skippedCount;
       acc.uploads += s.uploads;
       if (s.uploadP50 != null) acc.uploadP50.push(s.uploadP50);
       if (s.uploadP90 != null) acc.uploadP90.push(s.uploadP90);
       if (s.uploadMax != null) acc.uploadMax.push(s.uploadMax);
       return acc;
-    }, { sessions: 0, problems: 0, submitted: 0, correct: 0, uploads: 0, uploadP50: [], uploadP90: [], uploadMax: [] });
+    }, { sessions: 0, problems: 0, submitted: 0, correct: 0, skipped: 0, uploads: 0, uploadP50: [], uploadP90: [], uploadMax: [] });
     const accShown = totals.problems > 0 ? (100 * totals.correct) / totals.problems : 0;
     const accSubmitted = totals.submitted > 0 ? (100 * totals.correct) / totals.submitted : 0;
     const avg = (arr) => arr.length ? Math.round(arr.reduce((x, y) => x + y, 0) / arr.length) : null;
@@ -528,6 +575,8 @@ function main() {
       problems: totals.problems,
       submitted: totals.submitted,
       correct: totals.correct,
+      skipped_count: totals.skipped,
+      skipped_rate_pct: totals.problems > 0 ? toNumberOrNull((100 * totals.skipped) / totals.problems, 3) : 0,
       accuracy_pct: toNumberOrNull(accShown, 3),
       accuracy_submitted_pct: toNumberOrNull(accSubmitted, 3),
       avg_uploads_per_session: toNumberOrNull(totals.uploads / totals.sessions, 3),
@@ -538,6 +587,7 @@ function main() {
     byRunSummary.push(row);
     console.log(
       `  ${runId}: sessions=${row.sessions} problems=${row.problems} submitted=${row.submitted} ` +
+      `skipped=${row.skipped_count} ` +
       `acc_shown=${toFixedOrNA(accShown)}% acc_submitted=${toFixedOrNA(accSubmitted)}% ` +
       `avg_upload_ms(p50/p90/max)=${row.avg_upload_p50_ms ?? 'n/a'}/${row.avg_upload_p90_ms ?? 'n/a'}/${row.avg_upload_max_ms ?? 'n/a'}`
     );
@@ -580,6 +630,11 @@ function main() {
       begin_gate_fail_count: s.beginGateFailCount,
       begin_window_finals: s.beginWindowFinals,
       begin_window_non_begin_finals: s.beginWindowNonBeginFinals,
+      skipped_count: s.skippedCount,
+      skipped_empty_final_count: s.skippedEmptyFinalCount,
+      skipped_non_numeric_symbol_count: s.skippedNonNumericSymbolCount,
+      skipped_other_count: s.skippedOtherCount,
+      skipped_events_count: s.skippedEvents,
       stale_ignored: s.staleIgnored,
       stale_final_ignored: s.staleFinalIgnored,
       uploads: s.uploads,
@@ -627,6 +682,11 @@ function main() {
       'begin_gate_fail_count',
       'begin_window_finals',
       'begin_window_non_begin_finals',
+      'skipped_count',
+      'skipped_empty_final_count',
+      'skipped_non_numeric_symbol_count',
+      'skipped_other_count',
+      'skipped_events_count',
       'stale_ignored',
       'stale_final_ignored',
       'uploads',
