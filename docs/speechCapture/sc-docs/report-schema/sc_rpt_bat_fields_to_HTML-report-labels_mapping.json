@@ -83,3 +83,23 @@ NEW! {"stt_engine": "speech-to-text engine used for voice input transcription"} 
 {"server_whisper_errors": "count of Whisper transcription errors"} >> {"server_whisper_errors": "count of Whisper transcription errors"}
 
 {"server_http_errors": "count of HTTP/server status errors"} >> {"server_http_errors": "count of HTTP/server status errors"}
+
+[BEGIN-GATE DIAGNOSTICS]
+
+{"begin_gate_fail_count": "count of sessions that never passed begin-gate (no problems shown)"} >> {"begin_fail_count": "count of events where "Begin" failed to present the first problem"}
+
+{"begin_window_finals": "count of final transcripts produced while waiting for begin"} >> {"begin_final_count": "count of final transcripts produced during "Begin" state"}
+
+{"begin_window_non_begin_finals": "count of begin-window finals that did not contain begin"} >> {"begin_final_rejected_count": "count of non-"Begin" final transcripts rejected during "Begin" state"}
+
+[SKIPPED PROBLEM DIAGNOSTICS]
+
+{"skipped_count": "count of problems skipped in session"} >> {"skipped_problem_count": "count of problems skipped by app logic"}
+
+{"skipped_events_count": "count of problem_skipped events emitted"} >> {"skipped_event_count": "count of log events related to skipped problems"}
+
+{"skipped_empty_final_count": "count of skips caused by empty final transcript"} >> {"skipped_empty_final_count": "count of problems skipped due to empty final transcripts"}
+
+{"skipped_non_numeric_symbol_count": "count of skips caused by non-numeric symbol in transcript"} >> {"skipped_non_numeric_symbol_count": "count of problems skipped due to non-numeric symbol transcripts"}
+
+{"skipped_other_count": "count of skips caused by any other reason"} >> {"skipped_other_count": "count of problemns skip due to uncategorized reasons"}

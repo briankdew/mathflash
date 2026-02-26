@@ -9,7 +9,7 @@
 | `rpt` | report: structured output from analyzed log data |
 | `run` | run: grouped sessions completed together (run ID plus included session IDs) |
 | `sc` | speechCapture: app prefix |
-| `ses` | session: one or more problems completed from a single Start action |
+~~| `ses` | session: one or more problems completed from a single Start action |~~ [Deprecated]
 | `stt` | speech-to-text: voice transcription method |
 | `svr` | server: scope descriptor |
 | `vad` | voice-activity-detection (VAD): chunk mode (variable-length chunks) |
