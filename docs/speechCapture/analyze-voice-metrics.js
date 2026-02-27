@@ -118,6 +118,11 @@ function toSourceToken(source) {
   return 'unk';
 }
 
+function isRealRunId(runId) {
+  const value = String(runId || '').trim();
+  return /^run_[0-9]{8}_[0-9]{6}_[a-z0-9]+$/i.test(value);
+}
+
 function parseCliArgs(argv) {
   const positional = [];
   let runIdFilter = '';
@@ -613,6 +618,7 @@ function main() {
       file: s.file,
       session_id: s.sessionId,
       run_id: s.runId,
+      stt_engine: s.engineToken,
       selected_problem_count: s.selectedProblemCount,
       source: s.sourceToken,
       chunk_mode_raw: s.chunkModeRaw,
@@ -648,11 +654,21 @@ function main() {
       server_http_errors: s.server.httpErrors
     }));
 
+    const uniqueFiles = new Set(sessionRows.map((row) => String(row.file || '').trim()).filter(Boolean));
+    const uniqueRealRuns = new Set(
+      sessionRows
+        .map((row) => String(row.run_id || '').trim())
+        .filter((runId) => isRealRunId(runId))
+    );
+
     const jsonPayload = {
       generated_at_iso: now,
       logs_dir: logsDir,
       filter,
       run_id_filter: runIdFilter || null,
+      file_count: uniqueFiles.size,
+      run_count: uniqueRealRuns.size,
+      session_count: sessionRows.length,
       sessions: sessionRows,
       by_chunk_mode: byModeSummary,
       by_run_id: byRunSummary
@@ -665,6 +681,7 @@ function main() {
       'file',
       'session_id',
       'run_id',
+      'stt_engine',
       'selected_problem_count',
       'source',
       'chunk_mode_raw',
