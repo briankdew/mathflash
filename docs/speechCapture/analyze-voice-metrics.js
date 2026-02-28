@@ -61,6 +61,21 @@ function csvCell(value) {
   return text;
 }
 
+function htmlEscape(text) {
+  return String(text == null ? '' : text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function shortIdFromReportFilename(filename) {
+  const m = /\.(\d{2})-([a-z0-9]{4})_/i.exec(String(filename || ''));
+  if (!m) return 'n/a';
+  return `${m[1]}-${String(m[2]).toUpperCase()}`;
+}
+
 function makeShortStamp(date = new Date()) {
   const y = String(date.getFullYear()).slice(-1);
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -147,6 +162,170 @@ function parseCliArgs(argv) {
     outPrefixRaw: String(positional[2] || '').trim(),
     runIdFilter
   };
+}
+
+function buildHtmlInputStructure({
+  generatedAtIso,
+  logsDir,
+  filter,
+  runIdFilter,
+  fileCount,
+  runCount,
+  sessionCount,
+  sessionRows
+}) {
+  const files = [];
+  const fileMap = new Map();
+
+  for (const row of sessionRows) {
+    const file = String(row.file || '');
+    if (!fileMap.has(file)) {
+      const fileObj = {
+        fileIndex: files.length + 1,
+        filename: file,
+        runs: [],
+        runMap: new Map()
+      };
+      files.push(fileObj);
+      fileMap.set(file, fileObj);
+    }
+    const fileObj = fileMap.get(file);
+    const runId = String(row.run_id || '');
+    if (!fileObj.runMap.has(runId)) {
+      const runObj = {
+        runIndex: fileObj.runs.length + 1,
+        runId,
+        sessions: []
+      };
+      fileObj.runs.push(runObj);
+      fileObj.runMap.set(runId, runObj);
+    }
+    const runObj = fileObj.runMap.get(runId);
+    const sessionIndex = runObj.sessions.length + 1;
+    const sessionPayload = {};
+    sessionPayload[`session_id_${sessionIndex}`] = row.session_id;
+    for (const [key, value] of Object.entries(row)) {
+      if (key === 'file' || key === 'run_id' || key === 'session_id') continue;
+      sessionPayload[key] = value;
+    }
+    runObj.sessions.push(sessionPayload);
+  }
+
+  const normalizedFiles = files.map((fileObj) => {
+    const filePayload = {
+      [`filename_${fileObj.fileIndex}`]: fileObj.filename,
+      runs: fileObj.runs.map((runObj) => ({
+        [`run_id_${runObj.runIndex}`]: runObj.runId,
+        sessions: runObj.sessions
+      }))
+    };
+    return filePayload;
+  });
+
+  return {
+    generated_at_iso: generatedAtIso,
+    logs_dir: logsDir,
+    filter,
+    run_id_filter: runIdFilter || null,
+    file_count: fileCount,
+    run_count: runCount,
+    session_count: sessionCount,
+    files: normalizedFiles
+  };
+}
+
+function renderHtmlReport(structure) {
+  const generated = htmlEscape(structure.generated_at_iso);
+  const logsDir = htmlEscape(structure.logs_dir);
+  const fileCount = Number(structure.file_count || 0);
+  const runCount = Number(structure.run_count || 0);
+  const sessionCount = Number(structure.session_count || 0);
+  const reportFilename = htmlEscape(structure.report_filename || 'unknown');
+  const shortId = htmlEscape(structure.short_id || 'n/a');
+
+  const detailsHtml = (structure.files || []).map((fileObj) => {
+    const filenameKey = Object.keys(fileObj).find((k) => /^filename_\d+$/.test(k));
+    const filename = filenameKey ? fileObj[filenameKey] : '';
+    const runs = Array.isArray(fileObj.runs) ? fileObj.runs : [];
+    const runBlocks = runs.map((runObj) => {
+      const runKey = Object.keys(runObj).find((k) => /^run_id_\d+$/.test(k));
+      const runId = runKey ? runObj[runKey] : '';
+      const sessions = Array.isArray(runObj.sessions) ? runObj.sessions : [];
+      const sessionRows = sessions.map((sessionObj) => {
+        const sessionKey = Object.keys(sessionObj).find((k) => /^session_id_\d+$/.test(k));
+        const sessionId = sessionKey ? sessionObj[sessionKey] : '';
+        const kvRows = Object.entries(sessionObj)
+          .map(([k, v]) => `<tr><th>${htmlEscape(k)}</th><td>${htmlEscape(v)}</td></tr>`)
+          .join('');
+        return `
+          <details class="session-block" open>
+            <summary>${htmlEscape(sessionKey || 'session_id')} = ${htmlEscape(sessionId)}</summary>
+            <table>
+              <tbody>${kvRows}</tbody>
+            </table>
+          </details>
+        `;
+      }).join('');
+      return `
+        <details class="run-block" open>
+          <summary>${htmlEscape(runKey || 'run_id')} = ${htmlEscape(runId)}</summary>
+          ${sessionRows}
+        </details>
+      `;
+    }).join('');
+    return `
+      <details class="file-block" open>
+        <summary>${htmlEscape(filenameKey || 'filename')} = ${htmlEscape(filename)}</summary>
+        ${runBlocks}
+      </details>
+    `;
+  }).join('');
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>speechCapture Report (v1)</title>
+  <style>
+    :root { --fg:#1f1f1f; --bg:#f8f8f8; --panel:#ffffff; --line:#d8d8d8; --head:#ececec; --sid:#bf9000; }
+    body { margin:0; padding:20px 22px; font:10pt/1.35 Arial, sans-serif; color:var(--fg); background:var(--bg); }
+    .report-wrap { max-width:980px; margin:0 auto; }
+    h1 { margin:0 0 10px; font-size:15pt; text-align:right; }
+    .id-row { margin:2px 0 2px; font-size:15pt; font-weight:700; color:var(--sid); }
+    .filename-row { margin:0 0 10px; font-size:11pt; }
+    .filename-row .k { font-weight:700; margin-right:8px; }
+    .meta { margin-bottom:12px; padding:8px 10px; border:1px solid var(--line); background:var(--panel); }
+    .meta-grid { display:grid; grid-template-columns:max-content 1fr; gap:6px 8px; }
+    .section { border:1px solid var(--line); background:var(--panel); padding:10px; }
+    details { margin:8px 0; }
+    summary { cursor:pointer; font-weight:700; }
+    .run-block summary, .session-block summary { font-weight:600; }
+    table { border-collapse:collapse; width:100%; margin-top:8px; }
+    th, td { border:1px solid var(--line); padding:4px 6px; vertical-align:top; }
+    th { background:var(--head); text-align:left; width:220px; }
+  </style>
+</head>
+<body>
+  <main class="report-wrap">
+    <h1>speechCapture Report (v1)</h1>
+    <div class="id-row">${shortId}</div>
+    <div class="filename-row"><span class="k">Filename</span><span class="v">${reportFilename}</span></div>
+    <section class="meta">
+      <div class="meta-grid">
+        <div>generated_at_iso</div><div>${generated}</div>
+        <div>logs_dir</div><div>${logsDir}</div>
+        <div>file_count</div><div>${fileCount}</div>
+        <div>run_count</div><div>${runCount}</div>
+        <div>session_count</div><div>${sessionCount}</div>
+      </div>
+    </section>
+    <section class="section">
+      ${detailsHtml}
+    </section>
+  </main>
+</body>
+</html>`;
 }
 
 function main() {
@@ -661,6 +840,17 @@ function main() {
         .filter((runId) => isRealRunId(runId))
     );
 
+    const htmlInput = buildHtmlInputStructure({
+      generatedAtIso: now,
+      logsDir,
+      filter,
+      runIdFilter,
+      fileCount: uniqueFiles.size,
+      runCount: uniqueRealRuns.size,
+      sessionCount: sessionRows.length,
+      sessionRows
+    });
+
     const jsonPayload = {
       generated_at_iso: now,
       logs_dir: logsDir,
@@ -722,7 +912,11 @@ function main() {
     ];
     const csvPath = `${derivedOutPrefix}.csv`;
     fs.writeFileSync(csvPath, `${csvRows.join('\n')}\n`, 'utf8');
-    console.log(`\nWrote summary files:\n  ${jsonPath}\n  ${csvPath}`);
+    const htmlPath = `${derivedOutPrefix}.html`;
+    htmlInput.report_filename = path.basename(htmlPath);
+    htmlInput.short_id = shortIdFromReportFilename(path.basename(htmlPath));
+    fs.writeFileSync(htmlPath, `${renderHtmlReport(htmlInput)}\n`, 'utf8');
+    console.log(`\nWrote summary files:\n  ${jsonPath}\n  ${csvPath}\n  ${htmlPath}`);
   }
 }
 

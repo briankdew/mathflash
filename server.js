@@ -656,6 +656,18 @@ app.post('/api/logs/analyze', async (req, res) => {
       await fs.copyFile(src, dst);
     }
 
+    // Include server logs so server_* metrics are reproducible for VAA re-analysis.
+    const logsDirEntries = await fs.readdir(CLIENT_TEST_LOGS_DIR).catch(() => []);
+    const serverLogFiles = logsDirEntries.filter((name) =>
+      /^sc_log_svr-\d{5}\.\d{4}\.\d{2}\.jsonl$/.test(name) ||
+      /^stt-server-events(?: \(\d+\))?\.jsonl$/.test(name)
+    );
+    for (const file of serverLogFiles) {
+      const src = path.join(CLIENT_TEST_LOGS_DIR, file);
+      const dst = path.join(tempDir, file);
+      await fs.copyFile(src, dst).catch(() => {});
+    }
+
     await execFileAsync(
       process.execPath,
       [ANALYZER_SCRIPT_PATH, tempDir, '', 'auto'],
@@ -663,7 +675,7 @@ app.post('/api/logs/analyze', async (req, res) => {
     );
 
     const tempFiles = await fs.readdir(tempDir);
-    const outputs = tempFiles.filter((name) => /^sc_rpt_bat-.*\.(json|csv)$/.test(name)).sort();
+    const outputs = tempFiles.filter((name) => /^sc_rpt_bat-.*\.(json|csv|html)$/.test(name)).sort();
     const moved = [];
     for (const output of outputs) {
       const src = path.join(tempDir, output);

@@ -995,6 +995,43 @@
     return vaaSelection.get(filename);
   }
 
+  function getVaaHtmlReportWindowName(filename) {
+    const match = /^sc_rpt_bat-\d{5}\.\d{4}\.(\d{2})-([a-z0-9]{4})_/i.exec(String(filename || ''));
+    if (match) {
+      return `${match[1]}-${String(match[2]).toUpperCase()}`;
+    }
+    const base = String(filename || 'report').replace(/[^a-z0-9_-]/gi, '_');
+    return `scReport_${base.slice(0, 24)}`;
+  }
+
+  async function openVaaHtmlReportWindow(filename) {
+    const popupName = getVaaHtmlReportWindowName(filename);
+    const reportWindow = window.open(
+      'about:blank',
+      popupName,
+      'popup=yes,width=1200,height=900,resizable=yes,scrollbars=yes'
+    );
+    if (!reportWindow) {
+      setVaaStatus('Report window blocked. Allow popups for this site.', { type: 'warning', duration: 'temporary' });
+      return;
+    }
+
+    reportWindow.focus();
+    try {
+      const res = await fetch(`${LOGS_FILE_ENDPOINT}?name=${encodeURIComponent(filename)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const html = String(body.text || '');
+      reportWindow.document.open();
+      reportWindow.document.write(html);
+      reportWindow.document.close();
+      reportWindow.document.title = popupName;
+      reportWindow.focus();
+    } catch (err) {
+      setVaaStatus(`Open report failed: ${err && err.message ? err.message : String(err)}`, { type: 'warning', duration: 'temporary' });
+    }
+  }
+
   function makeSafeHtml(text) {
     return String(text || '')
       .replace(/&/g, '&amp;')
@@ -1106,10 +1143,34 @@
       .filter((f) => getVaaSelection(f.filename).view)
       .map((f) => f.filename);
     if (!selected.length) {
+      vaaViewPane.innerHTML = '';
       vaaViewPane.textContent = 'No files selected to view.';
       return;
     }
 
+    if (selected.length === 1 && String(selected[0]).toLowerCase().endsWith('.html')) {
+      const filename = selected[0];
+      vaaViewPane.innerHTML = '';
+      vaaViewPane.textContent = 'Loading selected file(s)...';
+      try {
+        const res = await fetch(`${LOGS_FILE_ENDPOINT}?name=${encodeURIComponent(filename)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const body = await res.json();
+        const iframe = document.createElement('iframe');
+        iframe.className = 'vaa-view-iframe';
+        iframe.setAttribute('sandbox', '');
+        iframe.setAttribute('title', `Preview ${filename}`);
+        iframe.srcdoc = String(body.text || '');
+        vaaViewPane.innerHTML = '';
+        vaaViewPane.appendChild(iframe);
+      } catch (err) {
+        vaaViewPane.innerHTML = '';
+        vaaViewPane.textContent = `[load failed] ${err && err.message ? err.message : String(err)}`;
+      }
+      return;
+    }
+
+    vaaViewPane.innerHTML = '';
     vaaViewPane.textContent = 'Loading selected file(s)...';
     const blocks = [];
     for (const filename of selected) {
@@ -1185,8 +1246,9 @@
       }
 
       await loadVaaFiles();
-      for (const filename of newlyGenerated) {
-        if (!String(filename).toLowerCase().endsWith('.json')) continue;
+      const generatedJson = newlyGenerated.filter((name) => String(name).toLowerCase().endsWith('.json'));
+      const autoViewTargets = generatedJson;
+      for (const filename of autoViewTargets) {
         const sel = getVaaSelection(filename);
         sel.view = true;
       }
@@ -1224,6 +1286,17 @@
         const idx = Number(row.getAttribute('data-idx'));
         const file = vaaFiles[idx];
         if (!file) return;
+        if (String(file.filename).toLowerCase().endsWith('.html')) {
+          const sel = getVaaSelection(file.filename);
+          if (sel.archive) {
+            sel.archive = false;
+            setVaaStatus("'Archive' de-selected to view file. To archive, reselect after viewing.", { type: 'warning', duration: 'temporary' });
+          }
+          sel.view = false;
+          renderVaaTable();
+          void openVaaHtmlReportWindow(file.filename);
+          return;
+        }
         const sel = getVaaSelection(file.filename);
         const nextView = !sel.view;
         sel.view = nextView;

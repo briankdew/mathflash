@@ -120,6 +120,9 @@ Build a measurement-first capture pipeline so we can tune boundaries, latency, a
       - [x] `Analyze`: run analysis on selected `ses/run` files.
       - [x] `Archive`: move selected files into archive folder (create if missing).
     - [x] Keep behavior engine-aware/source-aware via filename descriptors and analyzer grouping.
+    - [x] Analyzer output now includes a companion HTML report (`sc_rpt_bat-...html`) alongside existing JSON/CSV files.
+    - [x] HTML report supports direct viewing from VAA via dedicated popup windows for side-by-side comparison.
+    - [x] VAA analyze staging now includes server log inputs so server-metric values remain reproducible across repeat analyses.
     - [x] Added UI safety/flow behavior:
       - [x] Block archive when `View` is active for that row.
       - [x] Auto-clear `Archive` when `View` is selected for the same row.
