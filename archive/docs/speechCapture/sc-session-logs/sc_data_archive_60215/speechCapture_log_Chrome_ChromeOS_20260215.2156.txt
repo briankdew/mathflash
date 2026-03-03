@@ -1,0 +1,180 @@
+000 [21:56:04.096] ENV: Browser=Chrome OS=ChromeOS Source=Voice STT=whisper
+001 [21:56:04.097] SESSION: Start (active)
+002 [21:56:04.168] MIC_METER: start (threshold=0.02 hangover_ms=250 interval_ms=50)
+003 [21:56:04.180] STT_INFO: Whisper adapter active (endpoint=/api/stt/whisper, chunk_ms=1200).
+004 [21:56:04.243] REC: onstart
+005 [21:56:04.243] REC: onaudiostart
+006 [21:56:05.469] MIC_VOICE: on rms=0.093
+007 [21:56:05.470] MIC_RMS: rms=0.093 voiceActive=true
+008 [21:56:05.519] MIC_RMS: rms=0.102 voiceActive=true
+009 [21:56:05.569] MIC_RMS: rms=0.016 voiceActive=true
+010 [21:56:05.619] MIC_RMS: rms=0.075 voiceActive=true
+011 [21:56:05.669] MIC_RMS: rms=0.091 voiceActive=true
+012 [21:56:05.719] MIC_RMS: rms=0.059 voiceActive=true
+013 [21:56:05.769] MIC_RMS: rms=0.022 voiceActive=true
+014 [21:56:05.819] MIC_RMS: rms=0.016 voiceActive=true
+015 [21:56:05.869] MIC_RMS: rms=0.016 voiceActive=true
+016 [21:56:06.069] MIC_VOICE: off rms=0.000
+017 [21:56:07.469] REC_RES: i=2 final=true conf=n/a txt="begin."
+018 [21:56:07.469] BEGIN: Begin detected
+019 [21:56:07.469] CURR_PROB: Problem 0 (5 + 9 = 14)
+020 [21:56:07.869] MIC_VOICE: on rms=0.026
+021 [21:56:07.870] MIC_RMS: rms=0.026 voiceActive=true
+022 [21:56:08.169] MIC_VOICE: off rms=0.000
+023 [21:56:08.319] MIC_VOICE: on rms=0.024
+024 [21:56:08.320] MIC_RMS: rms=0.024 voiceActive=true
+025 [21:56:08.369] MIC_RMS: rms=0.044 voiceActive=true
+026 [21:56:08.419] MIC_RMS: rms=0.030 voiceActive=true
+027 [21:56:08.519] MIC_RMS: rms=0.024 voiceActive=true
+028 [21:56:08.569] MIC_RMS: rms=0.027 voiceActive=true
+029 [21:56:08.619] MIC_RMS: rms=0.075 voiceActive=true
+030 [21:56:08.669] MIC_RMS: rms=0.048 voiceActive=true
+031 [21:56:08.719] MIC_RMS: rms=0.029 voiceActive=true
+032 [21:56:08.769] MIC_RMS: rms=0.022 voiceActive=true
+033 [21:56:08.819] MIC_RMS: rms=0.017 voiceActive=true
+034 [21:56:08.869] MIC_RMS: rms=0.007 voiceActive=true
+035 [21:56:09.069] MIC_VOICE: off rms=0.000
+036 [21:56:09.940] REC_RES: i=4 final=true conf=n/a txt="Again, 14."
+037 [21:56:09.941] T_PROCESS: Problem 0 (0.400s)
+038 [21:56:09.941] T_SPEAK: Problem 0 (0.050s)
+039 [21:56:09.942] SUBMIT: Problem 0 (14)
+040 [21:56:09.942] CURR_PROB: Problem 1 (7 + 8 = 15)
+041 [21:56:10.719] MIC_RMS: rms=0.012 voiceActive=false
+042 [21:56:10.769] MIC_VOICE: on rms=0.039
+043 [21:56:10.770] MIC_RMS: rms=0.039 voiceActive=true
+044 [21:56:10.819] MIC_RMS: rms=0.071 voiceActive=true
+045 [21:56:10.869] MIC_RMS: rms=0.047 voiceActive=true
+046 [21:56:10.919] MIC_RMS: rms=0.018 voiceActive=true
+047 [21:56:10.969] MIC_RMS: rms=0.021 voiceActive=true
+048 [21:56:11.019] MIC_RMS: rms=0.047 voiceActive=true
+049 [21:56:11.069] MIC_RMS: rms=0.052 voiceActive=true
+050 [21:56:11.119] MIC_RMS: rms=0.037 voiceActive=true
+051 [21:56:11.169] MIC_RMS: rms=0.026 voiceActive=true
+052 [21:56:11.219] MIC_RMS: rms=0.029 voiceActive=true
+053 [21:56:11.269] MIC_RMS: rms=0.015 voiceActive=true
+054 [21:56:11.519] MIC_VOICE: off rms=0.001
+055 [21:56:12.396] REC_RES: i=6 final=true conf=n/a txt="Again, 14, 15."
+056 [21:56:12.396] T_PROCESS: Problem 1 (0.827s)
+057 [21:56:12.396] T_SPEAK: Problem 1 (0.500s)
+058 [21:56:12.397] SUBMIT: Problem 1 (14)
+059 [21:56:12.397] CURR_PROB: Problem 2 (5 + 7 = 12)
+060 [21:56:12.769] MIC_RMS: rms=0.017 voiceActive=false
+061 [21:56:13.119] MIC_RMS: rms=0.013 voiceActive=false
+062 [21:56:13.169] MIC_RMS: rms=0.010 voiceActive=false
+063 [21:56:13.219] MIC_VOICE: on rms=0.028
+064 [21:56:13.220] MIC_RMS: rms=0.028 voiceActive=true
+065 [21:56:13.269] MIC_RMS: rms=0.071 voiceActive=true
+066 [21:56:13.319] MIC_RMS: rms=0.055 voiceActive=true
+067 [21:56:13.369] MIC_RMS: rms=0.031 voiceActive=true
+068 [21:56:13.419] MIC_RMS: rms=0.020 voiceActive=true
+069 [21:56:13.469] MIC_RMS: rms=0.022 voiceActive=true
+070 [21:56:13.519] MIC_RMS: rms=0.013 voiceActive=true
+071 [21:56:13.769] MIC_VOICE: off rms=0.001
+072 [21:56:14.945] REC_RES: i=8 final=true conf=n/a txt="Again, 14, 15, 12."
+073 [21:56:14.945] T_PROCESS: Problem 2 (0.822s)
+074 [21:56:14.946] T_SPEAK: Problem 2 (0.300s)
+075 [21:56:14.947] SUBMIT: Problem 2 (14)
+076 [21:56:14.947] CURR_PROB: Problem 3 (3 + 7 = 10)
+077 [21:56:15.819] MIC_VOICE: on rms=0.041
+078 [21:56:15.820] MIC_RMS: rms=0.041 voiceActive=true
+079 [21:56:15.869] MIC_RMS: rms=0.069 voiceActive=true
+080 [21:56:15.919] MIC_RMS: rms=0.078 voiceActive=true
+081 [21:56:15.969] MIC_RMS: rms=0.068 voiceActive=true
+082 [21:56:16.019] MIC_RMS: rms=0.041 voiceActive=true
+083 [21:56:16.069] MIC_RMS: rms=0.036 voiceActive=true
+084 [21:56:16.119] MIC_RMS: rms=0.025 voiceActive=true
+085 [21:56:16.169] MIC_RMS: rms=0.009 voiceActive=true
+086 [21:56:16.184] REC_RES: i=9 final=true conf=n/a txt="Again, 14, 15, 12,"
+087 [21:56:16.185] T_PROCESS: Problem 3 (0.872s)
+088 [21:56:16.185] SUBMIT: Problem 3 (14)
+089 [21:56:16.186] CURR_PROB: Problem 4 (6 + 4 = 10)
+090 [21:56:16.419] MIC_VOICE: off rms=0.001
+091 [21:56:17.069] MIC_VOICE: on rms=0.045
+092 [21:56:17.071] MIC_RMS: rms=0.045 voiceActive=true
+093 [21:56:17.119] MIC_RMS: rms=0.083 voiceActive=true
+094 [21:56:17.169] MIC_RMS: rms=0.081 voiceActive=true
+095 [21:56:17.219] MIC_RMS: rms=0.073 voiceActive=true
+096 [21:56:17.269] MIC_RMS: rms=0.052 voiceActive=true
+097 [21:56:17.319] MIC_RMS: rms=0.041 voiceActive=true
+098 [21:56:17.369] MIC_RMS: rms=0.049 voiceActive=true
+099 [21:56:17.396] REC_RES: i=10 final=true conf=n/a txt="10,"
+100 [21:56:17.397] T_PROCESS: Problem 4 (0.883s)
+101 [21:56:17.397] SUBMIT: Problem 4 (10)
+102 [21:56:17.398] CURR_PROB: Problem 5 (6 + 9 = 15)
+103 [21:56:17.419] MIC_RMS: rms=0.012 voiceActive=true
+104 [21:56:17.669] MIC_VOICE: off rms=0.001
+105 [21:56:18.269] MIC_RMS: rms=0.014 voiceActive=false
+106 [21:56:18.319] MIC_VOICE: on rms=0.079
+107 [21:56:18.320] MIC_RMS: rms=0.079 voiceActive=true
+108 [21:56:18.369] MIC_RMS: rms=0.042 voiceActive=true
+109 [21:56:18.419] MIC_RMS: rms=0.027 voiceActive=true
+110 [21:56:18.519] MIC_RMS: rms=0.041 voiceActive=true
+111 [21:56:18.569] MIC_RMS: rms=0.058 voiceActive=true
+112 [21:56:18.619] MIC_RMS: rms=0.062 voiceActive=true
+113 [21:56:18.669] MIC_RMS: rms=0.043 voiceActive=true
+114 [21:56:18.693] REC_RES: i=11 final=true conf=n/a txt="10,"
+115 [21:56:18.694] T_PROCESS: Problem 5 (0.921s)
+116 [21:56:18.695] SUBMIT: Problem 5 (10)
+117 [21:56:18.696] CURR_PROB: Problem 6 (4 + 4 = 8)
+118 [21:56:18.719] MIC_RMS: rms=0.043 voiceActive=true
+119 [21:56:18.769] MIC_RMS: rms=0.045 voiceActive=true
+120 [21:56:18.819] MIC_RMS: rms=0.013 voiceActive=true
+121 [21:56:19.069] MIC_VOICE: off rms=0.001
+122 [21:56:19.569] MIC_VOICE: on rms=0.046
+123 [21:56:19.571] MIC_RMS: rms=0.046 voiceActive=true
+124 [21:56:19.619] MIC_RMS: rms=0.144 voiceActive=true
+125 [21:56:19.669] MIC_RMS: rms=0.098 voiceActive=true
+126 [21:56:19.719] MIC_RMS: rms=0.042 voiceActive=true
+127 [21:56:19.769] MIC_RMS: rms=0.011 voiceActive=true
+128 [21:56:19.819] MIC_RMS: rms=0.011 voiceActive=true
+129 [21:56:19.869] MIC_RMS: rms=0.010 voiceActive=true
+130 [21:56:19.995] REC_RES: i=12 final=true conf=n/a txt="15,"
+131 [21:56:19.996] T_PROCESS: Problem 6 (0.873s)
+132 [21:56:19.996] SUBMIT: Problem 6 (15)
+133 [21:56:19.997] CURR_PROB: Problem 7 (2 + 2 = 4)
+134 [21:56:20.019] MIC_VOICE: off rms=0.001
+135 [21:56:20.769] MIC_VOICE: on rms=0.020
+136 [21:56:20.771] MIC_RMS: rms=0.020 voiceActive=true
+137 [21:56:20.819] MIC_RMS: rms=0.102 voiceActive=true
+138 [21:56:20.869] MIC_RMS: rms=0.073 voiceActive=true
+139 [21:56:20.919] MIC_RMS: rms=0.048 voiceActive=true
+140 [21:56:20.969] MIC_RMS: rms=0.031 voiceActive=true
+141 [21:56:21.019] MIC_RMS: rms=0.031 voiceActive=true
+142 [21:56:21.069] MIC_RMS: rms=0.011 voiceActive=true
+143 [21:56:21.119] MIC_RMS: rms=0.008 voiceActive=true
+144 [21:56:21.219] REC_RES: i=13 final=true conf=n/a txt="8,"
+145 [21:56:21.220] T_PROCESS: Problem 7 (0.772s)
+146 [21:56:21.221] SUBMIT: Problem 7 (8)
+147 [21:56:21.222] CURR_PROB: Problem 8 (5 + 4 = 9)
+148 [21:56:21.320] MIC_VOICE: off rms=0.001
+149 [21:56:21.969] MIC_RMS: rms=0.005 voiceActive=false
+150 [21:56:22.019] MIC_VOICE: on rms=0.110
+151 [21:56:22.021] MIC_RMS: rms=0.110 voiceActive=true
+152 [21:56:22.069] MIC_RMS: rms=0.115 voiceActive=true
+153 [21:56:22.119] MIC_RMS: rms=0.095 voiceActive=true
+154 [21:56:22.169] MIC_RMS: rms=0.092 voiceActive=true
+155 [21:56:22.219] MIC_RMS: rms=0.080 voiceActive=true
+156 [21:56:22.269] MIC_RMS: rms=0.054 voiceActive=true
+157 [21:56:22.319] MIC_RMS: rms=0.047 voiceActive=true
+158 [21:56:22.369] MIC_RMS: rms=0.020 voiceActive=true
+159 [21:56:22.496] REC_RES: i=14 final=true conf=n/a txt="4,"
+160 [21:56:22.497] T_PROCESS: Problem 8 (0.797s)
+161 [21:56:22.498] SUBMIT: Problem 8 (4)
+162 [21:56:22.499] CURR_PROB: Problem 9 (7 + 7 = 14)
+163 [21:56:22.672] MIC_VOICE: off rms=0.001
+164 [21:56:23.269] MIC_RMS: rms=0.010 voiceActive=false
+165 [21:56:23.319] MIC_VOICE: on rms=0.095
+166 [21:56:23.321] MIC_RMS: rms=0.095 voiceActive=true
+167 [21:56:23.369] MIC_RMS: rms=0.086 voiceActive=true
+168 [21:56:23.419] MIC_RMS: rms=0.014 voiceActive=true
+169 [21:56:23.469] MIC_RMS: rms=0.016 voiceActive=true
+170 [21:56:23.519] MIC_RMS: rms=0.061 voiceActive=true
+171 [21:56:23.569] MIC_RMS: rms=0.088 voiceActive=true
+172 [21:56:23.619] MIC_RMS: rms=0.074 voiceActive=true
+173 [21:56:23.669] MIC_RMS: rms=0.027 voiceActive=true
+174 [21:56:23.679] REC_RES: i=15 final=true conf=n/a txt="9,"
+175 [21:56:23.680] T_PROCESS: Problem 9 (0.820s)
+176 [21:56:23.681] SUBMIT: Problem 9 (9)
+177 [21:56:23.682] AUTO-END: Session ended after 10 answered, 0 skipped
+178 [21:56:23.683] SESSION: End (idle)
+179 [21:56:23.686] MIC_METER: stop

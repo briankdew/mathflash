@@ -1,0 +1,76 @@
+{
+  "generated_at_iso": "2026-02-25T21:10:05.400Z",
+  "logs_dir": "/tmp/sc-analyze-ntQFc0",
+  "filter": "",
+  "run_id_filter": null,
+  "sessions": [
+    {
+      "file": "sc_log_run-60225.1606.50-uin4_s1_p5_wspc_vad_mic.jsonl",
+      "session_id": "sess_mm2iysn9_o2te37",
+      "run_id": "run_20260225_160650_uin4",
+      "selected_problem_count": 5,
+      "source": "mic",
+      "chunk_mode_raw": "utterance",
+      "chunk_mode": "vad",
+      "problems": 0,
+      "submitted": 0,
+      "correct": 0,
+      "wrong": 0,
+      "accuracy_pct": 0,
+      "accuracy_submitted_pct": 0,
+      "false_begin_rate_pct": 0,
+      "empty_final_rate_pct": 0,
+      "stale_wrong_rate_pct": 0,
+      "numeric_wer_proxy": 0,
+      "stale_ignored": 0,
+      "stale_final_ignored": 0,
+      "uploads": 4,
+      "upload_p50_ms": 103,
+      "upload_p90_ms": 120,
+      "upload_max_ms": 1710,
+      "server_requests": 0,
+      "server_responses": 0,
+      "server_ffmpeg_errors": 0,
+      "server_whisper_errors": 0,
+      "server_http_errors": 0
+    }
+  ],
+  "by_chunk_mode": [
+    {
+      "chunk_mode": "vad",
+      "sessions": 1,
+      "problems": 0,
+      "submitted": 0,
+      "correct": 0,
+      "wrong": 0,
+      "accuracy_pct": 0,
+      "accuracy_submitted_pct": 0,
+      "avg_false_begin_rate_pct": 0,
+      "avg_empty_final_rate_pct": 0,
+      "avg_stale_wrong_rate_pct": 0,
+      "avg_numeric_wer_proxy": 0,
+      "avg_uploads_per_session": 4,
+      "avg_upload_p50_ms": 103,
+      "avg_upload_p90_ms": 120,
+      "avg_upload_max_ms": 1710,
+      "server_ffmpeg_errors": 0,
+      "server_whisper_errors": 0,
+      "server_http_errors": 0
+    }
+  ],
+  "by_run_id": [
+    {
+      "run_id": "run_20260225_160650_uin4",
+      "sessions": 1,
+      "problems": 0,
+      "submitted": 0,
+      "correct": 0,
+      "accuracy_pct": 0,
+      "accuracy_submitted_pct": 0,
+      "avg_uploads_per_session": 4,
+      "avg_upload_p50_ms": 103,
+      "avg_upload_p90_ms": 120,
+      "avg_upload_max_ms": 1710
+    }
+  ]
+}

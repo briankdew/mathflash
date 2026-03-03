@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="en">
+<head> 
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>speechCapture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { max-width: 760px; margin: 24px auto; padding: 0 16px; }
+    .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .setting-label { font-weight: 700; }
+    button { padding: 10px 14px; border: 1px solid #bbb; background: #fff; border-radius: 8px; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .center-stack { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+    .problem-no-row { display: flex; align-items: center; justify-content: center; gap: 0px; }
+    .problem-no-label {
+      width: 150px;
+      height: 30px;
+      border: none;
+      border-radius: 0;
+      color: #000000;
+      background: none;
+      font-size: 1.33rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .problem-no-value {
+      width: 50px;
+      height: 30px;
+      border: 1px solid #000000;
+      border-radius: 5px;
+      color: #000000;
+      background: none;
+      font-size: 1.33rem;
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .equation-row { display: flex; align-items: center; justify-content: center; gap: 0px; }
+    .operand-box {
+      width: 160px;
+      height: 110px;
+      border: none;
+      border-radius: 20px;
+      color: #4b4837;
+      background: #dad8cc;
+      font-size: 6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .operand-value {
+      display: inline-block;
+      transition: opacity 40ms linear;
+    }
+    .operand-blink-off { opacity: 0; }
+    .operator-box {
+      width: 70px;
+      height: 110px;
+      border: none;
+      border-radius: 0;
+      color: #4b4837;
+      background: none;
+      font-size: 6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .result-row { display: flex; align-items: center; justify-content: center; }
+    .result-box {
+      width: 215px;
+      height: 110px;
+      border: none;
+      border-radius: 20px;
+      color: #4b4837;
+      background: #dad8cc;
+      font-size: 6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .blink-dot {
+      width: 0.75em;
+      height: 0.75em;
+      border-radius: 50%;
+      background: #c33;
+      opacity: 0;
+    }
+    .button-row { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .begin-prompt {
+      font-size: .9rem;
+      font-weight: 400;
+      color: #333;
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6px;
+      pointer-events: none;
+    }
+    .begin-prompt.is-hidden { visibility: hidden; }
+    .answer-stack { display: flex; flex-direction: column; align-items: center; gap: 0; }
+    .answer-label {
+      width: 90px;
+      height: 40px;
+      border: none;
+      border-radius: 0;
+      color: #000000;
+      background: none;
+      font-size: 1.33rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .answer-input {
+      width: 100px;
+      height: 60px;
+      border: 1px solid #000000;
+      border-radius: 10px;
+      color: #000000;
+      background: none;
+      font-size: 2.5rem;
+      font-weight: 400;
+      text-align: center;
+      padding: 0;
+    }
+    .blink-row { display: flex; gap: 4px; align-items: center; justify-content: center; }
+    #feed {
+      margin-top: 16px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 12px;
+      min-height: 240px;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.35;
+      background: #fafafa;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>speechCapture</h1>
+  <div class="row" style="margin-bottom: 12px; justify-content: flex-start;">
+    <label class="setting-label" for="modeSelect">Mode</label>
+    <select id="modeSelect">
+      <option value="learn">Learning</option>
+      <option value="eval">Evaluation</option>
+      <option value="challenge">Challenge</option>
+    </select>
+    <label class="setting-label" for="blinkToggleSelect">  Blink</label>
+    <select id="blinkToggleSelect">
+      <option value="on">On</option>
+      <option value="off" selected>Off</option>
+    </select>
+    <label class="setting-label" for="blinkRateInput">  Rate</label>
+    <input id="blinkRateInput" type="number" min="0.1" max="10.0" step="0.1" value="2.0" />
+    <span id="blinkDot" class="blink-dot"></span>
+    <label class="setting-label" for="problemCountInput">Problems</label>
+    <input id="problemCountInput" type="number" min="1" max="200" step="1" value="20" />
+  </div>
+  <div class="row" style="margin-bottom: 12px; justify-content: flex-start;">
+    <label class="setting-label" for="operationSelect">Operation</label>
+    <select id="operationSelect">
+      <option value="add" selected>Addition</option>
+      <option value="mul">Multiplication</option>
+    </select>
+    <label class="setting-label" for="missingValueSelect">  Missing value</label>
+    <select id="missingValueSelect">
+      <option value="operands">Operands</option>
+      <option value="result" selected>Result</option>
+      <option value="none">None</option>
+    </select>
+  </div>
+
+  <div class="center-stack">
+    <div class="problem-no-row">
+      <div class="problem-no-label">Problem no.</div>
+      <div id="problemCounter" class="problem-no-value">0</div>
+    </div>
+    <div class="equation-row">
+      <div id="leftOperand" class="operand-box"><span id="leftOperandValue" class="operand-value"></span></div>
+      <div id="operatorBox" class="operator-box"></div>
+      <div id="rightOperand" class="operand-box"><span id="rightOperandValue" class="operand-value"></span></div>
+    </div>
+    <div class="result-row">
+      <div id="resultBox" class="result-box">
+        <span id="resultValue"></span>
+        <div id="beginPrompt" class="begin-prompt is-hidden">Say "Begin" to start.</div>
+      </div>
+    </div>
+    <div class="answer-stack">
+      <div class="answer-label">Answer</div>
+      <input id="answerInput" class="answer-input" type="text" inputmode="numeric" autocomplete="off" maxlength="4" disabled />
+    </div>
+
+    <div class="button-row">
+      <button id="startEndBtn">Start</button>
+      <button id="micToggleBtn" aria-pressed="false">Type</button>
+    </div>
+  </div>
+
+  <div class="row" style="justify-content: flex-start; margin-top: 12px;">
+    <button id="downloadLogBtn">Download log</button>
+  </div>
+
+  <div id="feed" aria-label="Real-time input feed"></div>
+
+<script>
+(() => {
+  // -----------------------------
+  // State
+  // -----------------------------
+  let sessionActive = false;
+  let micOn = true;
+
+  let recognition = null;
+  let recognizing = false;
+  let lastFinalTranscript = '';
+  let nudgeTimerId = 0;
+
+  const MODE_LEARN = 'learn';
+  const MODE_EVAL = 'eval';
+  const MODE_CHALLENGE = 'challenge';
+  let mode = MODE_LEARN;
+  let operation = 'add';
+  let missingValue = 'result';
+
+  const startEndBtn = document.getElementById('startEndBtn');
+  const micToggleBtn = document.getElementById('micToggleBtn');
+  const answerInput = document.getElementById('answerInput');
+  const feed = document.getElementById('feed');
+  const downloadLogBtn = document.getElementById('downloadLogBtn');
+  const blinkDot = document.getElementById('blinkDot');
+  const blinkRateInput = document.getElementById('blinkRateInput');
+  const problemCounter = document.getElementById('problemCounter');
+  const modeSelect = document.getElementById('modeSelect');
+  const blinkToggleSelect = document.getElementById('blinkToggleSelect');
+  const problemCountInput = document.getElementById('problemCountInput');
+  const operationSelect = document.getElementById('operationSelect');
+  const missingValueSelect = document.getElementById('missingValueSelect');
+  const leftOperand = document.getElementById('leftOperand');
+  const rightOperand = document.getElementById('rightOperand');
+  const leftOperandValue = document.getElementById('leftOperandValue');
+  const rightOperandValue = document.getElementById('rightOperandValue');
+  const operatorBox = document.getElementById('operatorBox');
+  const resultBox = document.getElementById('resultBox');
+  const resultValue = document.getElementById('resultValue');
+  const beginPrompt = document.getElementById('beginPrompt');
+
+  // -----------------------------
+  // Utilities
+  // -----------------------------
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function buildFacts() {
+    const facts = [];
+    for (let a = 1; a <= 9; a++) {
+      for (let b = a; b <= 9; b++) {
+        facts.push({ a, b, op: operation });
+      }
+    }
+    return facts;
+  }
+
+  let factQueue = [];
+  let factIndex = 0;
+  let spaceCount = 0;
+  let answeredCount = 0;
+  let blinkTimerId = 0;
+  let blinkHideTimerId = 0;
+  let learnBlinkTimerId = 0;
+  let blinkOn = false;
+  let currentAnswer = null;
+  let currentFact = null;
+  let awaitingSubmission = false;
+  let hasRenderedFirstProblem = false;
+  let operandFadeTimerId = 0;
+  let waitingForBegin = false;
+
+  function resetFacts() {
+    factQueue = shuffle(buildFacts());
+    factIndex = 0;
+  }
+
+  function applyMissingDisplay() {
+    if (!currentFact) return;
+    if (!leftOperandValue || !rightOperandValue || !resultValue) return;
+
+    const hideOperands = (missingValue === 'operands') && sessionActive;
+    const hideResult = (missingValue === 'result') && sessionActive;
+
+    leftOperandValue.textContent = hideOperands ? '' : String(currentFact.left);
+    rightOperandValue.textContent = hideOperands ? '' : String(currentFact.right);
+    resultValue.textContent = hideResult ? '' : String(currentFact.answer);
+  }
+
+  function showNextFact() {
+    if (waitingForBegin) return false;
+    if (!leftOperandValue || !rightOperandValue || !operatorBox || !resultValue || !sessionActive) return false;
+    if (awaitingSubmission) return false;
+    if (factQueue.length === 0 || factIndex >= factQueue.length) resetFacts();
+
+    const fact = factQueue[factIndex++];
+    const swap = Math.random() < 0.5;
+    const left = swap ? fact.b : fact.a;
+    const right = swap ? fact.a : fact.b;
+    currentAnswer = (fact.op === 'add') ? (fact.a + fact.b) : (fact.a * fact.b);
+    currentFact = { left, right, answer: currentAnswer };
+    if (operandFadeTimerId) {
+      clearTimeout(operandFadeTimerId);
+      operandFadeTimerId = 0;
+    }
+    if (!hasRenderedFirstProblem) {
+      applyMissingDisplay();
+      hasRenderedFirstProblem = true;
+    } else {
+      leftOperandValue.classList.add('operand-blink-off');
+      rightOperandValue.classList.add('operand-blink-off');
+      operandFadeTimerId = setTimeout(() => {
+        applyMissingDisplay();
+        leftOperandValue.classList.remove('operand-blink-off');
+        rightOperandValue.classList.remove('operand-blink-off');
+        operandFadeTimerId = 0;
+      }, 40);
+    }
+    lastFinalTranscript = '';
+    awaitingSubmission = true;
+    if (mode === MODE_LEARN && blinkToggleSelect?.value === 'on') {
+      scheduleLearnBlink(parseFloat(blinkRateInput?.value) || 1.0);
+    }
+    return true;
+  }
+
+  function advanceProblem(logAuto) {
+    if (!showNextFact()) return false;
+    spaceCount += 1;
+    if (problemCounter) problemCounter.textContent = String(spaceCount);
+    const logIndex = spaceCount - 1;
+    if (logAuto) {
+      logLine('AUTO-NEXT', `Problem ${logIndex} (Ans: ${currentAnswer})`);
+    } else if (mode === MODE_LEARN && currentFact) {
+      const opSymbol = (operation === 'add') ? '+' : '×';
+      logLine('CURR_PROB', `Problem ${logIndex} (${currentFact.left} ${opSymbol} ${currentFact.right} = ${currentFact.answer})`);
+    }
+    return true;
+  }
+
+  function startBlinkTimer(seconds) {
+    if (!blinkDot) return;
+    if (blinkTimerId) clearInterval(blinkTimerId);
+    if (blinkHideTimerId) clearTimeout(blinkHideTimerId);
+    blinkOn = false;
+    blinkDot.style.opacity = '0';
+
+    const ms = Math.max(100, Math.min(5000, Math.round(seconds * 1000)));
+    const show = () => {
+      blinkOn = true;
+      blinkDot.style.opacity = '1';
+      if (sessionActive && mode === MODE_EVAL) {
+        advanceProblem(true);
+      }
+      if (blinkHideTimerId) clearTimeout(blinkHideTimerId);
+      blinkHideTimerId = setTimeout(() => {
+        blinkOn = false;
+        blinkDot.style.opacity = '0';
+      }, 500);
+    };
+
+    show();
+    blinkTimerId = setInterval(show, ms);
+  }
+
+  function scheduleLearnBlink(seconds) {
+    if (!blinkDot) return;
+    if (learnBlinkTimerId) clearTimeout(learnBlinkTimerId);
+    if (blinkHideTimerId) clearTimeout(blinkHideTimerId);
+    blinkDot.style.opacity = '0';
+    const ms = Math.max(100, Math.min(5000, Math.round(seconds * 1000)));
+    learnBlinkTimerId = setTimeout(() => {
+      blinkDot.style.opacity = '1';
+      if (blinkHideTimerId) clearTimeout(blinkHideTimerId);
+      blinkHideTimerId = setTimeout(() => {
+        blinkDot.style.opacity = '0';
+      }, 500);
+      learnBlinkTimerId = 0;
+    }, ms);
+  }
+
+  function stopBlinkTimer() {
+    if (blinkTimerId) clearInterval(blinkTimerId);
+    if (blinkHideTimerId) clearTimeout(blinkHideTimerId);
+    if (learnBlinkTimerId) clearTimeout(learnBlinkTimerId);
+    blinkTimerId = 0;
+    blinkHideTimerId = 0;
+    learnBlinkTimerId = 0;
+    blinkOn = false;
+    if (blinkDot) blinkDot.style.opacity = '0';
+  }
+
+  function ts() {
+    const d = new Date();
+    return d.toLocaleTimeString(undefined, { hour12: false }) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+  }
+
+  function logLine(kind, text) {
+    feed.textContent += `[${ts()}] ${kind}: ${text}\n`;
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function setAnswerBoxEnabled(enabled) {
+    answerInput.disabled = !enabled;
+    if (enabled) answerInput.focus();
+    if (!enabled) answerInput.value = '';
+  }
+
+  function setTypedModeUI() {
+    micToggleBtn.textContent = micOn ? 'Speak' : 'Type';
+    micToggleBtn.setAttribute('aria-pressed', String(micOn));
+
+    if (micOn) {
+      micToggleBtn.style.borderColor = '#c33';
+      // When Mic On, typed input is not allowed:
+      answerInput.readOnly = true;
+    } else {
+      micToggleBtn.style.borderColor = '#2b7';
+      answerInput.readOnly = false;
+    }
+  }
+
+  function detectDuplicateOrMixedTokens(raw) {
+    if (raw == null) return null;
+    const s = String(raw).trim().toLowerCase();
+    if (!s) return null;
+
+    const digitTokens = s.match(/\b\d+\b/g);
+    const wordTokens = s.split(/[^a-z]+/).filter(Boolean);
+    const wordToVal = {
+      'zero': 0, 'oh': 0,
+      'one': 1, 'two': 2, 'to': 2, 'too': 2,
+      'three': 3, 'four': 4, 'for': 4,
+      'five': 5, 'six': 6, 'seven': 7,
+      'eight': 8, 'ate': 8, 'nine': 9,
+      'ten': 10, 'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14,
+      'fifteen': 15, 'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19
+    };
+
+    const vals = [];
+    if (digitTokens) {
+      for (const t of digitTokens) vals.push(parseInt(t, 10));
+    }
+    if (wordTokens.length > 0) {
+      for (const t of wordTokens) {
+        if (wordToVal[t] == null) return null;
+        vals.push(wordToVal[t]);
+      }
+    }
+
+    if (vals.length > 1) {
+      const allSame = vals.every((v) => v === vals[0]);
+      return allSame ? { type: 'duplicate', value: vals[0] } : { type: 'mixed' };
+    }
+
+    return null;
+  }
+
+  // Normalize spoken/typed number up to 1000 (digits or common word forms)
+  function normalizeToNumber(raw) {
+    if (raw == null) return null;
+    const s = String(raw).trim().toLowerCase();
+
+    // Direct number present (e.g., "42", "1,000", "1 000")
+    // If multiple numbers appear, take the first numeric token only.
+    const m = s.match(/\b\d+\b/);
+    if (m) {
+      const cleaned = m[0].replace(/[,\s]/g, '');
+      const val = parseInt(cleaned, 10);
+      return (val >= 0 && val <= 1000) ? String(val) : null;
+    }
+
+    // Word parsing up to 1000
+    const units = {
+      'zero': 0, 'oh': 0,
+      'one': 1, 'two': 2, 'to': 2, 'too': 2,
+      'three': 3, 'four': 4, 'for': 4,
+      'five': 5, 'six': 6, 'seven': 7,
+      'eight': 8, 'ate': 8, 'nine': 9
+    };
+    const teens = {
+      'ten': 10, 'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14,
+      'fifteen': 15, 'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19
+    };
+    const tens = {
+      'twenty': 20, 'thirty': 30, 'forty': 40, 'fifty': 50,
+      'sixty': 60, 'seventy': 70, 'eighty': 80, 'ninety': 90
+    };
+
+    const tokens = s.split(/[^a-z]+/).filter(Boolean);
+    if (!tokens.length) return null;
+
+    let total = 0;
+    let current = 0;
+    let found = false;
+    let onlyUnits = true;
+    const unitDigits = [];
+
+    for (const t of tokens) {
+      if (t === 'and') continue;
+      if (teens[t] != null) {
+        current += teens[t];
+        found = true;
+        onlyUnits = false;
+      } else if (tens[t] != null) {
+        current += tens[t];
+        found = true;
+        onlyUnits = false;
+      } else if (units[t] != null) {
+        current += units[t];
+        unitDigits.push(units[t]);
+        found = true;
+      } else if (t === 'hundred') {
+        if (current === 0) current = 1;
+        current *= 100;
+        found = true;
+        onlyUnits = false;
+      } else if (t === 'thousand') {
+        if (current === 0) current = 1;
+        total += current * 1000;
+        current = 0;
+        found = true;
+        onlyUnits = false;
+      } else {
+        return null;
+      }
+    }
+
+    if (onlyUnits && unitDigits.length > 1) {
+      const combined = parseInt(unitDigits.join(''), 10);
+      return (combined >= 0 && combined <= 1000) ? String(combined) : null;
+    }
+
+    total += current;
+    return (found && total >= 0 && total <= 1000) ? String(total) : null;
+  }
+
+  function submitDigit(digit, source) {
+    if (!sessionActive) return;
+
+    // Replace value (never append)
+    answerInput.value = digit;
+
+    // Auto-submit immediately
+    logLine('SUBMIT', `${digit}  (source=${source})`);
+    awaitingSubmission = false;
+    answeredCount += 1;
+
+    const totalProblems = parseInt(problemCountInput?.value, 10);
+    if (Number.isFinite(totalProblems) && totalProblems > 0 && answeredCount >= totalProblems) {
+      logLine('SESSION', `Auto-end after ${answeredCount} problems`);
+      setTimeout(() => endSession(), 0);
+      // Clear quickly so you can see if duplicates happen later
+      answerInput.value = '';
+      if (!micOn) answerInput.focus();
+      return;
+    }
+
+    if (mode === MODE_LEARN) advanceProblem(false);
+
+    // Clear quickly so you can see if duplicates happen later
+    answerInput.value = '';
+    if (!micOn) answerInput.focus();
+  }
+
+  // -----------------------------
+  // Speech Recognition Setup
+  // -----------------------------
+  function initRecognitionIfPossible() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      logLine('INFO', 'Web Speech API SpeechRecognition not available in this browser.');
+      return null;
+    }
+
+    const r = new SR();
+    r.lang = 'en-US';
+    r.continuous = true;       // keep listening while session active
+    r.interimResults = true;   // emit interim results for debugging
+    r.maxAlternatives = 1;
+
+    r.onstart = () => { recognizing = true; logLine('REC', 'onstart'); };
+    r.onend = () => { recognizing = false; logLine('REC', 'onend');  autoRestartIfNeeded(); };
+    r.onerror = (e) => { logLine('REC_ERR', `${e.error}${e.message ? ' - ' + e.message : ''}`); };
+    r.onaudiostart = () => {
+      logLine('REC', 'onaudiostart');
+      if (sessionActive && !waitingForBegin && mode === MODE_LEARN && !awaitingSubmission && !leftOperandValue.textContent) {
+        advanceProblem(false);
+      }
+    };
+    r.onaudioend = () => logLine('REC', 'onaudioend');
+    r.onspeechstart = () => logLine('REC', 'onspeechstart');
+    r.onspeechend = () => {
+      if (nudgeTimerId) {
+        clearTimeout(nudgeTimerId);
+        nudgeTimerId = 0;
+      }
+      logLine('REC', 'onspeechend');
+    };
+    r.onsoundstart = () => logLine('REC', 'onsoundstart');
+    r.onsoundend = () => logLine('REC', 'onsoundend');
+    r.onnomatch = () => logLine('REC', 'onnomatch');
+
+    r.onresult = (event) => {
+      // Only act if we're in voice-only mode and session is active
+      if (!sessionActive || !micOn) return;
+
+      // Consume ONLY new results from resultIndex onward (prevents reprocessing)
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const res = event.results[i];
+        const top = res[0];
+        const transcript = (top && top.transcript) ? top.transcript : '';
+        const conf = (top && typeof top.confidence === 'number') ? top.confidence.toFixed(3) : 'n/a';
+
+        logLine('REC_RES', `i=${i} final=${res.isFinal} conf=${conf} txt="${transcript.trim()}"`);
+
+        if (!res.isFinal) {
+          if (nudgeTimerId) clearTimeout(nudgeTimerId);
+          nudgeTimerId = setTimeout(() => {
+            logLine('NUDGE', 'Answer not recognized. Try again, and speak clearly.');
+            nudgeTimerId = 0;
+          }, 2100);
+        }
+
+        if (res.isFinal) {
+          if (nudgeTimerId) {
+            clearTimeout(nudgeTimerId);
+            nudgeTimerId = 0;
+          }
+          const cleaned = transcript.trim().toLowerCase();
+          if (cleaned === '' && awaitingSubmission) {
+            const logIndex = spaceCount - 1;
+            logLine('PROB_SKIP', `Problem ${logIndex} (Empty final=true detected)`);
+            if (recognition) {
+              try {
+                recognition.abort();
+                logLine('REC', 'abort() called');
+              } catch (e) {
+                logLine('REC_ERR', `abort() threw: ${e && e.message ? e.message : String(e)}`);
+              }
+            }
+            recognition = null;
+            recognizing = false;
+            logLine('REC_RESET', 'after PROB_SKIP');
+            if (sessionActive && micOn) {
+              setTimeout(() => startRecognition(), 0);
+            }
+            awaitingSubmission = false;
+            setTimeout(() => advanceProblem(false), 250);
+            continue;
+          }
+          if (awaitingSubmission && /[:/]/.test(cleaned)) {
+            const logIndex = spaceCount - 1;
+            logLine('PROB_SKIP', `Problem ${logIndex} (Non-numeric symbol detected)`);
+            if (recognition) {
+              try {
+                recognition.abort();
+                logLine('REC', 'abort() called');
+              } catch (e) {
+                logLine('REC_ERR', `abort() threw: ${e && e.message ? ' - ' + e.message : String(e)}`);
+              }
+            }
+            recognition = null;
+            recognizing = false;
+            logLine('REC_RESET', 'after PROB_SKIP');
+            if (sessionActive && micOn) {
+              setTimeout(() => startRecognition(), 0);
+            }
+            awaitingSubmission = false;
+            setTimeout(() => advanceProblem(false), 250);
+            continue;
+          }
+          const tokenCheck = detectDuplicateOrMixedTokens(cleaned);
+          if (tokenCheck?.type === 'mixed' && awaitingSubmission) {
+            const logIndex = spaceCount - 1;
+            logLine('PROB_SKIP', `Problem ${logIndex} (Mixed token detected)`);
+            if (recognition) {
+              try {
+                recognition.abort();
+                logLine('REC', 'abort() called');
+              } catch (e) {
+                logLine('REC_ERR', `abort() threw: ${e && e.message ? e.message : String(e)}`);
+              }
+            }
+            recognition = null;
+            recognizing = false;
+            logLine('REC_RESET', 'after PROB_SKIP');
+            if (sessionActive && micOn) {
+              setTimeout(() => startRecognition(), 0);
+            }
+            awaitingSubmission = false;
+            setTimeout(() => advanceProblem(false), 250);
+            continue;
+          }
+          if (tokenCheck?.type === 'duplicate') {
+            submitDigit(String(tokenCheck.value), 'voice');
+            continue;
+          }
+          if (cleaned && cleaned === lastFinalTranscript) continue;
+          lastFinalTranscript = cleaned;
+          if (waitingForBegin && /\bbegin\b/.test(cleaned)) {
+            waitingForBegin = false;
+            if (beginPrompt) beginPrompt.classList.add('is-hidden');
+            logLine('BEGIN', 'Begin detected');
+            advanceProblem(false);
+            continue;
+          }
+          const val = normalizeToNumber(transcript);
+          if (val != null) {
+            submitDigit(val, 'voice');
+          }
+        }
+      }
+    };
+
+    return r;
+  }
+
+  function startRecognition() {
+    if (!recognition) recognition = initRecognitionIfPossible();
+    if (!recognition) return;
+
+    if (recognizing) return;
+    try {
+      recognition.start();
+      logLine('REC', 'start() called');
+    } catch (e) {
+      // start() can throw if called too quickly after an end
+      logLine('REC_ERR', `start() threw: ${e && e.message ? e.message : String(e)}`);
+    }
+  }
+
+  function stopRecognition() {
+    if (!recognition) return;
+    if (!recognizing) return;
+    try {
+      recognition.stop();
+      logLine('REC', 'stop() called');
+    } catch (e) {
+      logLine('REC_ERR', `stop() threw: ${e && e.message ? e.message : String(e)}`);
+    }
+  }
+
+  function autoRestartIfNeeded() {
+    // If mic is on AND session is active, keep speech recognition running.
+    // Some implementations end unexpectedly; this restarts it.
+    if (sessionActive && micOn) {
+      // tiny delay avoids "start called too soon" errors
+      setTimeout(() => {
+        if (sessionActive && micOn && !recognizing) startRecognition();
+      }, 250);
+    }
+  }
+
+  // -----------------------------
+  // UI Events
+  // -----------------------------
+  function startSession() {
+    sessionActive = true;
+    startEndBtn.textContent = 'End';
+    setAnswerBoxEnabled(true);
+    feed.textContent = '';
+    spaceCount = 0;
+    answeredCount = 0;
+    hasRenderedFirstProblem = false;
+    if (operandFadeTimerId) {
+      clearTimeout(operandFadeTimerId);
+      operandFadeTimerId = 0;
+    }
+    waitingForBegin = micOn;
+    if (beginPrompt) beginPrompt.classList.toggle('is-hidden', !waitingForBegin);
+    if (problemCounter) problemCounter.textContent = String(spaceCount);
+    if (leftOperandValue) leftOperandValue.textContent = '';
+    if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
+    if (rightOperandValue) rightOperandValue.textContent = '';
+    if (resultValue) resultValue.textContent = '';
+    currentAnswer = null;
+    currentFact = null;
+    awaitingSubmission = false;
+    lastFinalTranscript = '';
+    resetFacts();
+    logLine('SESSION', 'Start (active)');
+    if (blinkToggleSelect?.value === 'on' && mode === MODE_EVAL) {
+      startBlinkTimer(parseFloat(blinkRateInput?.value) || 1.0);
+    }
+
+    if (micOn) startRecognition();
+  }
+
+  function endSession() {
+    sessionActive = false;
+    startEndBtn.textContent = 'Start';
+    setAnswerBoxEnabled(false);
+    logLine('SESSION', 'End (idle)');
+    stopBlinkTimer();
+    if (operandFadeTimerId) {
+      clearTimeout(operandFadeTimerId);
+      operandFadeTimerId = 0;
+    }
+    if (leftOperandValue) leftOperandValue.classList.remove('operand-blink-off');
+    if (rightOperandValue) rightOperandValue.classList.remove('operand-blink-off');
+    waitingForBegin = false;
+    if (beginPrompt) beginPrompt.classList.add('is-hidden');
+    if (leftOperandValue) leftOperandValue.textContent = '';
+    if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
+    if (rightOperandValue) rightOperandValue.textContent = '';
+    if (resultValue) resultValue.textContent = '';
+    currentAnswer = null;
+    currentFact = null;
+    awaitingSubmission = false;
+
+    stopRecognition();
+  }
+
+  startEndBtn.addEventListener('click', () => {
+    if (sessionActive) endSession();
+    else startSession();
+  });
+
+  micToggleBtn.addEventListener('click', () => {
+    micOn = !micOn;
+    setTypedModeUI();
+    logLine('MIC', micOn ? 'On (voice-only)' : 'Off (typed-only)');
+
+    // Enforce mode immediately
+    if (micOn) {
+      // Clear any partial typed value (optional; keeps behavior crisp)
+      answerInput.value = '';
+      if (sessionActive) {
+        waitingForBegin = true;
+        if (beginPrompt) beginPrompt.classList.remove('is-hidden');
+      }
+      if (sessionActive) startRecognition();
+    } else {
+      waitingForBegin = false;
+      if (beginPrompt) beginPrompt.classList.add('is-hidden');
+      stopRecognition();
+      if (sessionActive) answerInput.focus();
+    }
+  });
+
+  if (modeSelect) {
+    modeSelect.addEventListener('change', () => {
+      mode = modeSelect.value;
+      logLine('MODE', `Mode set to ${mode}`);
+      if (sessionActive && mode === MODE_EVAL && blinkToggleSelect?.value === 'on') {
+        const val = parseFloat(blinkRateInput?.value) || 1.0;
+        startBlinkTimer(val);
+      }
+      if (sessionActive && mode !== MODE_EVAL) {
+        stopBlinkTimer();
+        if (mode === MODE_LEARN && blinkToggleSelect?.value === 'on' && awaitingSubmission) {
+          const val = parseFloat(blinkRateInput?.value) || 1.0;
+          scheduleLearnBlink(val);
+        }
+      }
+    });
+  }
+
+  if (operationSelect) {
+    operationSelect.addEventListener('change', () => {
+      operation = operationSelect.value;
+      logLine('OP', `Operation set to ${operation}`);
+      resetFacts();
+      awaitingSubmission = false;
+      currentFact = null;
+      if (operatorBox) operatorBox.textContent = (operation === 'add') ? '+' : '×';
+      if (leftOperandValue) leftOperandValue.textContent = '';
+      if (rightOperandValue) rightOperandValue.textContent = '';
+      if (resultValue) resultValue.textContent = '';
+      if (sessionActive) advanceProblem(false);
+    });
+  }
+
+  if (missingValueSelect) {
+    missingValueSelect.addEventListener('change', () => {
+      missingValue = missingValueSelect.value;
+      logLine('MISS', `Missing value set to ${missingValue}`);
+      applyMissingDisplay();
+    });
+  }
+
+  if (blinkToggleSelect) {
+    blinkToggleSelect.addEventListener('change', () => {
+      const isOn = blinkToggleSelect.value === 'on';
+      logLine('BLINK', isOn ? 'On' : 'Off');
+      if (!isOn) {
+        stopBlinkTimer();
+        return;
+      }
+      if (sessionActive && mode === MODE_EVAL) {
+        const val = parseFloat(blinkRateInput?.value) || 1.0;
+        startBlinkTimer(val);
+      } else if (sessionActive && mode === MODE_LEARN && awaitingSubmission) {
+        const val = parseFloat(blinkRateInput?.value) || 1.0;
+        scheduleLearnBlink(val);
+      }
+    });
+  }
+
+  // Typed input: enforce numeric-only and auto-submit
+  answerInput.addEventListener('input', (e) => {
+    if (!sessionActive) return;
+    if (micOn) {
+      // Voice-only mode: ignore any typed input (and keep it empty)
+      answerInput.value = '';
+      return;
+    }
+
+    const val = normalizeToNumber(answerInput.value);
+    if (val == null) {
+      // If not a digit, clear
+      answerInput.value = '';
+      return;
+    }
+
+    // Force normalized numeric display before submit
+    answerInput.value = val;
+    submitDigit(val, 'typed');
+  });
+
+  // Prevent non-digit key presses in typed mode (optional hardening)
+  answerInput.addEventListener('keydown', (e) => {
+    if (answerInput.disabled) return;
+    if (micOn) {
+      e.preventDefault();
+      return;
+    }
+
+    const allowed = [
+      'Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'
+    ];
+    if (allowed.includes(e.key)) return;
+
+    // Allow digits only
+    if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+  });
+
+  // -----------------------------
+  // Init UI
+  // -----------------------------
+  setTypedModeUI();
+  logLine('INFO', 'Ready. Press Start.');
+  stopBlinkTimer();
+  if (modeSelect) {
+    modeSelect.value = mode;
+  }
+  if (operationSelect) {
+    operationSelect.value = operation;
+  }
+  if (missingValueSelect) {
+    missingValueSelect.value = missingValue;
+  }
+  if (operatorBox) {
+    operatorBox.textContent = (operation === 'add') ? '+' : '×';
+  }
+
+  if (downloadLogBtn) {
+    downloadLogBtn.addEventListener('click', () => {
+      if (!feed.textContent) return;
+      const blob = new Blob([feed.textContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const now = new Date();
+      const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+      const time = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+      a.download = `speechCapture_log_${date}.${time}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space') return;
+    e.preventDefault();
+    const advanced = advanceProblem(false);
+    if (sessionActive && advanced) logLine('SPACE', 'Next problem');
+  });
+
+  if (blinkRateInput) {
+    blinkRateInput.addEventListener('change', () => {
+      const val = parseFloat(blinkRateInput.value);
+      if (isNaN(val)) return;
+      const clamped = Math.max(0.1, Math.min(10.0, val));
+      blinkRateInput.value = clamped.toFixed(1);
+      if (sessionActive && blinkToggleSelect?.value === 'on' && mode === MODE_EVAL) {
+        startBlinkTimer(clamped);
+      } else if (sessionActive && blinkToggleSelect?.value === 'on' && mode === MODE_LEARN && awaitingSubmission) {
+        scheduleLearnBlink(clamped);
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>

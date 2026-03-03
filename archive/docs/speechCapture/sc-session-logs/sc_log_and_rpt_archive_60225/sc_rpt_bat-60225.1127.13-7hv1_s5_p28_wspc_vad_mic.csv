@@ -1,0 +1,6 @@
+file,session_id,run_id,selected_problem_count,source,chunk_mode_raw,chunk_mode,problems,submitted,correct,wrong,accuracy_pct,accuracy_submitted_pct,false_begin_rate_pct,empty_final_rate_pct,stale_wrong_rate_pct,numeric_wer_proxy,stale_ignored,stale_final_ignored,uploads,upload_p50_ms,upload_p90_ms,upload_max_ms,server_requests,server_responses,server_ffmpeg_errors,server_whisper_errors,server_http_errors
+sc_log_run-60225.1123.37-gaky_s3_p18_wspc_vad_mic.jsonl,sess_mm28uz8h_tqljzu,run_20260225_112337_gaky,10,mic,utterance,vad,10,10,10,0,100,100,0,0,0,0,0,0,11,874,918,988,0,0,0,0,0
+sc_log_run-60225.1123.37-gaky_s3_p18_wspc_vad_mic.jsonl,sess_mm28w3dh_9eu888,run_20260225_112337_gaky,6,mic,utterance,vad,7,6,6,0,85.714,100,0,11.111,0,0,0,0,8,871,897,922,0,0,0,0,0
+sc_log_run-60225.1123.37-gaky_s3_p18_wspc_vad_mic.jsonl,sess_mm28ww2k_hjq5a7,run_20260225_112337_gaky,2,mic,utterance,vad,3,2,1,1,33.333,50,0,25,0,0.333333,0,0,3,873,873,901,0,0,0,0,0
+sc_log_ses-60225.1121.58-p161_s1_p5_wspc_vad_mic.jsonl,sess_mm28rewo_h2p161,,5,mic,utterance,vad,6,5,5,0,83.333,100,0,12.5,0,0,0,0,7,935,1779,3020,0,0,0,0,0
+sc_log_ses-60225.1123.13-oy7c_s1_p5_wspc_vad_mic.jsonl,sess_mm28tkdp_cfoy7c,,5,mic,utterance,vad,5,5,5,0,100,100,0,0,0,0,0,0,6,874,904,999,0,0,0,0,0

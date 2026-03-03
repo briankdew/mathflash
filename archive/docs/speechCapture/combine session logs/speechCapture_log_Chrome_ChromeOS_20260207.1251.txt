@@ -1,0 +1,60 @@
+[12:50:47.613] ENV: Browser=Chrome OS=ChromeOS
+[12:50:47.613] SESSION: Start (active)
+[12:50:47.614] REC: start() called
+[12:50:47.629] REC: onstart
+[12:50:47.863] REC: onaudiostart
+[12:50:49.463] REC: onsoundstart
+[12:50:49.464] REC: onspeechstart
+[12:50:50.006] REC_RES: i=0 final=false conf=0.010 txt="begin"
+[12:50:50.741] REC_RES: i=0 final=true conf=0.972 txt="begin"
+[12:50:50.742] BEGIN: Begin detected
+[12:50:50.743] CURR_PROB: Problem 0 (3 + 9 = 12)
+[12:50:52.212] REC_RES: i=1 final=false conf=0.010 txt="12"
+[12:50:52.712] REC_RES: i=1 final=false conf=0.010 txt="12:00"
+[12:50:52.978] REC_RES: i=1 final=true conf=0.820 txt="12:00"
+[12:50:52.980] PROB_SKIP: Problem 0 (Non-numeric symbol detected)
+[12:50:52.980] REC: abort() called
+[12:50:52.981] REC_RESET: after PROB_SKIP
+[12:50:52.984] REC: start() called
+[12:50:52.985] REC: onspeechend
+[12:50:52.986] REC: onsoundend
+[12:50:52.987] REC: onaudioend
+[12:50:52.988] REC_ERR: aborted
+[12:50:52.989] REC: onend
+[12:50:52.998] REC: onstart
+[12:50:53.126] REC: onaudiostart
+[12:50:53.233] CURR_PROB: Problem 1 (4 + 4 = 8)
+[12:50:54.126] REC: onsoundstart
+[12:50:54.128] REC: onspeechstart
+[12:50:54.967] REC_RES: i=0 final=false conf=0.010 txt="eight"
+[12:50:58.090] REC_RES: i=0 final=false conf=0.010 txt="eight"
+[12:50:58.300] REC_RES: i=0 final=true conf=0.868 txt="eight"
+[12:50:58.302] MAX_ALT: Problem 1 (Final alternatives=1, max=1)
+[12:50:58.304] SUBMIT: 8  (source=voice)
+[12:50:58.305] CURR_PROB: Problem 2 (8 + 8 = 16)
+[12:51:00.213] REC_RES: i=1 final=false conf=0.010 txt="16"
+[12:51:00.945] REC_RES: i=1 final=true conf=0.695 txt="16"
+[12:51:00.947] MAX_ALT: Problem 2 (Final alternatives=1, max=1)
+[12:51:00.949] SUBMIT: 16  (source=voice)
+[12:51:00.950] CURR_PROB: Problem 3 (1 + 5 = 6)
+[12:51:03.440] REC_RES: i=2 final=false conf=0.010 txt="-6"
+[12:51:03.798] REC_RES: i=2 final=true conf=0.598 txt="-6"
+[12:51:03.800] MAX_ALT: Problem 3 (Final alternatives=1, max=1)
+[12:51:03.801] SUBMIT: 6  (source=voice)
+[12:51:03.803] CURR_PROB: Problem 4 (3 + 3 = 6)
+[12:51:05.946] REC_RES: i=3 final=false conf=0.010 txt="6"
+[12:51:06.600] REC_RES: i=3 final=true conf=0.709 txt="6"
+[12:51:06.602] MAX_ALT: Problem 4 (Final alternatives=1, max=1)
+[12:51:06.603] SUBMIT: 6  (source=voice)
+[12:51:06.604] CURR_PROB: Problem 5 (1 + 1 = 2)
+[12:51:08.485] REC_RES: i=4 final=false conf=0.010 txt="2"
+[12:51:08.809] REC_RES: i=4 final=true conf=0.878 txt="2"
+[12:51:08.812] MAX_ALT: Problem 5 (Final alternatives=1, max=1)
+[12:51:08.813] SUBMIT: 2  (source=voice)
+[12:51:08.814] SESSION: Auto-end after 5 problems
+[12:51:08.816] SESSION: End (idle)
+[12:51:08.816] REC: stop() called
+[12:51:08.817] REC: onspeechend
+[12:51:08.817] REC: onsoundend
+[12:51:08.818] REC: onaudioend
+[12:51:08.916] REC: onend

@@ -1,0 +1,41 @@
+000 [22:24:16.389] ENV: Browser=Chrome OS=ChromeOS Source=Voice STT=whisper
+001 [22:24:16.390] SESSION: Start (active)
+002 [22:24:16.540] MIC_METER: start (threshold=0.02 hangover_ms=250 interval_ms=50)
+003 [22:24:16.568] STT_INFO: Whisper adapter active (endpoint=/api/stt/whisper, chunk_ms=1200).
+004 [22:24:16.630] REC: onstart
+005 [22:24:16.631] REC: onaudiostart
+006 [22:24:17.941] MIC_VOICE: on rms=0.046
+007 [22:24:17.941] MIC_RMS: rms=0.046 voiceActive=true
+008 [22:24:17.991] MIC_RMS: rms=0.113 voiceActive=true
+009 [22:24:18.041] MIC_RMS: rms=0.072 voiceActive=true
+010 [22:24:18.091] MIC_RMS: rms=0.036 voiceActive=true
+011 [22:24:18.141] MIC_RMS: rms=0.100 voiceActive=true
+012 [22:24:18.191] MIC_RMS: rms=0.099 voiceActive=true
+013 [22:24:18.241] MIC_RMS: rms=0.052 voiceActive=true
+014 [22:24:18.291] MIC_RMS: rms=0.020 voiceActive=true
+015 [22:24:18.341] MIC_RMS: rms=0.014 voiceActive=true
+016 [22:24:18.391] MIC_RMS: rms=0.018 voiceActive=true
+017 [22:24:18.541] MIC_VOICE: off rms=0.000
+018 [22:24:19.132] STT_ERR: Whisper HTTP 500 for chunk 1
+019 [22:24:20.378] STT_ERR: Whisper HTTP 500 for chunk 2
+020 [22:24:21.598] STT_ERR: Whisper HTTP 500 for chunk 3
+021 [22:24:22.191] MIC_VOICE: on rms=0.029
+022 [22:24:22.193] MIC_RMS: rms=0.029 voiceActive=true
+023 [22:24:22.241] MIC_RMS: rms=0.069 voiceActive=true
+024 [22:24:22.291] MIC_RMS: rms=0.033 voiceActive=true
+025 [22:24:22.341] MIC_RMS: rms=0.030 voiceActive=true
+026 [22:24:22.391] MIC_RMS: rms=0.105 voiceActive=true
+027 [22:24:22.441] MIC_RMS: rms=0.100 voiceActive=true
+028 [22:24:22.491] MIC_RMS: rms=0.050 voiceActive=true
+029 [22:24:22.541] MIC_RMS: rms=0.018 voiceActive=true
+030 [22:24:22.591] MIC_RMS: rms=0.018 voiceActive=true
+031 [22:24:22.641] MIC_RMS: rms=0.022 voiceActive=true
+032 [22:24:22.691] MIC_RMS: rms=0.008 voiceActive=true
+033 [22:24:22.844] STT_ERR: Whisper HTTP 500 for chunk 4
+034 [22:24:22.941] MIC_VOICE: off rms=0.001
+035 [22:24:24.105] STT_ERR: Whisper HTTP 500 for chunk 1
+036 [22:24:25.362] STT_ERR: Whisper HTTP 500 for chunk 2
+037 [22:24:26.619] STT_ERR: Whisper HTTP 500 for chunk 3
+038 [22:24:26.791] MIC_RMS: rms=0.016 voiceActive=false
+039 [22:24:27.019] SESSION: End (idle)
+040 [22:24:27.023] MIC_METER: stop

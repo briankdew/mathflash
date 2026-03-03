@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>speechCapture Report (v1)</title>
+  <style>
+    :root { --fg:#1f1f1f; --bg:#f8f8f8; --panel:#ffffff; --line:#d8d8d8; --head:#ececec; --sid:#bf9000; }
+    body { margin:0; padding:20px 22px; font:10pt/1.35 Arial, sans-serif; color:var(--fg); background:var(--bg); }
+    .report-wrap { max-width:980px; margin:0 auto; }
+    h1 { margin:0 0 10px; font-size:15pt; text-align:right; }
+    .id-row { margin:2px 0 2px; font-size:15pt; font-weight:700; color:var(--sid); }
+    .filename-row { margin:0 0 10px; font-size:11pt; }
+    .filename-row .k { font-weight:700; margin-right:8px; }
+    .meta { margin-bottom:12px; padding:8px 10px; border:1px solid var(--line); background:var(--panel); }
+    .meta-grid { display:grid; grid-template-columns:max-content 1fr; gap:6px 8px; }
+    .section { border:1px solid var(--line); background:var(--panel); padding:10px; }
+    details { margin:8px 0; }
+    summary { cursor:pointer; font-weight:700; }
+    .run-block summary, .session-block summary { font-weight:600; }
+    table { border-collapse:collapse; width:100%; margin-top:8px; }
+    th, td { border:1px solid var(--line); padding:4px 6px; vertical-align:top; }
+    th { background:var(--head); text-align:left; width:220px; }
+  </style>
+</head>
+<body>
+  <main class="report-wrap">
+    <h1>speechCapture Report (v1)</h1>
+    <div class="id-row">35-4QJJ</div>
+    <div class="filename-row"><span class="k">Filename</span><span class="v">sc_rpt_bat-60228.1339.35-4qjj_s3_p30_wspc_vad_mic.html</span></div>
+    <section class="meta">
+      <div class="meta-grid">
+        <div>generated_at_iso</div><div>2026-02-28T18:39:35.545Z</div>
+        <div>logs_dir</div><div>/tmp/sc-analyze-1Y9A15</div>
+        <div>file_count</div><div>1</div>
+        <div>run_count</div><div>1</div>
+        <div>session_count</div><div>3</div>
+      </div>
+    </section>
+    <section class="section">
+      
+      <details class="file-block" open>
+        <summary>filename_1 = sc_log_run-60226.1753.43-6yxh_s3_p30_wspc_vad_mic.jsonl</summary>
+        
+        <details class="run-block" open>
+          <summary>run_id_1 = run_20260226_175343_6yxh</summary>
+          
+          <details class="session-block" open>
+            <summary>session_id_1 = sess_mm428bia_oe0ni9</summary>
+            <table>
+              <tbody><tr><th>session_id_1</th><td>sess_mm428bia_oe0ni9</td></tr><tr><th>stt_engine</th><td>wspc</td></tr><tr><th>selected_problem_count</th><td>10</td></tr><tr><th>source</th><td>mic</td></tr><tr><th>chunk_mode_raw</th><td>utterance</td></tr><tr><th>chunk_mode</th><td>vad</td></tr><tr><th>problems</th><td>10</td></tr><tr><th>submitted</th><td>10</td></tr><tr><th>correct</th><td>10</td></tr><tr><th>wrong</th><td>0</td></tr><tr><th>accuracy_pct</th><td>100</td></tr><tr><th>accuracy_submitted_pct</th><td>100</td></tr><tr><th>false_begin_rate_pct</th><td>0</td></tr><tr><th>empty_final_rate_pct</th><td>0</td></tr><tr><th>stale_wrong_rate_pct</th><td>0</td></tr><tr><th>numeric_wer_proxy</th><td>0</td></tr><tr><th>begin_gate_fail_count</th><td>0</td></tr><tr><th>begin_window_finals</th><td>1</td></tr><tr><th>begin_window_non_begin_finals</th><td>0</td></tr><tr><th>skipped_count</th><td>0</td></tr><tr><th>skipped_empty_final_count</th><td>0</td></tr><tr><th>skipped_non_numeric_symbol_count</th><td>0</td></tr><tr><th>skipped_other_count</th><td>0</td></tr><tr><th>skipped_events_count</th><td>0</td></tr><tr><th>stale_ignored</th><td>0</td></tr><tr><th>stale_final_ignored</th><td>0</td></tr><tr><th>uploads</th><td>11</td></tr><tr><th>upload_p50_ms</th><td>859</td></tr><tr><th>upload_p90_ms</th><td>871</td></tr><tr><th>upload_max_ms</th><td>882</td></tr><tr><th>server_requests</th><td>0</td></tr><tr><th>server_responses</th><td>0</td></tr><tr><th>server_ffmpeg_errors</th><td>0</td></tr><tr><th>server_whisper_errors</th><td>0</td></tr><tr><th>server_http_errors</th><td>0</td></tr></tbody>
+            </table>
+          </details>
+        
+          <details class="session-block" open>
+            <summary>session_id_2 = sess_mm4293hd_q0zlpy</summary>
+            <table>
+              <tbody><tr><th>session_id_2</th><td>sess_mm4293hd_q0zlpy</td></tr><tr><th>stt_engine</th><td>wspc</td></tr><tr><th>selected_problem_count</th><td>10</td></tr><tr><th>source</th><td>mic</td></tr><tr><th>chunk_mode_raw</th><td>utterance</td></tr><tr><th>chunk_mode</th><td>vad</td></tr><tr><th>problems</th><td>10</td></tr><tr><th>submitted</th><td>10</td></tr><tr><th>correct</th><td>10</td></tr><tr><th>wrong</th><td>0</td></tr><tr><th>accuracy_pct</th><td>100</td></tr><tr><th>accuracy_submitted_pct</th><td>100</td></tr><tr><th>false_begin_rate_pct</th><td>0</td></tr><tr><th>empty_final_rate_pct</th><td>0</td></tr><tr><th>stale_wrong_rate_pct</th><td>0</td></tr><tr><th>numeric_wer_proxy</th><td>0</td></tr><tr><th>begin_gate_fail_count</th><td>0</td></tr><tr><th>begin_window_finals</th><td>1</td></tr><tr><th>begin_window_non_begin_finals</th><td>0</td></tr><tr><th>skipped_count</th><td>0</td></tr><tr><th>skipped_empty_final_count</th><td>0</td></tr><tr><th>skipped_non_numeric_symbol_count</th><td>0</td></tr><tr><th>skipped_other_count</th><td>0</td></tr><tr><th>skipped_events_count</th><td>0</td></tr><tr><th>stale_ignored</th><td>0</td></tr><tr><th>stale_final_ignored</th><td>0</td></tr><tr><th>uploads</th><td>11</td></tr><tr><th>upload_p50_ms</th><td>841</td></tr><tr><th>upload_p90_ms</th><td>889</td></tr><tr><th>upload_max_ms</th><td>916</td></tr><tr><th>server_requests</th><td>0</td></tr><tr><th>server_responses</th><td>0</td></tr><tr><th>server_ffmpeg_errors</th><td>0</td></tr><tr><th>server_whisper_errors</th><td>0</td></tr><tr><th>server_http_errors</th><td>0</td></tr></tbody>
+            </table>
+          </details>
+        
+          <details class="session-block" open>
+            <summary>session_id_3 = sess_mm429uch_ws8mnl</summary>
+            <table>
+              <tbody><tr><th>session_id_3</th><td>sess_mm429uch_ws8mnl</td></tr><tr><th>stt_engine</th><td>wspc</td></tr><tr><th>selected_problem_count</th><td>10</td></tr><tr><th>source</th><td>mic</td></tr><tr><th>chunk_mode_raw</th><td>utterance</td></tr><tr><th>chunk_mode</th><td>vad</td></tr><tr><th>problems</th><td>10</td></tr><tr><th>submitted</th><td>10</td></tr><tr><th>correct</th><td>9</td></tr><tr><th>wrong</th><td>1</td></tr><tr><th>accuracy_pct</th><td>90</td></tr><tr><th>accuracy_submitted_pct</th><td>90</td></tr><tr><th>false_begin_rate_pct</th><td>0</td></tr><tr><th>empty_final_rate_pct</th><td>0</td></tr><tr><th>stale_wrong_rate_pct</th><td>0</td></tr><tr><th>numeric_wer_proxy</th><td>0.0625</td></tr><tr><th>begin_gate_fail_count</th><td>0</td></tr><tr><th>begin_window_finals</th><td>1</td></tr><tr><th>begin_window_non_begin_finals</th><td>0</td></tr><tr><th>skipped_count</th><td>0</td></tr><tr><th>skipped_empty_final_count</th><td>0</td></tr><tr><th>skipped_non_numeric_symbol_count</th><td>0</td></tr><tr><th>skipped_other_count</th><td>0</td></tr><tr><th>skipped_events_count</th><td>0</td></tr><tr><th>stale_ignored</th><td>0</td></tr><tr><th>stale_final_ignored</th><td>0</td></tr><tr><th>uploads</th><td>11</td></tr><tr><th>upload_p50_ms</th><td>864</td></tr><tr><th>upload_p90_ms</th><td>903</td></tr><tr><th>upload_max_ms</th><td>1701</td></tr><tr><th>server_requests</th><td>0</td></tr><tr><th>server_responses</th><td>0</td></tr><tr><th>server_ffmpeg_errors</th><td>0</td></tr><tr><th>server_whisper_errors</th><td>0</td></tr><tr><th>server_http_errors</th><td>0</td></tr></tbody>
+            </table>
+          </details>
+        
+        </details>
+      
+      </details>
+    
+    </section>
+  </main>
+</body>
+</html>

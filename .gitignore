@@ -1,22 +1,41 @@
-mathflash logo_OLD.svg
-tools/speech/session logs/speechCapture_log_2026-02-02 (1).txt
-tools/speech/session logs/speechCapture_log_2026-02-02 (2).txt
-tools/speech/session logs/speechCapture_log_2026-02-02.txt
-tools/speech/speechCapture Practice Area UI.png
-tools/speech/speechCapture.html
-tools/speech/speechCapture_deprecated_delete_if_found.html
-path/to/folder/
-docs/speechCapture/combine session logs/
-mathflash index *.html
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# --- SpeechCapture local/dev artifacts ---
-# Whisper session exports (generated during testing)
-docs/speechCapture/sc-session-logs/
-
-# Local STT server runtime artifacts
-logs/
-tmp_uploads/
-
-# Local dependency/build trees
+# dependencies
 node_modules/
-whisper.cpp/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
