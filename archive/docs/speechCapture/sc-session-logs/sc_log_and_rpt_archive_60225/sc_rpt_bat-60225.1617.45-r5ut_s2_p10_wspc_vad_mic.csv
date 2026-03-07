@@ -1,3 +1,0 @@
-file,session_id,run_id,selected_problem_count,source,chunk_mode_raw,chunk_mode,problems,submitted,correct,wrong,accuracy_pct,accuracy_submitted_pct,false_begin_rate_pct,empty_final_rate_pct,stale_wrong_rate_pct,numeric_wer_proxy,stale_ignored,stale_final_ignored,uploads,upload_p50_ms,upload_p90_ms,upload_max_ms,server_requests,server_responses,server_ffmpeg_errors,server_whisper_errors,server_http_errors
-sc_log_run-60225.1614.38-si02_s2_p10_wspc_vad_mic.jsonl,sess_mm2j92by_grbr3a,run_20260225_161438_si02,5,mic,utterance,vad,5,5,5,0,100,100,0,0,0,0,0,0,6,834,836,959,0,0,0,0,0
-sc_log_run-60225.1614.38-si02_s2_p10_wspc_vad_mic.jsonl,sess_mm2j9iot_493vzp,run_20260225_161438_si02,5,mic,utterance,vad,5,5,5,0,100,100,0,0,0,0,0,0,6,842,858,891,0,0,0,0,0

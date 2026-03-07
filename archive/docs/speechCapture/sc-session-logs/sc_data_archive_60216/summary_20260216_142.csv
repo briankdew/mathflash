@@ -1,4 +1,0 @@
-file,session_id,chunk_mode,problems,submitted,correct,wrong,accuracy_pct,false_begin_rate_pct,empty_final_rate_pct,stale_wrong_rate_pct,numeric_wer_proxy,stale_ignored,stale_final_ignored,uploads,upload_p50_ms,upload_p90_ms,upload_max_ms,server_requests,server_responses,server_ffmpeg_errors,server_whisper_errors,server_http_errors
-speechCapture_events_Chrome_ChromeOS_20260216.1422_sess_mlpk96kw_qjv0vw.jsonl,sess_mlpk96kw_qjv0vw,utterance,10,10,10,0,100,0,0,0,0,0,0,11,861,891,905,11,11,0,0,0
-speechCapture_events_Chrome_ChromeOS_20260216.1423_sess_mlpka5mq_b29fg9.jsonl,sess_mlpka5mq_b29fg9,utterance,10,10,10,0,100,0,0,0,0,0,0,11,858,883,904,11,11,0,0,0
-speechCapture_events_Chrome_ChromeOS_20260216.1423_sess_mlpkb2aa_2tp1ed.jsonl,sess_mlpkb2aa_2tp1ed,utterance,10,10,10,0,100,0,0,0,0,0,0,11,865,882,904,11,11,0,0,0
