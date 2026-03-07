@@ -1,26 +1,26 @@
 ADDITION SIGN 45x45 CANVAS
-
 <svg id="Flat" width="45" height="45" fill="#000000" version="1.1" viewBox="0 0 14.4 14.4" xmlns="http://www.w3.org/2000/svg">
  <path d="m7.2 2.08c-0.57933 0-1.049 0.46964-1.049 1.049v3.022h-3.022c-0.57933 0-1.049 0.46964-1.049 1.049 0 0.57936 0.46964 1.049 1.049 1.049h3.022v3.022c0 0.57933 0.46964 1.049 1.049 1.049 0.57933 0 1.049-0.46964 1.049-1.049v-3.022h3.022c0.57933 0 1.049-0.46964 1.049-1.049 0-0.57936-0.46964-1.049-1.049-1.049h-3.022v-3.022c0-0.57933-0.46964-1.049-1.049-1.049z" fill="#000" stroke-linejoin="round" stroke-miterlimit="0" stroke-width=".035331"/>
 </svg>
 
 
 SUBTRACTION SIGN 45x45 CANVAS
-
 <svg id="Flat" width="45" height="45" fill="#000000" version="1.1" viewBox="0 0 14.4 14.4" xmlns="http://www.w3.org/2000/svg">
  <path d="m3.8763 6.1504a1.0496 1.0496 0 0 0-1.0496 1.0496 1.0496 1.0496 0 0 0 1.0496 1.0496h6.6475a1.0496 1.0496 0 0 0 1.0496-1.0496 1.0496 1.0496 0 0 0-1.0496-1.0496z" fill="#000"/>
 </svg>
 
 
 MULTIPLICATION SIGN 45X45 CANVAS
-
 <svg id="Flat" width="45" height="45" fill="#000000" version="1.1" viewBox="0 0 14.4 14.4" xmlns="http://www.w3.org/2000/svg">
  <path d="m11.052 3.3477a1.0496 1.0496 0 0 0-1.4844 5e-7l-2.3679 2.3679-2.3679-2.3679a1.0496 1.0496 0 0 0-1.4844 6e-7 1.0496 1.0496 0 0 0 3e-7 1.4844l2.3679 2.3679-2.3679 2.3679a1.0496 1.0496 0 0 0 0 1.4844 1.0496 1.0496 0 0 0 1.4844 0l2.3679-2.3679 2.3679 2.3679a1.0496 1.0496 0 0 0 1.4844 0 1.0496 1.0496 0 0 0 0-1.4844l-2.3679-2.3679 2.3679-2.3679a1.0496 1.0496 0 0 0 0-1.4844z" stroke-linejoin="round" stroke-miterlimit="0" stroke-width=".035352"/>
 </svg>
 
 
 DIVISION SIGN 45X45 CANVAS
-
 <svg id="Flat" width="45" height="45" fill="#000000" version="1.1" viewBox="0 0 14.4 14.4" xmlns="http://www.w3.org/2000/svg">
  <path d="m3.2015 6.1504a1.0496 1.0496 0 0 0-1.0496 1.0496 1.0496 1.0496 0 0 0 1.0496 1.0496h7.9969a1.0496 1.0496 0 0 0 1.0496-1.0496 1.0496 1.0496 0 0 0-1.0496-1.0496zm5.0039 4.1347a1.0746 1.0746 0 0 1-1.0746 1.0746 1.0746 1.0746 0 0 1-1.0746-1.0746 1.0746 1.0746 0 0 1 1.0746-1.0746 1.0746 1.0746 0 0 1 1.0746 1.0746zm0.13824-6.1702a1.0746 1.0746 0 0 1-1.0746 1.0746 1.0746 1.0746 0 0 1-1.0746-1.0746 1.0746 1.0746 0 0 1 1.0746-1.0746 1.0746 1.0746 0 0 1 1.0746 1.0746z" fill="#000"/>
 </svg>
+
+
+ANSWER BOX W/INSET SHADOW
+<svg width="215" height="110" version="1.1" viewBox="0 0 215 110" xml:space="preserve" xmlns="http://www.w3.org/2000/svg"><defs><filter id="filter66" x="-.027907" y="-.054545" width="1.0558" height="1.1364" color-interpolation-filters="sRGB"><feFlood flood-color="rgb(0,0,0)" flood-opacity=".50196" in="SourceGraphic" result="flood"/><feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="2.500000"/><feOffset dx="0.000000" dy="3.000000" in="blur" result="offset"/><feComposite in="flood" in2="offset" operator="out" result="comp1"/><feComposite in="comp1" in2="SourceGraphic" operator="atop" result="comp2"/></filter></defs><rect x="1.4211e-14" y="-2.8422e-14" width="215" height="110" rx="25" ry="25" fill="#fff" filter="url(#filter66)"/></svg>

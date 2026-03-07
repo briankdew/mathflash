@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,18 +8,40 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  Modal,
+  Dimensions
 } from 'react-native';
 import { Header } from './src/components/Header';
 import { SettingsPanel } from './src/components/SettingsPanel';
 import { ProblemConstellation } from './src/components/ProblemConstellation';
 import { useMathSession } from './src/hooks/useMathSession';
-import { theme } from './src/theme/colors';
+import { theme, getOperationTheme } from './src/theme/colors';
+import { useFonts, Nunito_700Bold } from '@expo-google-fonts/nunito';
+import { Archivo_400Regular } from '@expo-google-fonts/archivo';
 
 export default function App() {
   const session = useMathSession();
+  const opTheme = getOperationTheme(session.options.operation);
   const [inputValue, setInputValue] = useState('');
   const [shakeTrigger, setShakeTrigger] = useState(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showCorrect, setShowCorrect] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (session.isActive) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    } else {
+      inputRef.current?.blur();
+      setInputValue('');
+    }
+  }, [session.isActive]);
+
+  let [fontsLoaded] = useFonts({
+    Nunito_700Bold,
+    Archivo_400Regular,
+  });
 
   const handleSubmit = () => {
     if (!inputValue) return;
@@ -27,12 +49,14 @@ export default function App() {
 
     if (res === 'wrong') {
       setShakeTrigger(prev => prev + 1);
-      setInputValue('');
+      setTimeout(() => setInputValue(''), 400);
     } else if (res === 'correct') {
-      setInputValue('');
+      setShowCorrect(true);
       setTimeout(() => {
+        setInputValue('');
+        setShowCorrect(false);
         session.advanceToNextProblem();
-      }, 300); // slight delay so they can see it's right
+      }, 500); // 500ms delay so they can see it's right
     }
   };
 
@@ -40,13 +64,15 @@ export default function App() {
     setInputValue(text);
     const res = session.checkAnswer(text, false);
     if (res === 'correct') {
-      setInputValue('');
+      setShowCorrect(true);
       setTimeout(() => {
+        setInputValue('');
+        setShowCorrect(false);
         session.advanceToNextProblem();
-      }, 300);
+      }, 500);
     } else if (res === 'wrong') {
       setShakeTrigger(prev => prev + 1);
-      setInputValue('');
+      setTimeout(() => setInputValue(''), 400);
     }
   };
 
@@ -60,46 +86,53 @@ export default function App() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <Header operation={session.options.operation} />
+          <Header operation={session.options.operation} onOpenSettings={() => setIsSettingsOpen(true)} />
 
-          <View style={styles.mainLayout}>
-            {!session.isActive && (
-              <View style={styles.panelLeft}>
+          <Modal visible={isSettingsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setIsSettingsOpen(false)}>
+            <SafeAreaView style={styles.modalSafeArea}>
+              <ScrollView>
                 <SettingsPanel
                   options={session.options}
                   updateOptions={session.updateOptions}
                   useTimer={session.useTimer}
                   setUseTimer={session.setUseTimer}
                   disabled={session.isActive}
+                  onClose={() => setIsSettingsOpen(false)}
                 />
-              </View>
-            )}
+              </ScrollView>
+            </SafeAreaView>
+          </Modal>
 
+          <View style={styles.mainLayout}>
             <View style={styles.panelCenter}>
               <View style={styles.constellationWrapper}>
                 <ProblemConstellation
                   problem={session.currentProblem}
                   operation={session.options.operation}
                   shakeTrigger={shakeTrigger}
+                  showCorrect={showCorrect}
+                  renderInput={
+                    <TextInput
+                      ref={inputRef}
+                      style={[styles.textInput, { outline: 'none' } as any]}
+                      keyboardType="number-pad"
+                      value={inputValue}
+                      onChangeText={handleInput}
+                      onSubmitEditing={handleSubmit}
+                      editable={session.isActive}
+                      autoFocus={false}
+                    />
+                  }
                 />
               </View>
 
               <View style={styles.inputArea}>
-                <TextInput
-                  style={styles.textInput}
-                  keyboardType="number-pad"
-                  value={inputValue}
-                  onChangeText={handleInput}
-                  onSubmitEditing={handleSubmit}
-                  editable={session.isActive}
-                  placeholder={session.isActive ? "123" : ""}
-                  placeholderTextColor={theme.textMuted}
-                  autoFocus={false}
-                />
-
-                <View style={styles.sessionControl}>
+                <View style={[styles.sessionControl, { marginTop: 25 }]}>
                   <TouchableOpacity
-                    style={[styles.startBtn, session.isActive && styles.resetBtn]}
+                    style={[
+                      styles.startBtn,
+                      { backgroundColor: opTheme.textOperand }
+                    ]}
                     onPress={() => {
                       if (session.isActive) session.endSession();
                       else session.startSession();
@@ -111,7 +144,7 @@ export default function App() {
                   </TouchableOpacity>
                   <Text style={styles.countText}>
                     {session.isActive ? 'Problems remaining: ' : 'Problems selected: '}
-                    <Text style={{ fontWeight: 'bold' }}>{session.isActive ? session.totalProblems - session.stats.completed : session.getPendingCount()}</Text>
+                    <Text style={{ fontFamily: 'Nunito_700Bold' }}>{session.isActive ? session.totalProblems - session.stats.completed : session.getPendingCount()}</Text>
                   </Text>
                 </View>
               </View>
@@ -135,31 +168,25 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 40,
   },
-  mainLayout: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    justifyContent: 'center',
+  modalSafeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  panelLeft: {
-    width: '100%',
-    maxWidth: 400,
-    marginBottom: 20,
+  mainLayout: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   panelCenter: {
     flex: 1,
-    minWidth: 320,
-    maxWidth: 800,
+    width: '100%',
+    maxWidth: 600,
     alignItems: 'center',
-    marginHorizontal: 10,
   },
   constellationWrapper: {
     width: '100%',
-    height: 400,
-    justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden', // to prevent absolute objects from causing weird scrolls
-    marginBottom: 20,
+    marginTop: 35.5,
   },
   inputArea: {
     width: '100%',
@@ -167,41 +194,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   textInput: {
-    width: '80%',
-    height: 60,
-    borderWidth: 2,
-    borderColor: theme.cardOperandBg,
-    borderRadius: 8,
-    fontSize: 32,
-    fontWeight: 'bold',
+    width: '100%',
+    height: '100%',
+    fontSize: 98,
+    fontFamily: 'Nunito_700Bold',
+    fontWeight: '700',
     textAlign: 'center',
-    backgroundColor: '#fff',
-    color: theme.textMain,
-    marginBottom: 20,
+    color: '#777565',
+    backgroundColor: 'transparent',
+    zIndex: 10,
   },
   sessionControl: {
     width: '100%',
     alignItems: 'center',
   },
   startBtn: {
-    width: '100%',
-    padding: 16,
-    backgroundColor: theme.textMain,
-    borderRadius: 8,
+    width: 215,
+    height: 35,
+    justifyContent: 'center',
+    borderRadius: 17.5,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 6,
     marginBottom: 10,
   },
   resetBtn: {
-    backgroundColor: '#d32f2f', // Red for reset
+    // This is handled inline dynamically now
   },
   startBtnText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+    fontSize: 15,
+    fontFamily: 'Archivo_400Regular',
+    fontWeight: 'normal',
   },
   countText: {
     fontSize: 16,
+    fontFamily: 'Archivo_400Regular',
     color: theme.textMuted,
   }
 });

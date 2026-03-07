@@ -1,0 +1,21 @@
+# Antigravity Global Ignores
+# These files will not be indexed by agent search tools unless explicitly opened by the user
+
+# Dependencies and Build Outputs
+node_modules/
+.expo/
+dist/
+web-build/
+android/
+ios/
+
+# Legacy Files
+archive/
+
+# Static Assets
+# Avoids searching binary or large SVG/Image data
+assets/
+
+# Misc
+*.log
+.DS_Store

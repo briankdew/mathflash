@@ -13,6 +13,7 @@ interface SettingsPanelProps {
     useTimer: boolean;
     setUseTimer: (val: boolean) => void;
     disabled?: boolean;
+    onClose?: () => void;
 }
 
 export function SettingsPanel({
@@ -20,7 +21,8 @@ export function SettingsPanel({
     updateOptions,
     useTimer,
     setUseTimer,
-    disabled
+    disabled,
+    onClose
 }: SettingsPanelProps) {
 
     const cycleOperation = () => {
@@ -82,7 +84,14 @@ export function SettingsPanel({
 
     return (
         <View style={styles.container}>
-            <Text style={styles.headerTitle}>Settings</Text>
+            <View style={styles.headerRow}>
+                <Text style={styles.headerTitle}>Settings</Text>
+                {onClose && (
+                    <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                        <Text style={styles.closeBtnText}>Done</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
 
             <View style={styles.controlGroup}>
                 <Text style={styles.label}>Operation</Text>
@@ -182,16 +191,28 @@ const styles = StyleSheet.create({
     container: {
         padding: 20,
         backgroundColor: '#fff',
-        borderRadius: 8,
         marginVertical: 10,
-        // Note: To match the exact layout we will fit this inside the sidebar area.
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
     },
     headerTitle: {
         fontSize: 18,
         fontWeight: 'condensedBold' as any,
         color: theme.textMuted,
         textTransform: 'uppercase',
-        marginBottom: 15,
+    },
+    closeBtn: {
+        padding: 8,
+        backgroundColor: theme.bg,
+        borderRadius: 4,
+    },
+    closeBtnText: {
+        fontWeight: 'bold',
+        color: theme.textMain,
     },
     controlGroup: {
         marginBottom: 15,

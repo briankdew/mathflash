@@ -1,31 +1,73 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { View, Text, StyleSheet, useWindowDimensions, TextInput } from 'react-native';
+import Svg, { Path, Ellipse, Defs, Filter, FeDropShadow, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect } from 'react-native-svg';
 import { ProblemDisplay, OperationMode } from '../lib/types';
 import { theme, getOperationTheme } from '../theme/colors';
 import Animated, { useAnimatedStyle, withRepeat, withSequence, withTiming, Easing, useSharedValue, withSpring } from 'react-native-reanimated';
 
 const IconPlus = ({ color }: { color: string }) => (
-    <Svg viewBox="0 0 43 42.7" style={styles.iconSvg} color={color}>
-        <Path d="m21.579367 0.023679266c-1.3058815 0 -2.3014984 0.3397539 -2.9868546 1.0192583c-0.67609406 0.6703242 -1.0141411 1.6253037 -1.0141411 2.8649423l0 13.456964l-13.7534275 0c-1.194742 0 -2.1347904 0.32598114 -2.8201468 0.9779377c-0.6760938 0.65195656 -1.0141416 1.5702095 -1.0141416 2.754753c0 1.1845436 0.33804774 2.1027908 1.0141416 2.7547512c0.6853564 0.6427727 1.6254048 0.9641628 2.8201468 0.9641628l13.7534275 0l0 13.883953c0 1.2396355 0.33804703 2.2129822 1.0141411 2.9200363c0.68535614 0.69786835 1.6531887 1.0468063 2.9035015 1.0468063c1.3151417 0 2.2968674 -0.348938 2.945177 -1.0468063c0.6575718 -0.70705414 0.98635674 -1.6804008 0.98635674 -2.9200363l0 -13.883953l13.739532 0c1.2503128 0 2.199623 -0.32139015 2.8479347 -0.9641628c0.6575699 -0.6519604 0.9863548 -1.5702076 0.9863548 -2.7547512c0 -1.1845436 -0.32878494 -2.1027966 -0.9863548 -2.754753c-0.6483116 -0.65195656 -1.5976219 -0.9779377 -2.8479347 -0.9779377l-13.739532 0l0 -13.456964c0 -1.2396386 -0.32878494 -2.1946182 -0.98635674 -2.8649423c-0.6483097 -0.6795044 -1.602251 -1.0192583 -2.861824 -1.0192583z" fill="currentColor" fillRule="evenodd" />
+    <Svg width={45} height={45} viewBox="0 0 14.4 14.4" color={color}>
+        <Defs>
+            <Filter id="filter40" x="-0.047" y="-0.047" width="1.09" height="1.29">
+                <FeDropShadow dx="0" dy=".75" stdDeviation="0.6" floodColor="#000000" floodOpacity="0.35" />
+            </Filter>
+        </Defs>
+        <Path
+            d="m 7.1999999,2.0799999 c -0.57933,0 -1.049,0.46964 -1.049,1.049 v 3.022 h -3.022 c -0.57933,0 -1.049,0.46964 -1.049,1.049 0,0.57936 0.46964,1.049 1.049,1.049 h 3.022 V 11.271 c 0,0.57933 0.46964,1.049 1.049,1.049 0.57933,0 1.049,-0.46964 1.049,-1.049 V 8.2489999 H 11.271 c 0.57933,0 1.049,-0.46964 1.049,-1.049 0,-0.57936 -0.46964,-1.049 -1.049,-1.049 H 8.2489999 v -3.022 c 0,-0.57933 -0.46964,-1.049 -1.049,-1.049 z"
+            fill="currentColor"
+            strokeLinejoin="round"
+            strokeMiterlimit="0"
+            strokeWidth="0.035331"
+            filter="url(#filter40)"
+        />
     </Svg>
 );
 
 const IconTimes = ({ color }: { color: string }) => (
-    <Svg viewBox="-2.65 -2.45 43.7 42.7" style={styles.iconSvg} color={color}>
-        <Path d="m3.7250946 0c-0.608165 0 -1.1753755 0.15159208 -1.7016313 0.4547796c-0.6760938 0.3948489 -1.1993718 0.91825175 -1.5698355 1.5702088c-0.37046212 0.6519568 -0.5140169 1.3865564 -0.43066284 2.2038019c0.0833541 0.81724167 0.4954932 1.5931625 1.2364191 2.3277655l12.628145 12.520349l-12.378083 12.272421c-0.9076341 0.899889 -1.3336656 1.8456821 -1.2780962 2.8373966c0.05556941 0.9825287 0.4260315 1.8273201 1.111388 2.5343704c0.6853665 0.70705414 1.5235289 1.0881271 2.5145154 1.1432228c0.057706118 0.0031814575 0.11525798 0.0047683716 0.17265725 0.0047683716c0.9375081 0 1.8338971 -0.42398834 2.689167 -1.2719536l12.461437 -12.355064l12.461437 12.355064c0.74092484 0.73460007 1.5096359 1.143219 2.3061295 1.2258644c0.14629745 0.01517868 0.29009247 0.022766113 0.43138504 0.022766113c0.6279831 0 1.2065887 -0.1499176 1.7358208 -0.4497528c0.6575737 -0.36729813 1.185482 -0.8861084 1.5837288 -1.5564346c0.39824677 -0.6795082 0.54180145 -1.4141121 0.43066406 -2.203804c-0.111141205 -0.78969574 -0.5371704 -1.5518494 -1.2780952 -2.2864437l-12.378086 -12.272421l12.628147 -12.520349c0.9724655 -0.9641633 1.4123878 -1.9237366 1.3197708 -2.8787162c-0.083351135 -0.96416306 -0.4815979 -1.7951789 -1.1947403 -2.4930506c-0.7038803 -0.707052 -1.5698357 -1.0881271 -2.5978699 -1.1432222c-0.067276 -0.0042437725 -0.13433075 -0.006365657 -0.20116425 -0.006365657c-0.9452133 0 -1.8459892 0.42451835 -2.7023354 1.2735517l-12.544792 12.437706l-12.544792 -12.437706c-0.74092484 -0.7345995 -1.5235271 -1.1569959 -2.347807 -1.267186c-0.19135046 -0.027712297 -0.37895823 -0.041566763 -0.5628216 -0.041566763z" fill="currentColor" fillRule="evenodd" />
+    <Svg width={45} height={45} viewBox="0 0 14.4 14.4" color={color}>
+        <Defs>
+            <Filter id="filterTimes" x="-0.047" y="-0.047" width="1.09" height="1.29">
+                <FeDropShadow dx="0" dy=".75" stdDeviation="0.6" floodColor="#000000" floodOpacity="0.35" />
+            </Filter>
+        </Defs>
+        <Path d="m11.052 3.3477a1.0496 1.0496 0 0 0-1.4844 5e-7l-2.3679 2.3679-2.3679-2.3679a1.0496 1.0496 0 0 0-1.4844 6e-7 1.0496 1.0496 0 0 0 3e-7 1.4844l2.3679 2.3679-2.3679 2.3679a1.0496 1.0496 0 0 0 0 1.4844 1.0496 1.0496 0 0 0 1.4844 0l2.3679-2.3679 2.3679 2.3679a1.0496 1.0496 0 0 0 1.4844 0 1.0496 1.0496 0 0 0 0-1.4844l-2.3679-2.3679 2.3679-2.3679a1.0496 1.0496 0 0 0 0-1.4844z" strokeLinejoin="round" strokeMiterlimit="0" strokeWidth="0.035352" fill="currentColor" filter="url(#filterTimes)" />
     </Svg>
 );
 
 const IconMinus = ({ color }: { color: string }) => (
-    <Svg viewBox="0 0 43.2 7.4" style={styles.iconSvg} color={color}>
-        <Path d="m3.8342886 0c-1.1947422 0 -2.1347907 0.32598013 -2.820147 0.97793704c-0.6760938 0.65195686 -1.0141416 1.5702088 -1.0141416 2.7547522c0 1.1845434 0.33804774 2.102792 1.0141416 2.7547524c0.6853564 0.64277315 1.6254048 0.9641633 2.820147 0.9641633l35.508846 0c1.250309 0 2.2042503 -0.32139015 2.861824 -0.9641633c0.6575699 -0.6519604 0.9863548 -1.570209 0.9863548 -2.7547524c0 -1.1845434 -0.32878494 -2.1027951 -0.9863548 -2.7547522c-0.6575737 -0.6519569 -1.611515 -0.97793704 -2.861824 -0.97793704z" fill="currentColor" fillRule="evenodd" />
+    <Svg width={45} height={45} viewBox="0 0 14.4 14.4" color={color}>
+        <Defs>
+            <Filter id="filterMinus" x="-0.047" y="-0.047" width="1.09" height="1.29">
+                <FeDropShadow dx="0" dy=".75" stdDeviation="0.6" floodColor="#000000" floodOpacity="0.35" />
+            </Filter>
+        </Defs>
+        <Path d="m3.8763 6.1504a1.0496 1.0496 0 0 0-1.0496 1.0496 1.0496 1.0496 0 0 0 1.0496 1.0496h6.6475a1.0496 1.0496 0 0 0 1.0496-1.0496 1.0496 1.0496 0 0 0-1.0496-1.0496z" fill="currentColor" filter="url(#filterMinus)" />
     </Svg>
 );
 
 const IconDivide = ({ color }: { color: string }) => (
-    <Svg viewBox="0 0 43 42.7" style={styles.iconSvg} color={color}>
-        <Path d="m20.99134 0c-1.4725895 0 -2.6256542 0.41321284 -3.459196 1.2396384c-0.8242798 0.817242 -1.2364178 1.9558741 -1.2364178 3.415893c0 1.469202 0.412138 2.6124244 1.2364178 3.429666c0.83354187 0.8172426 1.9866066 1.2258654 3.459196 1.2258654c1.5374203 0 2.7043762 -0.40862274 3.5008717 -1.2258654c0.79649544 -0.81724167 1.1947422 -1.960464 1.1947422 -3.429666c0 -1.5242975 -0.4121399 -2.6812935 -1.2364197 -3.4709878c-0.8242798 -0.78969455 -1.9773445 -1.1845435 -3.4591942 -1.1845435zm-17.157051 17.602867c-1.1947422 0 -2.1347907 0.32597923 -2.820147 0.9779358c-0.6760938 0.65195656 -1.0141416 1.5702095 -1.0141416 2.754753c0 1.1845436 0.33804774 2.1027908 1.0141416 2.7547512c0.6853564 0.6427746 1.6254048 0.96416473 2.820147 0.96416473l35.342136 0c1.2503128 0 2.199623 -0.32139015 2.847931 -0.96416473c0.6575737 -0.6519604 0.98635864 -1.5702076 0.98635864 -2.7547512c0 -1.1845436 -0.32878494 -2.1027966 -0.98635864 -2.754753c-0.6483078 -0.65195656 -1.5976181 -0.9779358 -2.847931 -0.9779358zm17.157051 15.743408c-1.4725895 0 -2.6256542 0.40861893 -3.459196 1.2258644c-0.8242798 0.8172455 -1.2364178 1.9604683 -1.2364178 3.4296684c0 1.4691963 0.412138 2.6124191 1.2364178 3.4296646c0.83354187 0.8172455 1.9866066 1.2258644 3.459196 1.2258644c1.5374203 0 2.7043762 -0.40861893 3.5008717 -1.2258644c0.79649544 -0.8172455 1.1947422 -1.9604683 1.1947422 -3.4296646c0 -1.5242958 -0.4121399 -2.6812935 -1.2364197 -3.4709892c-0.8242798 -0.78969955 -1.9773445 -1.1845436 -3.4591942 -1.1845436z" fill="currentColor" fillRule="evenodd" />
+    <Svg width={45} height={45} viewBox="0 0 14.4 14.4" color={color}>
+        <Defs>
+            <Filter id="filterDivide" x="-0.047" y="-0.047" width="1.09" height="1.29">
+                <FeDropShadow dx="0" dy=".75" stdDeviation="0.6" floodColor="#000000" floodOpacity="0.35" />
+            </Filter>
+        </Defs>
+        <Path d="m3.2015 6.1504a1.0496 1.0496 0 0 0-1.0496 1.0496 1.0496 1.0496 0 0 0 1.0496 1.0496h7.9969a1.0496 1.0496 0 0 0 1.0496-1.0496 1.0496 1.0496 0 0 0-1.0496-1.0496zm5.0039 4.1347a1.0746 1.0746 0 0 1-1.0746 1.0746 1.0746 1.0746 0 0 1-1.0746-1.0746 1.0746 1.0746 0 0 1 1.0746-1.0746 1.0746 1.0746 0 0 1 1.0746 1.0746zm0.13824-6.1702a1.0746 1.0746 0 0 1-1.0746 1.0746 1.0746 1.0746 0 0 1-1.0746-1.0746 1.0746 1.0746 0 0 1 1.0746-1.0746 1.0746 1.0746 0 0 1 1.0746 1.0746z" fill="currentColor" filter="url(#filterDivide)" />
+    </Svg>
+);
+
+const AnswerBoxSvg = () => (
+    <Svg width="100%" height="100%" viewBox="0 0 215 110" style={StyleSheet.absoluteFill} pointerEvents="none" focusable={false}>
+        <Defs>
+            <Filter id="filterAnswerBox" x="-0.027907" y="-0.054545" width="1.0558" height="1.1364">
+                <FeFlood floodColor="#000000" floodOpacity="0.7" in="SourceGraphic" result="flood" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="3" />
+                <FeOffset dx="0" dy="4" in="blur" result="offset" />
+                <FeComposite in="flood" in2="offset" operator="out" result="comp1" />
+                <FeComposite in="comp1" in2="SourceGraphic" operator="atop" result="comp2" />
+            </Filter>
+        </Defs>
+        <Rect x="0" y="0" width="215" height="110" rx="25" ry="25" fill="#ffffff" filter="url(#filterAnswerBox)" />
     </Svg>
 );
 
@@ -33,10 +75,15 @@ interface ProblemConstellationProps {
     problem: ProblemDisplay | null;
     operation: OperationMode;
     shakeTrigger?: number; // pass a random value to trigger a shake
+    renderInput?: React.ReactNode;
+    showCorrect?: boolean;
 }
 
-export function ProblemConstellation({ problem, operation, shakeTrigger = 0 }: ProblemConstellationProps) {
+export function ProblemConstellation({ problem, operation, shakeTrigger = 0, renderInput, showCorrect = false }: ProblemConstellationProps) {
     const opTheme = getOperationTheme(operation);
+    const { width } = useWindowDimensions();
+
+    const dynamicScale = 1; // Locked to 1 to honor exact Figma coordinates
 
     // We only animate the problem constellation to react to errors
     const translateX = useSharedValue(0);
@@ -52,16 +99,19 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0 }: P
     }, [shakeTrigger, translateX]);
 
     const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: translateX.value }]
+        transform: [
+            { scale: dynamicScale },
+            { translateX: translateX.value }
+        ]
     }));
 
-    const valL = problem ? (problem.missing === 'left' ? '?' : problem.left) : '--';
-    const valR = problem ? (problem.missing === 'right' ? '?' : problem.right) : '--';
-    const valRes = problem ? (problem.missing === 'result' ? '?' : problem.result) : '---';
+    const valL = problem ? (problem.missing === 'left' ? (showCorrect ? problem.left : '') : problem.left) : '--';
+    const valR = problem ? (problem.missing === 'right' ? (showCorrect ? problem.right : '') : problem.right) : '--';
+    const valRes = problem ? (problem.missing === 'result' ? (showCorrect ? problem.result : '') : problem.result) : '---';
 
-    const idleColorL = problem ? opTheme.textOperand : theme.textMuted;
-    const idleColorR = problem ? opTheme.textOperand : theme.textMuted;
-    const idleColorRes = problem ? opTheme.textResult : theme.textMuted;
+    const idleColorL = problem ? opTheme.textOperand : '#c0beb1';
+    const idleColorR = problem ? opTheme.textOperand : '#c0beb1';
+    const idleColorRes = problem ? opTheme.textResult : '#a7a597';
 
     const MainIcon = operation === 'addsub' ? IconPlus : IconTimes;
     const InvIcon = operation === 'addsub' ? IconMinus : IconDivide;
@@ -71,14 +121,24 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0 }: P
 
     return (
         <Animated.View style={[styles.container, animatedStyle]}>
-            <Text style={[styles.opDisplay, { color: opTheme.btnBg }]}>
-                {operation === 'addsub' ? 'addition / subtraction' : 'multiplication / division'}
-            </Text>
-
             <View style={styles.anchor}>
+                {/* Operation Mode Label */}
+                <View style={styles.operationLabel}>
+                    <Text style={[styles.operationTextLeft, { color: opTheme.logoMath }]}>{operation === 'addsub' ? 'addition' : 'multiplication'}</Text>
+                    <Text style={[styles.operationTextRight, { color: opTheme.logoFlash }]}>{operation === 'addsub' ? 'subtraction' : 'division'}</Text>
+                </View>
+
                 {/* Ellipses */}
-                <View style={styles.ellipseLarge} />
-                <View style={styles.ellipseSmall} />
+                <View style={[styles.ellipseLarge, { zIndex: -1 }]}>
+                    <Svg width="100%" height="100%">
+                        <Ellipse cx="50%" cy="50%" rx={(297 - 12) / 2} ry={(202 - 12) / 2} stroke="#E7E5D9" strokeWidth="12" fill="none" />
+                    </Svg>
+                </View>
+                <View style={[styles.ellipseSmall, { zIndex: -1 }]}>
+                    <Svg width="100%" height="100%">
+                        <Ellipse cx="50%" cy="50%" rx={(167 - 12) / 2} ry={(137 - 12) / 2} stroke="#DAD8CC" strokeWidth="12" fill="none" />
+                    </Svg>
+                </View>
 
                 {/* Cards */}
                 <View style={[styles.card, styles.cardLeft]}>
@@ -87,21 +147,26 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0 }: P
                 <View style={[styles.card, styles.cardRight]}>
                     <Text style={[styles.cardText, { color: idleColorR }]}>{valR}</Text>
                 </View>
-                <View style={[styles.cardResult, styles.cardResultPosition]}>
+                <View style={styles.cardResult}>
                     <Text style={[styles.cardText, { color: idleColorRes }]}>{valRes}</Text>
+                </View>
+
+                <View style={styles.cardAnswer}>
+                    <AnswerBoxSvg />
+                    {renderInput}
                 </View>
 
                 {/* Operator Circles */}
                 <View style={[styles.circle, styles.circleMain]}>
-                    <MainIcon color={theme.operatorCircleBg === '#100d00' ? '#ffffff' : theme.bg} />
+                    <MainIcon color={theme.operatorCircleBg} />
                 </View>
 
                 <View style={[styles.circle, styles.circleInvLeft]}>
-                    <InvIcon color={theme.inverseCircleBg === theme.bg ? theme.textMain : theme.bg} />
+                    <InvIcon color={theme.inverseCircleBg} />
                 </View>
 
                 <View style={[styles.circle, styles.circleInvRight]}>
-                    <InvIcon color={theme.inverseCircleBg === theme.bg ? theme.textMain : theme.bg} />
+                    <InvIcon color={theme.inverseCircleBg} />
                 </View>
             </View>
         </Animated.View>
@@ -110,12 +175,9 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0 }: P
 
 const styles = StyleSheet.create({
     container: {
-        height: 350,
-        justifyContent: 'center',
+        height: 390.5, // Bounding box calculated with +32 top offset
         alignItems: 'center',
-        // We scale down slightly for mobile so it fits the screen easily.
-        // Or we handle scaling in a parent wrapper.
-        transform: [{ scale: 0.8 }],
+        width: '100%',
     },
     opDisplay: {
         position: 'absolute',
@@ -128,107 +190,135 @@ const styles = StyleSheet.create({
         width: 0,
         height: 0,
         position: 'relative',
+        top: 133, // Pushes the center (0,0) down by exactly half the large ellipse height + 32px for the title
+    },
+    operationLabel: {
+        position: 'absolute',
+        top: -160.5, // Centers text at original operand card tops (-117.5) minus 43 (32 + 11)
+        flexDirection: 'row',
+        justifyContent: 'center',
+        width: '100%',
+        alignItems: 'baseline',
+    },
+    operationTextLeft: {
+        fontSize: 30,
+        fontFamily: 'Fredoka_400Regular',
+    },
+    operationTextRight: {
+        fontSize: 30,
+        fontFamily: 'Fredoka_400Regular',
     },
     card: {
         position: 'absolute',
-        width: 210,
-        height: 150,
-        backgroundColor: theme.cardOperandBg,
-        borderRadius: 24,
+        width: 155,
+        height: 110,
+        backgroundColor: '#DAD8CC',
+        borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
-        // Center translations in React Native require taking half width/height:
-        transform: [{ translateX: -105 }, { translateY: -75 }],
+        // Figma Shadow: X:0, Y:3, Blur:6, Color: #000 50%
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.5,
+        shadowRadius: 6,
+        elevation: 6,
         zIndex: 2,
     },
     cardLeft: {
-        left: -145,
-        top: -85,
+        // Top calculation: Bottom tangent is -7.5. Height 110. Top = -7.5 - 110 = -117.5
+        top: -117.5,
+        // Left calculation: Circle right edge -22.5. Gap 9. Card right edge -31.5. Width 155. Left = -186.5
+        left: -186.5,
     },
     cardRight: {
-        left: 145,
-        top: -85,
+        top: -117.5,
+        // Left calculation: Circle left edge 22.5. Gap 9. Card left edge 31.5
+        left: 31.5,
     },
     cardResult: {
         position: 'absolute',
-        width: 290,
-        height: 150,
-        backgroundColor: theme.cardResultBg,
-        borderRadius: 24,
+        top: 7.5, // 15 down from operand cards bottom (-7.5)
+        left: -107.5, // Center of width 215
+        width: 215,
+        height: 110,
+        backgroundColor: '#C0BEB1',
+        borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
-        transform: [{ translateX: -145 }, { translateY: -75 }],
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.5,
+        shadowRadius: 6,
+        elevation: 6,
         zIndex: 2,
     },
-    cardResultPosition: {
-        left: 0,
-        top: 85,
+    cardAnswer: {
+        position: 'absolute',
+        top: 147.5, // 30 down from result card bottom (7.5 + 110 + 30)
+        left: -107.5,
+        width: 215,
+        height: 110,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 2,
     },
     cardText: {
-        fontSize: 100,
-        fontWeight: 'bold',
+        fontSize: 98,
+        fontWeight: '700',
+        fontFamily: 'Nunito_700Bold',
+        textShadowColor: 'rgba(0, 0, 0, 0.5)',
+        textShadowOffset: { width: 0, height: 3 },
+        textShadowRadius: 6,
     },
     ellipseLarge: {
         position: 'absolute',
-        width: 409,
-        height: 281,
+        width: 297,
+        height: 202,
         left: 0,
         top: 0,
-        borderWidth: 16,
-        borderColor: theme.ellipseLargeStroke,
-        borderRadius: 409 / 2,
-        transform: [{ translateX: -204.5 }, { translateY: -140.5 }],
+        transform: [{ translateX: -148.5 }, { translateY: -101 }],
         zIndex: -1,
     },
     ellipseSmall: {
         position: 'absolute',
-        width: 227,
-        height: 182,
+        width: 167,
+        height: 137,
         left: 0,
-        top: 41.5,
-        borderWidth: 16,
-        borderColor: theme.ellipseSmallStroke,
-        borderRadius: 227 / 2,
-        transform: [{ translateX: -113.5 }, { translateY: -91 }],
+        top: 32.5,
+        transform: [{ translateX: -83.5 }, { translateY: -68.5 }],
         zIndex: -1,
     },
     circle: {
         position: 'absolute',
-        width: 63,
-        height: 63,
-        borderRadius: 31.5,
+        width: 45, // From Figma W
+        height: 45, // From Figma H
+        borderRadius: 22.5,
         justifyContent: 'center',
         alignItems: 'center',
-        transform: [{ translateX: -31.5 }, { translateY: -31.5 }],
+        transform: [{ translateX: -22.5 }, { translateY: -22.5 }],
         zIndex: 3,
     },
     circleMain: {
         left: 0,
-        top: -41.5,
+        // Centering logic based on your confirmed math:
+        // Center of Small Ellipse: 32.5
+        // Top Apogee of small path (125 / 2): 62.5
+        // Result: 32.5 - 62.5 = -30
+        top: -30,
         backgroundColor: theme.operatorCircleBg,
     },
     circleInvLeft: {
-        left: -186.5,
-        top: 41.5,
+        // Horizontal: Visual edge at -116.5, center at -139
+        left: -139,
+        // Vertical: Visual top at 7.5, center at 30
+        top: 30,
         backgroundColor: theme.inverseCircleBg,
     },
     circleInvRight: {
-        left: 186.5,
-        top: 41.5,
+        // Horizontal: Visual edge at 116.5, center at 139
+        left: 139,
+        // Vertical: Visual top at 7.5, center at 30
+        top: 30,
         backgroundColor: theme.inverseCircleBg,
-    },
-    iconSvg: {
-        width: 40,
-        height: 40,
     }
 });
