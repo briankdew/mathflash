@@ -13,12 +13,13 @@ import {
   Dimensions
 } from 'react-native';
 import { Header } from './src/components/Header';
-import { SettingsPanel } from './src/components/SettingsPanel';
 import { ProblemConstellation } from './src/components/ProblemConstellation';
+import { SettingsModal } from './src/components/SettingsModal';
 import { useMathSession } from './src/hooks/useMathSession';
 import { theme, getOperationTheme } from './src/theme/colors';
 import { useFonts, Nunito_700Bold } from '@expo-google-fonts/nunito';
 import { Archivo_400Regular } from '@expo-google-fonts/archivo';
+import { appStyles as styles } from './src/theme/App.styles';
 
 export default function App() {
   const session = useMathSession();
@@ -88,20 +89,15 @@ export default function App() {
         >
           <Header operation={session.options.operation} onOpenSettings={() => setIsSettingsOpen(true)} />
 
-          <Modal visible={isSettingsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setIsSettingsOpen(false)}>
-            <SafeAreaView style={styles.modalSafeArea}>
-              <ScrollView>
-                <SettingsPanel
-                  options={session.options}
-                  updateOptions={session.updateOptions}
-                  useTimer={session.useTimer}
-                  setUseTimer={session.setUseTimer}
-                  disabled={session.isActive}
-                  onClose={() => setIsSettingsOpen(false)}
-                />
-              </ScrollView>
-            </SafeAreaView>
-          </Modal>
+          <SettingsModal
+            visible={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            options={session.options}
+            updateOptions={session.updateOptions}
+            useTimer={session.useTimer}
+            setUseTimer={session.setUseTimer}
+            disabled={session.isActive}
+          />
 
           <View style={styles.mainLayout}>
             <View style={styles.panelCenter}>
@@ -158,83 +154,4 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.bg,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 40,
-  },
-  modalSafeArea: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  mainLayout: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  panelCenter: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 600,
-    alignItems: 'center',
-  },
-  constellationWrapper: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 22,
-  },
-  inputArea: {
-    width: '100%',
-    maxWidth: 400,
-    alignItems: 'center',
-  },
-  textInput: {
-    width: '100%',
-    height: '100%',
-    fontSize: 98,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
-    textAlign: 'center',
-    color: '#777565',
-    backgroundColor: 'transparent',
-    zIndex: 10,
-  },
-  sessionControl: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  startBtn: {
-    width: 215,
-    height: 35,
-    justifyContent: 'center',
-    borderRadius: 17.5,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 6,
-    marginBottom: 10,
-  },
-  resetBtn: {
-    // This is handled inline dynamically now
-  },
-  startBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontFamily: 'Archivo_400Regular',
-    fontWeight: 'normal',
-  },
-  countText: {
-    fontSize: 16,
-    fontFamily: 'Archivo_400Regular',
-    color: theme.textMuted,
-  }
-});
+

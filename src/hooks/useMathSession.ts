@@ -40,13 +40,13 @@ export function useMathSession() {
     const [missedProblems, setMissedProblems] = useState<MissedProblem[]>([]);
     const [totalProblems, setTotalProblems] = useState(0);
 
-    // Cycle State
-    const [cyclesRemaining, setCyclesRemaining] = useState(0);
-
-    // Per-Problem Tracking
-    const [wrongAnswerCount, setWrongAnswerCount] = useState(0);
-    const [isFirstTry, setIsFirstTry] = useState(true);
-    const sessionCompletionMsTotal = useRef(0);
+    // Internal Tracking (Refs prevent redundant re-renders during rapid inputs)
+    const metrics = useRef({
+        cyclesRemaining: 0,
+        wrongAnswerCount: 0,
+        isFirstTry: true,
+        sessionCompletionMsTotal: 0
+    });
 
     const timerStart = useRef(0);
 
@@ -77,13 +77,13 @@ export function useMathSession() {
 
         setQueue(pool);
         setTotalProblems(pool.length * cycles);
-        setCyclesRemaining(cycles - 1);
+        metrics.current.cyclesRemaining = cycles - 1;
 
         setIsActive(true);
         setSessionId(generateSessionId());
         setSessionStart(new Date());
         timerStart.current = Date.now();
-        sessionCompletionMsTotal.current = 0;
+        metrics.current.sessionCompletionMsTotal = 0;
 
         setStats({ completed: 0, correctFirst: 0, missedFirst: 0 });
         setMissedProblems([]);
@@ -102,7 +102,7 @@ export function useMathSession() {
                     return;
                 }
 
-                setCyclesRemaining(remainingCycles - 1);
+                metrics.current.cyclesRemaining = remainingCycles - 1;
 
                 const p = pool.shift()!;
                 setQueue(pool);
@@ -119,8 +119,8 @@ export function useMathSession() {
     };
 
     const _setCurrent = (p: ProblemSpec) => {
-        setIsFirstTry(true);
-        setWrongAnswerCount(0);
+        metrics.current.isFirstTry = true;
+        metrics.current.wrongAnswerCount = 0;
         const display = MathEngine.configureProblemDisplay(p, options);
         display.presentedAtPerf = performance.now();
         display.attempts = 0;
@@ -144,23 +144,23 @@ export function useMathSession() {
 
         // Provide Answer
         if (userVal === currentProblem.correct) {
-            sessionCompletionMsTotal.current += attemptMs;
+            metrics.current.sessionCompletionMsTotal += attemptMs;
 
             setStats(prev => ({
                 ...prev,
                 completed: prev.completed + 1,
-                correctFirst: isFirstTry ? prev.correctFirst + 1 : prev.correctFirst
+                correctFirst: metrics.current.isFirstTry ? prev.correctFirst + 1 : prev.correctFirst
             }));
 
             // Advance after small delay (handled by UI)
             return 'correct';
         } else {
-            if (isFirstTry) {
+            if (metrics.current.isFirstTry) {
                 setStats(prev => ({ ...prev, missedFirst: prev.missedFirst + 1 }));
-                setIsFirstTry(false);
+                metrics.current.isFirstTry = false;
             }
 
-            setWrongAnswerCount(prev => prev + 1);
+            metrics.current.wrongAnswerCount += 1;
 
             // Log Missed Problem
             setMissedProblems(prev => {
@@ -182,7 +182,7 @@ export function useMathSession() {
             });
             return 'wrong';
         }
-    }, [currentProblem, isActive, isFirstTry, options]);
+    }, [currentProblem, isActive, options]);
 
     const endSession = useCallback(() => {
         if (!isActive) return;
@@ -192,7 +192,7 @@ export function useMathSession() {
 
         const n = stats.completed;
         const c = stats.correctFirst;
-        const speed = n > 0 ? (sessionCompletionMsTotal.current / 1000 / n).toFixed(1) : '0.0';
+        const speed = n > 0 ? (metrics.current.sessionCompletionMsTotal / 1000 / n).toFixed(1) : '0.0';
 
         const opText = options.operation === 'addsub' ? 'Addition / Subtraction' : 'Multiplication / Division';
         let levelText = "Easy";
@@ -227,8 +227,8 @@ export function useMathSession() {
     }, [isActive, stats, totalProblems, useTimer, options, sessionStart, sessionId]);
 
     const advanceToNextProblem = useCallback(() => {
-        _nextProblem(queue, cyclesRemaining);
-    }, [queue, cyclesRemaining, options]);
+        _nextProblem(queue, metrics.current.cyclesRemaining);
+    }, [queue, options]);
 
     return {
         options,
@@ -239,7 +239,7 @@ export function useMathSession() {
         currentProblem,
         stats,
         totalProblems,
-        wrongAnswerCount,
+        wrongAnswerCount: metrics.current.wrongAnswerCount,
         getPendingCount,
         startSession,
         checkAnswer,

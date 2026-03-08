@@ -25,10 +25,6 @@ export function SettingsPanel({
     onClose
 }: SettingsPanelProps) {
 
-    const cycleOperation = () => {
-        if (disabled) return;
-        updateOptions({ operation: options.operation === 'addsub' ? 'multdiv' : 'addsub' });
-    };
 
     const cycleOrder = () => {
         if (disabled) return;
@@ -93,14 +89,6 @@ export function SettingsPanel({
                 )}
             </View>
 
-            <View style={styles.controlGroup}>
-                <Text style={styles.label}>Operation</Text>
-                <TouchableOpacity style={styles.selectBtn} onPress={cycleOperation} disabled={disabled}>
-                    <Text style={styles.selectBtnText}>
-                        {options.operation === 'addsub' ? 'Addition / Subtraction' : 'Multiplication / Division'}
-                    </Text>
-                </TouchableOpacity>
-            </View>
 
             <View style={styles.controlGroup}>
                 <Text style={styles.label}>Problem order</Text>
