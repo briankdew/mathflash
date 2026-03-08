@@ -111,6 +111,8 @@ export default function App() {
                   operation={session.options.operation}
                   shakeTrigger={shakeTrigger}
                   showCorrect={showCorrect}
+                  isActive={session.isActive}
+                  onToggleOperation={() => session.updateOptions({ operation: session.options.operation === 'addsub' ? 'multdiv' : 'addsub' })}
                   renderInput={
                     <TextInput
                       ref={inputRef}
@@ -186,7 +188,7 @@ const styles = StyleSheet.create({
   constellationWrapper: {
     width: '100%',
     alignItems: 'center',
-    marginTop: 35.5,
+    marginTop: 22,
   },
   inputArea: {
     width: '100%',

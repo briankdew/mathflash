@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, TextInput } from 'react-native';
-import Svg, { Path, Ellipse, Defs, Filter, FeDropShadow, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect } from 'react-native-svg';
+import { View, Text, StyleSheet, useWindowDimensions, TextInput, TouchableOpacity } from 'react-native';
+import Svg, { Path, Ellipse, Defs, Filter, FeDropShadow, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect, FeBlend, FeColorMatrix } from 'react-native-svg';
 import { ProblemDisplay, OperationMode } from '../lib/types';
 import { theme, getOperationTheme } from '../theme/colors';
 import Animated, { useAnimatedStyle, withRepeat, withSequence, withTiming, Easing, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -56,7 +56,7 @@ const IconDivide = ({ color }: { color: string }) => (
     </Svg>
 );
 
-const AnswerBoxSvg = () => (
+const AnswerBoxSvg = ({ isActive }: { isActive: boolean }) => (
     <Svg width="100%" height="100%" viewBox="0 0 215 110" style={StyleSheet.absoluteFill} pointerEvents="none" focusable={false}>
         <Defs>
             <Filter id="filterAnswerBox" x="-0.027907" y="-0.054545" width="1.0558" height="1.1364">
@@ -77,9 +77,11 @@ interface ProblemConstellationProps {
     shakeTrigger?: number; // pass a random value to trigger a shake
     renderInput?: React.ReactNode;
     showCorrect?: boolean;
+    isActive?: boolean;
+    onToggleOperation?: () => void;
 }
 
-export function ProblemConstellation({ problem, operation, shakeTrigger = 0, renderInput, showCorrect = false }: ProblemConstellationProps) {
+export function ProblemConstellation({ problem, operation, shakeTrigger = 0, renderInput, showCorrect = false, isActive = false, onToggleOperation }: ProblemConstellationProps) {
     const opTheme = getOperationTheme(operation);
     const { width } = useWindowDimensions();
 
@@ -123,9 +125,35 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
         <Animated.View style={[styles.container, animatedStyle]}>
             <View style={styles.anchor}>
                 {/* Operation Mode Label */}
-                <View style={styles.operationLabel}>
-                    <Text style={[styles.operationTextLeft, { color: opTheme.logoMath }]}>{operation === 'addsub' ? 'addition' : 'multiplication'}</Text>
-                    <Text style={[styles.operationTextRight, { color: opTheme.logoFlash }]}>{operation === 'addsub' ? 'subtraction' : 'division'}</Text>
+                <View style={styles.operationLabelContainer}>
+                    {!isActive && (
+                        <Svg width="330" height="35" viewBox="0 0 330 35" style={{ position: 'absolute' }}>
+                            <Defs>
+                                <Filter id="stadiumShadow" x="-0.03" y="-0.15" width="1.06" height="1.3" filterUnits="objectBoundingBox">
+                                    <FeFlood floodOpacity="0" result="BackgroundImageFix" />
+                                    <FeBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+                                    <FeColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+                                    <FeOffset dy="1" />
+                                    <FeGaussianBlur stdDeviation="1.5" />
+                                    <FeComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1" />
+                                    <FeColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0" />
+                                    <FeBlend mode="normal" in2="shape" result="effect1_innerShadow" />
+                                </Filter>
+                            </Defs>
+                            <Rect width="330" height="35" rx="17.5" fill="#FFFFFF" filter="url(#stadiumShadow)" />
+                        </Svg>
+                    )}
+                    {isActive ? (
+                        <View style={styles.operationLabel}>
+                            <Text style={[styles.operationTextLeft, { color: opTheme.logoMath }]}>{operation === 'addsub' ? 'addition' : 'multiplication'}</Text>
+                            <Text style={[styles.operationTextRight, { color: opTheme.logoFlash }]}>{operation === 'addsub' ? 'subtraction' : 'division'}</Text>
+                        </View>
+                    ) : (
+                        <TouchableOpacity activeOpacity={0.8} onPress={onToggleOperation} style={styles.operationLabel}>
+                            <Text style={[styles.operationTextLeft, { color: opTheme.logoMath }]}>{operation === 'addsub' ? 'addition' : 'multiplication'}</Text>
+                            <Text style={[styles.operationTextRight, { color: opTheme.logoFlash }]}>{operation === 'addsub' ? 'subtraction' : 'division'}</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {/* Ellipses */}
@@ -151,8 +179,8 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                     <Text style={[styles.cardText, { color: idleColorRes }]}>{valRes}</Text>
                 </View>
 
-                <View style={styles.cardAnswer}>
-                    <AnswerBoxSvg />
+                <View style={[styles.cardAnswer, !isActive && styles.idleAnswerBox]}>
+                    {isActive && <AnswerBoxSvg isActive={isActive} />}
                     {renderInput}
                 </View>
 
@@ -175,7 +203,7 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
 
 const styles = StyleSheet.create({
     container: {
-        height: 390.5, // Bounding box calculated with +32 top offset
+        height: 420, // Bounding box calculated so top of stadium is perfectly Y=0
         alignItems: 'center',
         width: '100%',
     },
@@ -190,14 +218,21 @@ const styles = StyleSheet.create({
         width: 0,
         height: 0,
         position: 'relative',
-        top: 133, // Pushes the center (0,0) down by exactly half the large ellipse height + 32px for the title
+        top: 162.5, // Pushes the center (0,0) down so that -162.5 (stadium top) sits perfectly at bounds top
+    },
+    operationLabelContainer: {
+        position: 'absolute',
+        top: -162.5, // 10px precisely above the -117.5 operand card bound
+        left: -165, // Centers the 330px width shape horizontally
+        width: 330,
+        height: 35,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'row',
     },
     operationLabel: {
-        position: 'absolute',
-        top: -160.5, // Centers text at original operand card tops (-117.5) minus 43 (32 + 11)
         flexDirection: 'row',
         justifyContent: 'center',
-        width: '100%',
         alignItems: 'baseline',
     },
     operationTextLeft: {
@@ -261,6 +296,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 2,
+    },
+    idleAnswerBox: {
+        backgroundColor: theme.bg,
+        borderRadius: 25,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.5,
+        shadowRadius: 6,
+        elevation: 6,
     },
     cardText: {
         fontSize: 98,
