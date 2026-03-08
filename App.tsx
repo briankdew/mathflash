@@ -125,7 +125,11 @@ export default function App() {
               </View>
 
               <View style={styles.inputArea}>
-                <View style={[styles.sessionControl, { marginTop: 25 }]}>
+                <View style={[styles.sessionControl, { marginTop: 7 }]}>
+                  <Text style={[styles.countText, { lineHeight: 22, marginBottom: 11 }]}>
+                    {session.isActive ? 'Problems remaining: ' : 'Problems selected: '}
+                    <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22 }}>{session.isActive ? session.totalProblems - session.stats.completed : session.getPendingCount()}</Text>
+                  </Text>
                   <TouchableOpacity
                     style={[
                       styles.startBtn,
@@ -140,10 +144,6 @@ export default function App() {
                       {session.isActive ? 'Reset Session' : 'Start Session'}
                     </Text>
                   </TouchableOpacity>
-                  <Text style={styles.countText}>
-                    {session.isActive ? 'Problems remaining: ' : 'Problems selected: '}
-                    <Text style={{ fontFamily: 'Nunito_700Bold' }}>{session.isActive ? session.totalProblems - session.stats.completed : session.getPendingCount()}</Text>
-                  </Text>
                 </View>
               </View>
             </View>
