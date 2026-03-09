@@ -24,3 +24,38 @@ DIVISION SIGN 45X45 CANVAS
 
 ANSWER BOX W/INSET SHADOW
 <svg width="215" height="110" version="1.1" viewBox="0 0 215 110" xml:space="preserve" xmlns="http://www.w3.org/2000/svg"><defs><filter id="filter66" x="-.027907" y="-.054545" width="1.0558" height="1.1364" color-interpolation-filters="sRGB"><feFlood flood-color="rgb(0,0,0)" flood-opacity=".50196" in="SourceGraphic" result="flood"/><feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="2.500000"/><feOffset dx="0.000000" dy="3.000000" in="blur" result="offset"/><feComposite in="flood" in2="offset" operator="out" result="comp1"/><feComposite in="comp1" in2="SourceGraphic" operator="atop" result="comp2"/></filter></defs><rect x="1.4211e-14" y="-2.8422e-14" width="215" height="110" rx="25" ry="25" fill="#fff" filter="url(#filter66)"/></svg>
+
+
+KEYPAD BACKSPACE CHARACTER (⌫)
+<svg fill="none" stroke-linecap="square" stroke-miterlimit="10" version="1.1" viewBox="0 0 100 52" xmlns="http://www.w3.org/2000/svg">
+ <clipPath>
+  <path d="m0 0h100v52h-100v-52z"/>
+ </clipPath>
+ <path d="m66.028 40h-26.028l-14-13.98 14-14.02h26.028zm-2.2455-2.2259v-23.509h-22.806l-11.755 11.755 11.755 11.755zm-5.0767-6.3068-1.523 1.5425-5.4672-5.4672-5.4672 5.4672-1.523-1.5425 5.4282-5.4477-5.4282-5.4672 1.523-1.5621 5.4672 5.4672 5.4672-5.4672 1.523 1.5621-5.4477 5.4672z" fill="#000"/>
+</svg>
+
+
+KEYPAD BUTTON (RAISED)
+<svg fill="none" stroke-linecap="square" stroke-miterlimit="10" version="1.1" viewBox="0 0 100 52" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <filter id="filter48" x="-.024" y="-.046154" width="1.048" height="1.0923" color-interpolation-filters="sRGB">
+   <feGaussianBlur in="SourceGraphic" result="result0"/>
+   <feDiffuseLighting lighting-color="rgb(255,255,255)" result="result5" surfaceScale="5">
+    <feDistantLight azimuth="90" elevation="135"/>
+   </feDiffuseLighting>
+   <feComposite in="result5" in2="SourceGraphic" k1="1.4" operator="arithmetic" result="fbSourceGraphic"/>
+   <feGaussianBlur in="fbSourceGraphic" result="result0"/>
+   <feSpecularLighting lighting-color="rgb(255,255,255)" in="result0" result="result1" specularConstant="1.5" specularExponent="50" surfaceScale="-0.3500000000000002">
+    <feDistantLight azimuth="90" elevation="40"/>
+   </feSpecularLighting>
+   <feComposite in="fbSourceGraphic" in2="result1" k2="1" k3="1" operator="arithmetic" result="result4"/>
+   <feGaussianBlur in="result4" result="result6" stdDeviation="1"/>
+   <feComposite in="result6" in2="SourceGraphic" operator="in" result="result2"/>
+  </filter>
+ </defs>
+ <clipPath>
+  <path d="m0 0h100v52h-100v-52z"/>
+ </clipPath>
+ <path d="m-37.86 39.98h-26.028l-14-13.98 14-14.02h26.028zm-2.2455-2.2259v-23.509h-22.806l-11.755 11.755 11.755 11.755zm-5.0767-6.3068-1.523 1.5425-5.4672-5.4672-5.4672 5.4672-1.523-1.5425 5.4282-5.4477-5.4282-5.4672 1.523-1.5621 5.4672 5.4672 5.4672-5.4672 1.523 1.5621-5.4477 5.4672z" fill="#000"/>
+ <rect width="100" height="52" rx="14" ry="14" fill="#f4f2e7" filter="url(#filter48)"/>
+</svg>
