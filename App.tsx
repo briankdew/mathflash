@@ -21,12 +21,13 @@ import { useMathSession } from './src/hooks/useMathSession';
 import { theme, getOperationTheme } from './src/theme/colors';
 import { useFonts, Nunito_700Bold } from '@expo-google-fonts/nunito';
 import { Archivo_400Regular } from '@expo-google-fonts/archivo';
+import { Fredoka_400Regular } from '@expo-google-fonts/fredoka';
 import { appStyles as styles } from './src/theme/App.styles';
 
 // Keypad dimensions: 4 rows × (52px + 8px margin) = 240px
 const KEYPAD_CONTENT_HEIGHT = 240;
-// Gap below keypad to button: 22px
-const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 22; // 262px
+// Gap below keypad to button: 15px
+const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 15; // 255px
 
 export default function App() {
   const session = useMathSession();
@@ -82,6 +83,7 @@ export default function App() {
   let [fontsLoaded] = useFonts({
     Nunito_700Bold,
     Archivo_400Regular,
+    Fredoka_400Regular,
   });
 
   const handleSubmit = () => {
@@ -167,8 +169,8 @@ export default function App() {
               </View>
 
               <View style={styles.inputArea}>
-                <View style={[styles.sessionControl, { marginTop: 7 }]}>
-                  <Text style={[styles.countText, { lineHeight: 22, marginBottom: 11 }]}>
+                <View style={[styles.sessionControl, { marginTop: 2 }]}>
+                  <Text style={[styles.countText, { lineHeight: 22, marginBottom: 11, borderColor: '#000', borderWidth: 1 }]}>
                     {session.isActive ? 'Problems remaining: ' : 'Problems selected: '}
                     <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22 }}>{session.isActive ? session.totalProblems - session.stats.completed : session.getPendingCount()}</Text>
                   </Text>

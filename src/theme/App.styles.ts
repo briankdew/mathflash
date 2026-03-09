@@ -31,12 +31,14 @@ export const appStyles = StyleSheet.create({
     constellationWrapper: {
         width: '100%',
         alignItems: 'center',
-        marginTop: 22,
+        marginTop: 10, // Exactly 10px below the header
+        backgroundColor: 'rgba(0,0,0,0.05)',
     },
     inputArea: {
         width: '100%',
         maxWidth: 400,
         alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.05)',
     },
     textInput: {
         width: '100%',

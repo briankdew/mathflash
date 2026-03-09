@@ -3,9 +3,10 @@ import { theme } from './colors';
 
 export const constellationStyles = StyleSheet.create({
     container: {
-        height: 420, // Bounding box calculated so top of stadium is perfectly Y=0
+        height: 415, // Extended 10px to top
         alignItems: 'center',
         width: '100%',
+        backgroundColor: 'rgba(0,0,0,0.05)',
     },
     opDisplay: {
         position: 'absolute',
@@ -18,7 +19,7 @@ export const constellationStyles = StyleSheet.create({
         width: 0,
         height: 0,
         position: 'relative',
-        top: 162.5, // Pushes the center (0,0) down so that -162.5 (stadium top) sits perfectly at bounds top
+        top: 162.5, // Pushes the center (0,0) down 10px further
     },
     operationLabelContainer: {
         position: 'absolute',
@@ -89,7 +90,7 @@ export const constellationStyles = StyleSheet.create({
     },
     cardAnswer: {
         position: 'absolute',
-        top: 147.5, // 30 down from result card bottom (7.5 + 110 + 30)
+        top: 142.5, // 25 down from result card bottom (7.5 + 110 + 25)
         left: -107.5,
         width: 215,
         height: 110,
