@@ -24,6 +24,7 @@ import { useFonts, Nunito_700Bold } from '@expo-google-fonts/nunito';
 import { Archivo_400Regular } from '@expo-google-fonts/archivo';
 import { Fredoka_400Regular } from '@expo-google-fonts/fredoka';
 import { NotoSans_500Medium } from '@expo-google-fonts/noto-sans';
+import { LibreBaskerville_400Regular_Italic } from '@expo-google-fonts/libre-baskerville';
 import { appStyles as styles } from './src/theme/App.styles';
 
 // Keypad dimensions: 4 rows × 52px + 3 gaps × 8px = 232px
@@ -99,6 +100,7 @@ export default function App() {
     Archivo_400Regular,
     Fredoka_400Regular,
     NotoSans_500Medium,
+    LibreBaskerville_400Regular_Italic,
   });
 
   const handleSubmit = () => {
@@ -228,7 +230,7 @@ export default function App() {
         </ScrollView>
         {!session.isActive && (
           <TouchableOpacity
-            style={{ position: 'absolute', bottom: 20, right: 20, padding: 10 }}
+            style={{ position: 'absolute', bottom: 10, right: 10, padding: 10 }}
             onPress={() => setIsSettingsOpen(!isSettingsOpen)}
           >
             <FontAwesome name="gear" size={35} color={opTheme.tagline} />

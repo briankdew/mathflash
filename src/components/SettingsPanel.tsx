@@ -40,6 +40,9 @@ export function SettingsPanel({
     onClose
 }: SettingsPanelProps) {
 
+    // Track the toggle state independently so it doesn't flip when single chips are touched
+    const [isAllMode, setIsAllMode] = React.useState(options.activeChips.length === 9);
+
     const cycleOrder = () => {
         if (disabled) return;
         updateOptions({ problemOrder: options.problemOrder === 'random' ? 'standard' : 'random' });
@@ -78,17 +81,21 @@ export function SettingsPanel({
 
     const toggleAllChips = () => {
         if (disabled) return;
-        updateOptions({ customSet: null });
-        if (options.activeChips.length === 9) {
-            updateOptions({ activeChips: [] });
-        } else {
-            updateOptions({ activeChips: [1, 2, 3, 4, 5, 6, 7, 8, 9] });
-        }
+        const nextVal = !isAllMode;
+        setIsAllMode(nextVal);
+        updateOptions({
+            customSet: null,
+            activeChips: nextVal ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []
+        });
     };
 
     const setCustomSet = (set: '10s' | 'doubles') => {
         if (disabled) return;
-        updateOptions({ customSet: options.customSet === set ? null : set, activeChips: [] });
+        const isActivating = options.customSet !== set;
+        if (isActivating) {
+            setIsAllMode(false);
+        }
+        updateOptions({ customSet: isActivating ? set : null, activeChips: [] });
     };
 
     return (
@@ -108,12 +115,12 @@ export function SettingsPanel({
                         )
                     })}
                     <TouchableOpacity
-                        style={[styles.digitBox, !options.customSet && options.activeChips.length > 0 && styles.chipActive, disabled && styles.chipDisabled]}
+                        style={[styles.digitBox, isAllMode && styles.chipActive, disabled && styles.chipDisabled]}
                         onPress={toggleAllChips} disabled={disabled}
                     >
-                        {!options.customSet && options.activeChips.length > 0 && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
-                        <Text style={[styles.chipTextAllClr, !options.customSet && options.activeChips.length > 0 && styles.chipTextActive]}>
-                            {!options.customSet && options.activeChips.length === 9 ? "Clear\nAll" : "Select\nAll"}
+                        {isAllMode && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
+                        <Text style={[styles.chipTextAllClr, isAllMode && styles.chipTextActive]}>
+                            {isAllMode ? "Clear\nAll" : "Select\nAll"}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -148,20 +155,24 @@ export function SettingsPanel({
                     </TouchableOpacity>
                 </View>
 
-                <View style={[styles.controlGroupSquare, { flex: 1, alignItems: 'center' }]}>
+                <View style={{ flex: 1 }} />
+
+                <View style={[styles.controlGroupSquare, { alignItems: 'center' }]}>
                     <Text style={styles.label}>Custom</Text>
                     <View style={styles.chipGridWide}>
                         <TouchableOpacity
-                            style={[styles.selectBtn, options.customSet === '10s' && styles.chipActive, disabled && styles.chipDisabled]}
+                            style={[styles.digitBox, options.customSet === '10s' && styles.chipActive, disabled && styles.chipDisabled]}
                             onPress={() => setCustomSet('10s')} disabled={disabled}
                         >
-                            <Text style={[styles.chipText, options.customSet === '10s' && styles.chipTextActive]}>10s</Text>
+                            {options.customSet === '10s' && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
+                            <Text style={[styles.chipText, options.customSet === '10s' && styles.chipTextActive]}>10's</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.selectBtn, options.customSet === 'doubles' && styles.chipActive, disabled && styles.chipDisabled]}
+                            style={[styles.digitBox, options.customSet === 'doubles' && styles.chipActive, disabled && styles.chipDisabled]}
                             onPress={() => setCustomSet('doubles')} disabled={disabled}
                         >
-                            <Text style={[styles.chipText, options.customSet === 'doubles' && styles.chipTextActive, { fontStyle: 'italic' }]}>
+                            {options.customSet === 'doubles' && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
+                            <Text style={[styles.chipTextMath, options.customSet === 'doubles' && styles.chipTextActiveMath]}>
                                 n+n
                             </Text>
                         </TouchableOpacity>
@@ -189,7 +200,9 @@ const styles = StyleSheet.create({
     },
     selectorsRow: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
+        alignItems: 'flex-start',
+        width: 352,
+        alignSelf: 'center',
         gap: 15,
         marginBottom: 15,
     },
@@ -268,11 +281,19 @@ const styles = StyleSheet.create({
     chipTextActive: {
         color: '#615e4e', // Darker beige for contrast when selected
     },
+    chipTextMath: {
+        fontSize: 22,
+        color: palette.beige[3], // Updated to match unselected digits
+        fontFamily: 'LibreBaskerville_400Regular_Italic',
+    },
+    chipTextActiveMath: {
+        color: '#615e4e',
+    },
     chipTextAllClr: {
         fontFamily: 'NotoSans_500Medium',
         fontSize: 16,
         lineHeight: 17,
-        color: palette.beige[2], // Beige when unselected
+        color: palette.beige[3], // Updated to match unselected digits
         textAlign: 'center',
     },
     chipDisabled: {
