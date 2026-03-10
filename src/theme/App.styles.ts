@@ -5,13 +5,16 @@ export const appStyles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: theme.bg,
+        maxHeight: 852, // iPhone 14 Pro design constraint
+        borderBottomWidth: 2,
+        borderBottomColor: 'rgba(255, 0, 0, 0.2)', // Faint red "floor" line
     },
     keyboardView: {
         flex: 1,
     },
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: 40,
+        paddingBottom: 20, // Reduced to see floor more clearly
     },
     modalSafeArea: {
         flex: 1,
@@ -32,13 +35,20 @@ export const appStyles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         marginTop: 10, // Exactly 10px below the header
-        backgroundColor: 'rgba(0,0,0,0.05)',
     },
     inputArea: {
         width: '100%',
         maxWidth: 400,
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.05)',
+    },
+    statsBlock: {
+        width: '100%',
+        alignItems: 'center',
+    },
+    keypadBlock: {
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 9, // Reduced 2px (1 to offset stats shift, 1 to move up)
     },
     textInput: {
         width: '100%',

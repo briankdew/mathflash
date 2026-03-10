@@ -30,7 +30,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   headerContent: {
     flexDirection: 'row',

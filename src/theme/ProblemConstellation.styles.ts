@@ -6,7 +6,6 @@ export const constellationStyles = StyleSheet.create({
         height: 415, // Extended 10px to top
         alignItems: 'center',
         width: '100%',
-        backgroundColor: 'rgba(0,0,0,0.05)',
     },
     opDisplay: {
         position: 'absolute',
@@ -97,15 +96,6 @@ export const constellationStyles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 2,
-    },
-    idleAnswerBox: {
-        backgroundColor: theme.bg,
-        borderRadius: 25,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.5,
-        shadowRadius: 6,
-        elevation: 6,
     },
     cardText: {
         fontSize: 98,

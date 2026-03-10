@@ -24,10 +24,10 @@ import { Archivo_400Regular } from '@expo-google-fonts/archivo';
 import { Fredoka_400Regular } from '@expo-google-fonts/fredoka';
 import { appStyles as styles } from './src/theme/App.styles';
 
-// Keypad dimensions: 4 rows × (52px + 8px margin) = 240px
-const KEYPAD_CONTENT_HEIGHT = 240;
-// Gap below keypad to button: 15px
-const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 15; // 255px
+// Keypad dimensions: 4 rows × 52px + 3 gaps × 8px = 232px
+const KEYPAD_CONTENT_HEIGHT = 232;
+// Gap below keypad to button: exactly 20px
+const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 20; // 252px
 
 export default function App() {
   const session = useMathSession();
@@ -169,12 +169,14 @@ export default function App() {
               </View>
 
               <View style={styles.inputArea}>
-                <View style={[styles.sessionControl, { marginTop: 2 }]}>
-                  <Text style={[styles.countText, { lineHeight: 22, marginBottom: 11, borderColor: '#000', borderWidth: 1 }]}>
+                <View style={[styles.statsBlock, { marginTop: 4 }]}>
+                  <Text style={[styles.countText, { lineHeight: 22 }]}>
                     {session.isActive ? 'Problems remaining: ' : 'Problems selected: '}
                     <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22 }}>{session.isActive ? session.totalProblems - session.stats.completed : session.getPendingCount()}</Text>
                   </Text>
+                </View>
 
+                <View style={styles.keypadBlock}>
                   {/* Animated keypad slide-in: slides down like a movie screen */}
                   <Animated.View style={[{ alignItems: 'center', width: '100%' }, keypadWrapperStyle]}>
                     <Animated.View style={[{ width: '100%', alignItems: 'center' }, keypadContentStyle]}>

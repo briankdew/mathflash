@@ -19,7 +19,7 @@ const AnswerBoxSvg = ({ isActive }: { isActive: boolean }) => (
                 <FeComposite in="comp1" in2="SourceGraphic" operator="atop" result="comp2" />
             </Filter>
         </Defs>
-        <Rect x="0" y="0" width="215" height="110" rx="25" ry="25" fill="#ffffff" filter="url(#filterAnswerBox)" />
+        <Rect x="0" y="0" width="215" height="110" rx="25" ry="25" fill={isActive ? "#ffffff" : theme.bg} filter="url(#filterAnswerBox)" />
     </Svg>
 );
 
@@ -131,8 +131,8 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                     <Text style={[styles.cardText, { color: idleColorRes }]}>{valRes}</Text>
                 </View>
 
-                <View style={[styles.cardAnswer, !isActive && styles.idleAnswerBox]}>
-                    {isActive && <AnswerBoxSvg isActive={isActive} />}
+                <View style={styles.cardAnswer}>
+                    <AnswerBoxSvg isActive={isActive} />
                     {renderInput}
                 </View>
 
