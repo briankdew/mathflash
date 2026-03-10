@@ -15,12 +15,18 @@ function generateSessionId() {
 }
 
 export function useMathSession() {
-    // Settings State
+    // Mode-specific preferences to maintain "Tactile Memory" during a session
+    const [modePrefs, setModePrefs] = useState({
+        digits: { problemOrder: 'random' as const, operandOrder: 'random' as const, missingValue: 'random' as const },
+        '10s': { problemOrder: 'standard' as const, operandOrder: 'random' as const, missingValue: 'operand' as const },
+        doubles: { problemOrder: 'standard' as const, operandOrder: 'standard' as const, missingValue: 'result' as const },
+    });
+
     const [options, setOptions] = useState<SessionOptions>({
         operation: 'addsub',
         problemOrder: 'random',
-        operandOrder: 'standard',
-        missingValue: 'result',
+        operandOrder: 'random',
+        missingValue: 'random',
         activeChips: [1, 2, 3, 4, 5, 6, 7, 8, 9],
         customSet: null,
         practiceCycles: 1,
@@ -58,7 +64,35 @@ export function useMathSession() {
     }, [options]);
 
     const updateOptions = (newOpts: Partial<SessionOptions>) => {
-        setOptions((prev) => ({ ...prev, ...newOpts }));
+        setOptions((prev) => {
+            const next = { ...prev, ...newOpts };
+
+            // Determine if we are switching modes
+            const oldMode = prev.customSet || 'digits';
+            const newMode = next.customSet || 'digits';
+
+            if (oldMode !== newMode) {
+                // We are switching modes: Load this mode's previous custom tweaks
+                const prefs = modePrefs[(newMode || 'digits') as keyof typeof modePrefs];
+                next.problemOrder = prefs.problemOrder;
+                next.operandOrder = prefs.operandOrder;
+                next.missingValue = prefs.missingValue;
+            } else {
+                // We are staying in the same mode: Save any tweaks to PO, OO, or MV
+                if (newOpts.problemOrder || newOpts.operandOrder || newOpts.missingValue) {
+                    setModePrefs(prevPrefs => ({
+                        ...prevPrefs,
+                        [(newMode || 'digits') as keyof typeof modePrefs]: {
+                            problemOrder: next.problemOrder,
+                            operandOrder: next.operandOrder,
+                            missingValue: next.missingValue,
+                        }
+                    }));
+                }
+            }
+
+            return next;
+        });
     };
 
     const startSession = useCallback(() => {

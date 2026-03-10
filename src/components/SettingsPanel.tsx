@@ -94,8 +94,10 @@ export function SettingsPanel({
         const isActivating = options.customSet !== set;
         if (isActivating) {
             setIsAllMode(false);
+            updateOptions({ customSet: set, activeChips: [] });
+        } else {
+            updateOptions({ customSet: null, activeChips: [] });
         }
-        updateOptions({ customSet: isActivating ? set : null, activeChips: [] });
     };
 
     return (
@@ -127,39 +129,54 @@ export function SettingsPanel({
             </View>
 
             <View style={styles.selectorsRow}>
-                <View style={styles.controlGroupSquare}>
-                    <Text style={styles.label}>PO</Text>
-                    <TouchableOpacity style={styles.selectBtn} onPress={cycleOrder} disabled={disabled}>
-                        <Text style={styles.selectBtnText}>
-                            {options.problemOrder === 'random' ? 'Ran' : 'Std'}
-                        </Text>
-                    </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={styles.controlGroupSquare}>
+                        <Text style={styles.label}>PO</Text>
+                        <TouchableOpacity style={styles.selectBtn} onPress={cycleOrder} disabled={disabled}>
+                            <Text style={styles.selectBtnText}>
+                                {options.problemOrder === 'random' ? 'Ran' : 'Std'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.controlGroupSquare}>
+                        <Text style={styles.label}>OO</Text>
+                        <TouchableOpacity style={styles.selectBtn} onPress={cycleOperandOrder} disabled={disabled}>
+                            <Text style={styles.selectBtnText}>
+                                {options.operandOrder === 'random' ? 'Ran' : options.operandOrder === 'standard' ? 'Std' : 'Rev'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.controlGroupSquare}>
+                        <Text style={styles.label}>MV</Text>
+                        <TouchableOpacity style={styles.selectBtn} onPress={cycleMissing} disabled={disabled}>
+                            <Text style={styles.selectBtnText}>{
+                                options.missingValue === 'result' ? 'Res' :
+                                    options.missingValue === 'operand' ? 'Opd' : 'Ran'
+                            }</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
-                <View style={styles.controlGroupSquare}>
-                    <Text style={styles.label}>OO</Text>
-                    <TouchableOpacity style={styles.selectBtn} onPress={cycleOperandOrder} disabled={disabled}>
-                        <Text style={styles.selectBtnText}>
-                            {options.operandOrder === 'random' ? 'Ran' : options.operandOrder === 'standard' ? 'Std' : 'Rev'}
-                        </Text>
-                    </TouchableOpacity>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                    <View style={styles.controlGroupSquare}>
+                        <Text style={styles.label}>Timer</Text>
+                        <TouchableOpacity
+                            style={[styles.timerBox, useTimer && styles.chipActive, disabled && styles.chipDisabled]}
+                            onPress={() => setUseTimer(!useTimer)} disabled={disabled}
+                        >
+                            {useTimer && <InnerShadowBox width={44} height={44} rx={10} fill="#C0BEB1" />}
+                            <Text style={[styles.chipTextAllClr, useTimer && styles.chipTextActive]}>
+                                {useTimer ? "On" : "Off"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-
-                <View style={styles.controlGroupSquare}>
-                    <Text style={styles.label}>MV</Text>
-                    <TouchableOpacity style={styles.selectBtn} onPress={cycleMissing} disabled={disabled}>
-                        <Text style={styles.selectBtnText}>{
-                            options.missingValue === 'result' ? 'Res' :
-                                options.missingValue === 'operand' ? 'Opd' : 'Ran'
-                        }</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={{ flex: 1 }} />
 
                 <View style={[styles.controlGroupSquare, { alignItems: 'center' }]}>
                     <Text style={styles.label}>Custom</Text>
-                    <View style={styles.chipGridWide}>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
                         <TouchableOpacity
                             style={[styles.digitBox, options.customSet === '10s' && styles.chipActive, disabled && styles.chipDisabled]}
                             onPress={() => setCustomSet('10s')} disabled={disabled}
@@ -180,15 +197,6 @@ export function SettingsPanel({
                 </View>
             </View>
 
-            <View style={[styles.controlGroup, { flexDirection: 'row', alignItems: 'center' }]}>
-                <Text style={[styles.label, { marginBottom: 0, marginRight: 15 }]}>Timer</Text>
-                <Switch
-                    value={useTimer}
-                    onValueChange={setUseTimer}
-                    disabled={disabled}
-                    trackColor={{ false: theme.cardOperandBg, true: theme.textMuted }}
-                />
-            </View>
         </View>
     );
 }
@@ -203,7 +211,6 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         width: 352,
         alignSelf: 'center',
-        gap: 15,
         marginBottom: 15,
     },
     controlGroup: {
@@ -225,14 +232,12 @@ const styles = StyleSheet.create({
         height: 44,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: theme.bg,
+        backgroundColor: '#C0BEB1', // Temporary visibility update: matching selected chip
         borderRadius: 10,
-        borderWidth: 1,
-        borderColor: theme.cardOperandBg,
     },
     selectBtnText: {
-        fontSize: 24,
-        color: '#ffffff',
+        fontSize: 16, // Matching 'Clear/Select All' button size for fit
+        color: '#615e4e', // Matching selected chip text color
         fontFamily: 'NotoSans_500Medium',
     },
     digitGrid: {
@@ -247,6 +252,19 @@ const styles = StyleSheet.create({
         height: 44, justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: palette.bg, // Matches screen background
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.5,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    timerBox: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: palette.bg,
         borderRadius: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
