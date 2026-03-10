@@ -85,7 +85,7 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                                     <FeFlood floodOpacity="0" result="BackgroundImageFix" />
                                     <FeBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
                                     <FeColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-                                    <FeOffset dy="1" />
+                                    <FeOffset dy="1.5" />
                                     <FeGaussianBlur stdDeviation="1.5" />
                                     <FeComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1" />
                                     <FeColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0" />

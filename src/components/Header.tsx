@@ -7,19 +7,15 @@ import { LogoWithTagline } from './icons/LogoWithTagline';
 
 interface HeaderProps {
   operation: OperationMode;
-  onOpenSettings?: () => void;
 }
 
-export function Header({ operation, onOpenSettings }: HeaderProps) {
+export function Header({ operation }: HeaderProps) {
   const currentTheme = getOperationTheme(operation);
 
   return (
     <View style={styles.headerContainer}>
       <View style={styles.headerContent}>
         <LogoWithTagline colors={currentTheme} />
-        <TouchableOpacity style={styles.settingsBtn} onPress={onOpenSettings}>
-          <FontAwesome name="gear" size={20} color={currentTheme.tagline} />
-        </TouchableOpacity>
       </View>
     </View >
   );
@@ -36,12 +32,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    position: 'relative',
     paddingHorizontal: 20,
-  },
-  settingsBtn: {
-    position: 'absolute',
-    right: 20,
-    padding: 10,
   },
 });

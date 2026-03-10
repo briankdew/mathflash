@@ -13,15 +13,17 @@ import {
   Dimensions
 } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import { FontAwesome } from '@expo/vector-icons';
 import { Header } from './src/components/Header';
 import { ProblemConstellation } from './src/components/ProblemConstellation';
-import { SettingsModal } from './src/components/SettingsModal';
+import { SettingsPanel } from './src/components/SettingsPanel';
 import { NumberPad } from './src/components/NumberPad';
 import { useMathSession } from './src/hooks/useMathSession';
 import { theme, getOperationTheme } from './src/theme/colors';
 import { useFonts, Nunito_700Bold } from '@expo-google-fonts/nunito';
 import { Archivo_400Regular } from '@expo-google-fonts/archivo';
 import { Fredoka_400Regular } from '@expo-google-fonts/fredoka';
+import { NotoSans_500Medium } from '@expo-google-fonts/noto-sans';
 import { appStyles as styles } from './src/theme/App.styles';
 
 // Keypad dimensions: 4 rows × 52px + 3 gaps × 8px = 232px
@@ -41,6 +43,9 @@ export default function App() {
   // Animated values for keypad slide-in
   const keypadHeight = useSharedValue(0);
   const keypadSlide = useSharedValue(-KEYPAD_CONTENT_HEIGHT);
+
+  // Settings reveal animation
+  const settingsOpenAnim = useSharedValue(0); // 0 = closed, 1 = open
 
   useEffect(() => {
     if (session.isActive) {
@@ -80,10 +85,20 @@ export default function App() {
     transform: [{ translateY: keypadSlide.value }],
   }));
 
+  const settingsWrapperStyle = useAnimatedStyle(() => ({
+    height: withTiming(isSettingsOpen ? 550 : 0, { // Approximate height for now
+       duration: 350,
+       easing: Easing.out(Easing.cubic),
+    }),
+    opacity: withTiming(isSettingsOpen ? 1 : 0),
+    overflow: 'hidden',
+  }));
+
   let [fontsLoaded] = useFonts({
     Nunito_700Bold,
     Archivo_400Regular,
     Fredoka_400Regular,
+    NotoSans_500Medium,
   });
 
   const handleSubmit = () => {
@@ -129,17 +144,7 @@ export default function App() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <Header operation={session.options.operation} onOpenSettings={() => setIsSettingsOpen(true)} />
-
-          <SettingsModal
-            visible={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            options={session.options}
-            updateOptions={session.updateOptions}
-            useTimer={session.useTimer}
-            setUseTimer={session.setUseTimer}
-            disabled={session.isActive}
-          />
+          <Header operation={session.options.operation} />
 
           <View style={styles.mainLayout}>
             <View style={styles.panelCenter}>
@@ -188,25 +193,47 @@ export default function App() {
                     </Animated.View>
                   </Animated.View>
 
-                  <TouchableOpacity
-                    style={[
-                      styles.startBtn,
-                      { backgroundColor: opTheme.textOperand }
-                    ]}
-                    onPress={() => {
-                      if (session.isActive) session.endSession();
-                      else session.startSession();
-                    }}
-                  >
-                    <Text style={styles.startBtnText}>
-                      {session.isActive ? 'Reset Session' : 'Start Session'}
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={{ width: '100%', alignItems: 'center' }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.startBtn,
+                        { backgroundColor: opTheme.textOperand }
+                      ]}
+                      onPress={() => {
+                        if (session.isActive) session.endSession();
+                        else session.startSession();
+                      }}
+                    >
+                      <Text style={styles.startBtnText}>
+                        {session.isActive ? 'Reset Session' : 'Start Session'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Inline Settings Block */}
+                  <Animated.View style={[{ width: '100%' }, settingsWrapperStyle]}>
+                    <SettingsPanel
+                      options={session.options}
+                      updateOptions={session.updateOptions}
+                      useTimer={session.useTimer}
+                      setUseTimer={session.setUseTimer}
+                      disabled={session.isActive}
+                      onClose={() => setIsSettingsOpen(false)}
+                    />
+                  </Animated.View>
                 </View>
               </View>
             </View>
           </View>
         </ScrollView>
+        {!session.isActive && (
+          <TouchableOpacity
+            style={{ position: 'absolute', bottom: 20, right: 20, padding: 10 }}
+            onPress={() => setIsSettingsOpen(!isSettingsOpen)}
+          >
+            <FontAwesome name="gear" size={35} color={opTheme.tagline} />
+          </TouchableOpacity>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
