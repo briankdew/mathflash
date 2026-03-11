@@ -54,6 +54,7 @@ export default function App() {
                 currentProblem={session.currentProblem}
                 options={session.options}
                 isActive={session.isActive}
+                isStadiumActive={session.isStadiumActive}
                 onToggleOperation={() => session.updateOptions({ operation: session.options.operation === 'addsub' ? 'multdiv' : 'addsub' })}
                 onCheckAnswer={(input, force) => session.checkAnswer(input, force)}
                 onAdvanceProblem={session.advanceToNextProblem}
@@ -64,9 +65,9 @@ export default function App() {
               <View style={styles.inputArea}>
                 <View style={[styles.statsBlock, { marginTop: 4 }]}>
                   <Text style={[styles.countText, { lineHeight: 22 }]}>
-                    {session.isActive ? 'Problems remaining: ' : 'Problems selected: '}
+                    {session.isActive && !!session.currentProblem ? 'Problems remaining: ' : 'Problems selected: '}
                     <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22 }}>
-                      {session.isActive ? session.totalProblems - session.stats.completed : session.getPendingCount()}
+                      {session.isActive && !!session.currentProblem ? session.totalProblems - session.stats.completed : session.getPendingCount()}
                     </Text>
                   </Text>
                 </View>

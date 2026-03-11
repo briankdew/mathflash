@@ -36,6 +36,7 @@ export function useMathSession() {
 
     // Session State
     const [isActive, setIsActive] = useState(false);
+    const [isStadiumActive, setIsStadiumActive] = useState(true);
     const [sessionId, setSessionId] = useState('');
     const [sessionStart, setSessionStart] = useState<Date | null>(null);
 
@@ -116,13 +117,19 @@ export function useMathSession() {
         setIsActive(true);
         setSessionId(generateSessionId());
         setSessionStart(new Date());
-        timerStart.current = Date.now();
         metrics.current.sessionCompletionMsTotal = 0;
 
         setStats({ completed: 0, correctFirst: 0, missedFirst: 0 });
         setMissedProblems([]);
 
-        _nextProblem(pool, cycles - 1);
+        // Total visual prep: T(500) + B(150) + R(400) + P(1950) = 3000ms
+        // Hide the stadium 1000ms before the problem displays (3000 - 1000 = 2000ms)
+        setTimeout(() => setIsStadiumActive(false), 2000);
+        
+        setTimeout(() => {
+            timerStart.current = Date.now();
+            _nextProblem(pool, cycles - 1);
+        }, 3000);
     }, [options]);
 
     const _nextProblem = (currentQueue: ProblemSpec[], remainingCycles: number) => {
@@ -256,6 +263,7 @@ export function useMathSession() {
         });
 
         setIsActive(false);
+        setIsStadiumActive(true);
         setCurrentProblem(null);
         setQueue([]);
     }, [isActive, stats, totalProblems, useTimer, options, sessionStart, sessionId]);
@@ -270,6 +278,7 @@ export function useMathSession() {
         useTimer,
         setUseTimer,
         isActive,
+        isStadiumActive,
         currentProblem,
         stats,
         totalProblems,

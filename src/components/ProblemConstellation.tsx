@@ -30,10 +30,11 @@ interface ProblemConstellationProps {
     renderInput?: React.ReactNode;
     showCorrect?: boolean;
     isActive?: boolean;
+    isStadiumActive?: boolean;
     onToggleOperation?: () => void;
 }
 
-export function ProblemConstellation({ problem, operation, shakeTrigger = 0, renderInput, showCorrect = false, isActive = false, onToggleOperation }: ProblemConstellationProps) {
+export function ProblemConstellation({ problem, operation, shakeTrigger = 0, renderInput, showCorrect = false, isActive = false, isStadiumActive = true, onToggleOperation }: ProblemConstellationProps) {
     const opTheme = getOperationTheme(operation);
     const { width } = useWindowDimensions();
 
@@ -78,7 +79,7 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
             <View style={styles.anchor}>
                 {/* Operation Mode Label */}
                 <View style={styles.operationLabelContainer}>
-                    {!isActive && (
+                    {isStadiumActive && (
                         <Svg width="330" height="35" viewBox="0 0 330 35" style={{ position: 'absolute' }}>
                             <Defs>
                                 <Filter id="stadiumShadow" x="-0.03" y="-0.15" width="1.06" height="1.3" filterUnits="objectBoundingBox">
@@ -132,7 +133,7 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                 </View>
 
                 <View style={styles.cardAnswer}>
-                    <AnswerBoxSvg isActive={isActive} />
+                    <AnswerBoxSvg isActive={isActive && !!problem} />
                     {renderInput}
                 </View>
 

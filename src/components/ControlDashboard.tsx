@@ -48,34 +48,34 @@ export function ControlDashboard({
   useEffect(() => {
     if (isActive) {
       // Step 1: Tuck gear behind the Start Session button
-      gearOffset.value = withTiming(0, { duration: 250, easing: Easing.inOut(Easing.cubic) });
+      gearOffset.value = withTiming(0, { duration: 500, easing: Easing.inOut(Easing.cubic) });
       
-      // Step 2: About a beat later, reveal keypad
+      // Step 2: After tuck and beat (500 + 150)
       setTimeout(() => {
         keypadHeight.value = withTiming(KEYPAD_REVEAL_HEIGHT, {
-          duration: 350,
-          easing: Easing.out(Easing.cubic),
+          duration: 400,
+          easing: Easing.linear,
         });
         keypadSlide.value = withTiming(0, {
-          duration: 350,
-          easing: Easing.out(Easing.cubic),
+          duration: 400,
+          easing: Easing.linear,
         });
-      }, 300); // 250ms + 50ms "beat"
+      }, 650); // 500ms tuck + 150ms beat
     } else {
-      // Step 1: Hide keypad
+      // Step 1: Hide keypad (Roll reverse)
       keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
-        duration: 250,
-        easing: Easing.in(Easing.cubic),
+        duration: 400,
+        easing: Easing.linear,
       });
       keypadHeight.value = withTiming(0, {
-        duration: 250,
-        easing: Easing.in(Easing.cubic),
+        duration: 400,
+        easing: Easing.linear,
       });
 
-      // Step 2: After keypad hidden, untuck gear
+      // Step 2: After keypad hidden and beat, untuck gear
       setTimeout(() => {
-        gearOffset.value = withTiming(142, { duration: 250, easing: Easing.out(Easing.cubic) });
-      }, 300);
+        gearOffset.value = withTiming(142, { duration: 500, easing: Easing.out(Easing.cubic) });
+      }, 550); // 400ms roll + 150ms beat
     }
   }, [isActive]);
 

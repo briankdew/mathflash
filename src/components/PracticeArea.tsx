@@ -8,6 +8,7 @@ interface PracticeAreaProps {
   currentProblem: ProblemDisplay | null;
   options: SessionOptions;
   isActive: boolean;
+  isStadiumActive: boolean;
   onToggleOperation: () => void;
   onCheckAnswer: (input: string, forceComplete: boolean) => 'correct' | 'wrong' | 'incomplete';
   onAdvanceProblem: () => void;
@@ -19,6 +20,7 @@ export function PracticeArea({
   currentProblem,
   options,
   isActive,
+  isStadiumActive,
   onToggleOperation,
   onCheckAnswer,
   onAdvanceProblem,
@@ -80,6 +82,7 @@ export function PracticeArea({
         shakeTrigger={shakeTrigger}
         showCorrect={showCorrect}
         isActive={isActive}
+        isStadiumActive={isStadiumActive}
         onToggleOperation={onToggleOperation}
         renderInput={
           <TextInput
