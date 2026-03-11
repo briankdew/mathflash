@@ -1,23 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
-  TextInput,
-  TouchableOpacity,
   Text,
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Modal,
-  Dimensions
 } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
-import { FontAwesome } from '@expo/vector-icons';
 import { Header } from './src/components/Header';
-import { ProblemConstellation } from './src/components/ProblemConstellation';
-import { SettingsPanel } from './src/components/SettingsPanel';
-import { NumberPad } from './src/components/NumberPad';
+import { PracticeArea } from './src/components/PracticeArea';
+import { ControlDashboard } from './src/components/ControlDashboard';
 import { useMathSession } from './src/hooks/useMathSession';
 import { theme, getOperationTheme } from './src/theme/colors';
 import { useFonts, Nunito_700Bold } from '@expo-google-fonts/nunito';
@@ -27,73 +20,10 @@ import { NotoSans_500Medium } from '@expo-google-fonts/noto-sans';
 import { LibreBaskerville_400Regular_Italic } from '@expo-google-fonts/libre-baskerville';
 import { appStyles as styles } from './src/theme/App.styles';
 
-// Keypad dimensions: 4 rows × 52px + 3 gaps × 8px = 232px
-const KEYPAD_CONTENT_HEIGHT = 232;
-// Gap below keypad to button: exactly 20px
-const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 20; // 252px
-
 export default function App() {
   const session = useMathSession();
   const opTheme = getOperationTheme(session.options.operation);
   const [inputValue, setInputValue] = useState('');
-  const [shakeTrigger, setShakeTrigger] = useState(0);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showCorrect, setShowCorrect] = useState(false);
-  const inputRef = useRef<TextInput>(null);
-
-  // Animated values for keypad slide-in
-  const keypadHeight = useSharedValue(0);
-  const keypadSlide = useSharedValue(-KEYPAD_CONTENT_HEIGHT);
-
-  // Settings reveal animation
-  const settingsOpenAnim = useSharedValue(0); // 0 = closed, 1 = open
-
-  useEffect(() => {
-    if (session.isActive) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-      // Expand the wrapper AND slide the keypad content downward in sync
-      keypadHeight.value = withTiming(KEYPAD_REVEAL_HEIGHT, {
-        duration: 350,
-        easing: Easing.out(Easing.cubic),
-      });
-      keypadSlide.value = withTiming(0, {
-        duration: 350,
-        easing: Easing.out(Easing.cubic),
-      });
-    } else {
-      inputRef.current?.blur();
-      setInputValue('');
-      // Collapse: slide keypad back up and shrink wrapper
-      keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
-        duration: 250,
-        easing: Easing.in(Easing.cubic),
-      });
-      keypadHeight.value = withTiming(0, {
-        duration: 250,
-        easing: Easing.in(Easing.cubic),
-      });
-    }
-  }, [session.isActive]);
-
-  // Wrapper: expands height to push button down, clips overflow
-  const keypadWrapperStyle = useAnimatedStyle(() => ({
-    height: keypadHeight.value,
-    overflow: 'hidden' as const,
-  }));
-
-  // Content: slides downward from -232 to 0 inside the wrapper
-  const keypadContentStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: keypadSlide.value }],
-  }));
-
-  const settingsWrapperStyle = useAnimatedStyle(() => ({
-    height: withTiming(isSettingsOpen ? 550 : 0, { // Approximate height for now
-       duration: 350,
-       easing: Easing.out(Easing.cubic),
-    }),
-    opacity: withTiming(isSettingsOpen ? 1 : 0),
-    overflow: 'hidden',
-  }));
 
   let [fontsLoaded] = useFonts({
     Nunito_700Bold,
@@ -103,38 +33,7 @@ export default function App() {
     LibreBaskerville_400Regular_Italic,
   });
 
-  const handleSubmit = () => {
-    if (!inputValue) return;
-    const res = session.checkAnswer(inputValue, true);
-
-    if (res === 'wrong') {
-      setShakeTrigger(prev => prev + 1);
-      setTimeout(() => setInputValue(''), 400);
-    } else if (res === 'correct') {
-      setShowCorrect(true);
-      setTimeout(() => {
-        setInputValue('');
-        setShowCorrect(false);
-        session.advanceToNextProblem();
-      }, 500);
-    }
-  };
-
-  const handleInput = (text: string) => {
-    setInputValue(text);
-    const res = session.checkAnswer(text, false);
-    if (res === 'correct') {
-      setShowCorrect(true);
-      setTimeout(() => {
-        setInputValue('');
-        setShowCorrect(false);
-        session.advanceToNextProblem();
-      }, 500);
-    } else if (res === 'wrong') {
-      setShakeTrigger(prev => prev + 1);
-      setTimeout(() => setInputValue(''), 400);
-    }
-  };
+  if (!fontsLoaded) return null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -150,92 +49,45 @@ export default function App() {
 
           <View style={styles.mainLayout}>
             <View style={styles.panelCenter}>
-              <View style={styles.constellationWrapper}>
-                <ProblemConstellation
-                  problem={session.currentProblem}
-                  operation={session.options.operation}
-                  shakeTrigger={shakeTrigger}
-                  showCorrect={showCorrect}
-                  isActive={session.isActive}
-                  onToggleOperation={() => session.updateOptions({ operation: session.options.operation === 'addsub' ? 'multdiv' : 'addsub' })}
-                  renderInput={
-                    <TextInput
-                      ref={inputRef}
-                      style={[styles.textInput, { outline: 'none' } as any]}
-                      keyboardType="number-pad"
-                      value={inputValue}
-                      onChangeText={handleInput}
-                      onSubmitEditing={handleSubmit}
-                      editable={session.isActive}
-                      autoFocus={false}
-                      showSoftInputOnFocus={false}
-                      caretHidden={true}
-                    />
-                  }
-                />
-              </View>
+
+              <PracticeArea
+                currentProblem={session.currentProblem}
+                options={session.options}
+                isActive={session.isActive}
+                onToggleOperation={() => session.updateOptions({ operation: session.options.operation === 'addsub' ? 'multdiv' : 'addsub' })}
+                onCheckAnswer={(input, force) => session.checkAnswer(input, force)}
+                onAdvanceProblem={session.advanceToNextProblem}
+                onInputChanged={setInputValue}
+                inputValue={inputValue}
+              />
 
               <View style={styles.inputArea}>
                 <View style={[styles.statsBlock, { marginTop: 4 }]}>
                   <Text style={[styles.countText, { lineHeight: 22 }]}>
                     {session.isActive ? 'Problems remaining: ' : 'Problems selected: '}
-                    <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22 }}>{session.isActive ? session.totalProblems - session.stats.completed : session.getPendingCount()}</Text>
+                    <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22 }}>
+                      {session.isActive ? session.totalProblems - session.stats.completed : session.getPendingCount()}
+                    </Text>
                   </Text>
                 </View>
 
-                <View style={styles.keypadBlock}>
-                  {/* Animated keypad slide-in: slides down like a movie screen */}
-                  <Animated.View style={[{ alignItems: 'center', width: '100%' }, keypadWrapperStyle]}>
-                    <Animated.View style={[{ width: '100%', alignItems: 'center' }, keypadContentStyle]}>
-                      <NumberPad
-                        onDigit={(d) => handleInput(inputValue + d)}
-                        onClear={() => setInputValue('')}
-                        disabled={!session.isActive}
-                      />
-                    </Animated.View>
-                  </Animated.View>
-
-                  <View style={{ width: '100%', alignItems: 'center' }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.startBtn,
-                        { backgroundColor: opTheme.textOperand }
-                      ]}
-                      onPress={() => {
-                        if (session.isActive) session.endSession();
-                        else session.startSession();
-                      }}
-                    >
-                      <Text style={styles.startBtnText}>
-                        {session.isActive ? 'Reset Session' : 'Start Session'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Inline Settings Block */}
-                  <Animated.View style={[{ width: '100%' }, settingsWrapperStyle]}>
-                    <SettingsPanel
-                      options={session.options}
-                      updateOptions={session.updateOptions}
-                      useTimer={session.useTimer}
-                      setUseTimer={session.setUseTimer}
-                      disabled={session.isActive}
-                      onClose={() => setIsSettingsOpen(false)}
-                    />
-                  </Animated.View>
-                </View>
+                <ControlDashboard
+                  isActive={session.isActive}
+                  options={session.options}
+                  opTheme={opTheme}
+                  onStartSession={session.startSession}
+                  onEndSession={session.endSession}
+                  onDigitInput={(d) => setInputValue(prev => prev + d)}
+                  onClearInput={() => setInputValue('')}
+                  onUpdateOptions={session.updateOptions}
+                  useTimer={session.useTimer}
+                  setUseTimer={session.setUseTimer}
+                />
               </View>
+
             </View>
           </View>
         </ScrollView>
-        {!session.isActive && (
-          <TouchableOpacity
-            style={{ position: 'absolute', bottom: 10, right: 10, padding: 10 }}
-            onPress={() => setIsSettingsOpen(!isSettingsOpen)}
-          >
-            <FontAwesome name="gear" size={35} color={opTheme.tagline} />
-          </TouchableOpacity>
-        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
