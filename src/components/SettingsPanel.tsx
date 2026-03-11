@@ -28,7 +28,6 @@ interface SettingsPanelProps {
     useTimer: boolean;
     setUseTimer: (val: boolean) => void;
     disabled?: boolean;
-    onClose?: () => void;
 }
 
 export function SettingsPanel({
@@ -37,7 +36,6 @@ export function SettingsPanel({
     useTimer,
     setUseTimer,
     disabled,
-    onClose
 }: SettingsPanelProps) {
 
     // Track the toggle state independently so it doesn't flip when single chips are touched
@@ -203,7 +201,8 @@ export function SettingsPanel({
 
 const styles = StyleSheet.create({
     container: {
-        padding: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
         backgroundColor: 'transparent',
     },
     selectorsRow: {

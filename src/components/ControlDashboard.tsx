@@ -6,6 +6,7 @@ import { NumberPad } from './NumberPad';
 import { SettingsPanel } from './SettingsPanel';
 import { SessionOptions } from '../lib/types';
 import { appStyles as styles } from '../theme/App.styles';
+import { theme } from '../theme/colors';
 
 // Keypad dimensions
 const KEYPAD_CONTENT_HEIGHT = 232;
@@ -41,19 +42,27 @@ export function ControlDashboard({
   // Animated values for keypad slide-in
   const keypadHeight = useSharedValue(0);
   const keypadSlide = useSharedValue(-KEYPAD_CONTENT_HEIGHT);
+  // Gear tucked behind button: 0. Fully out: 142 (Left edge = 107.5 button edge + 18u gap + 16.5 half width of 33px gear)
+  const gearOffset = useSharedValue(142);
 
   useEffect(() => {
     if (isActive) {
-      setIsSettingsOpen(false); // Auto-close settings when starting
-      keypadHeight.value = withTiming(KEYPAD_REVEAL_HEIGHT, {
-        duration: 350,
-        easing: Easing.out(Easing.cubic),
-      });
-      keypadSlide.value = withTiming(0, {
-        duration: 350,
-        easing: Easing.out(Easing.cubic),
-      });
+      // Step 1: Tuck gear behind the Start Session button
+      gearOffset.value = withTiming(0, { duration: 250, easing: Easing.inOut(Easing.cubic) });
+      
+      // Step 2: About a beat later, reveal keypad
+      setTimeout(() => {
+        keypadHeight.value = withTiming(KEYPAD_REVEAL_HEIGHT, {
+          duration: 350,
+          easing: Easing.out(Easing.cubic),
+        });
+        keypadSlide.value = withTiming(0, {
+          duration: 350,
+          easing: Easing.out(Easing.cubic),
+        });
+      }, 300); // 250ms + 50ms "beat"
     } else {
+      // Step 1: Hide keypad
       keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
         duration: 250,
         easing: Easing.in(Easing.cubic),
@@ -62,6 +71,11 @@ export function ControlDashboard({
         duration: 250,
         easing: Easing.in(Easing.cubic),
       });
+
+      // Step 2: After keypad hidden, untuck gear
+      setTimeout(() => {
+        gearOffset.value = withTiming(142, { duration: 250, easing: Easing.out(Easing.cubic) });
+      }, 300);
     }
   }, [isActive]);
 
@@ -72,6 +86,10 @@ export function ControlDashboard({
 
   const keypadContentStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: keypadSlide.value }],
+  }));
+
+  const gearStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: gearOffset.value }],
   }));
 
   const settingsWrapperStyle = useAnimatedStyle(() => ({
@@ -86,7 +104,13 @@ export function ControlDashboard({
   return (
     <View style={styles.keypadBlock}>
       {/* Animated Keypad View */}
-      <Animated.View style={[{ alignItems: 'center', width: '100%' }, keypadWrapperStyle]}>
+      <Animated.View 
+        pointerEvents={isActive ? 'auto' : 'none'}
+        style={[
+          { alignItems: 'center', width: '100%', backgroundColor: theme.bg, zIndex: 10 }, 
+          keypadWrapperStyle
+        ]}
+      >
         <Animated.View style={[{ width: '100%', alignItems: 'center' }, keypadContentStyle]}>
           <NumberPad
             onDigit={onDigitInput}
@@ -96,11 +120,30 @@ export function ControlDashboard({
         </Animated.View>
       </Animated.View>
 
-      {/* Primary Action Button */}
-      <View style={{ width: '100%', alignItems: 'center' }}>
+      {/* Primary Action Button Row */}
+      <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+        <Animated.View style={[
+          { position: 'absolute', zIndex: 0, marginBottom: 10 },
+          gearStyle
+        ]}>
+          <TouchableOpacity
+            style={{ 
+              width: 33, 
+              height: 33, 
+              justifyContent: 'center', 
+              alignItems: 'center',
+            }}
+            onPress={() => !isActive && setIsSettingsOpen(!isSettingsOpen)}
+            disabled={isActive}
+          >
+            <FontAwesome name="gear" size={33} color={opTheme.tagline} />
+          </TouchableOpacity>
+        </Animated.View>
+
         <TouchableOpacity
-          style={[styles.startBtn, { backgroundColor: opTheme.textOperand }]}
+          style={[styles.startBtn, { backgroundColor: opTheme.textOperand, zIndex: 1 }]}
           onPress={() => isActive ? onEndSession() : onStartSession()}
+          activeOpacity={0.9}
         >
           <Text style={styles.startBtnText}>
             {isActive ? 'Reset Session' : 'Start Session'}
@@ -116,19 +159,8 @@ export function ControlDashboard({
           useTimer={useTimer}
           setUseTimer={setUseTimer}
           disabled={isActive}
-          onClose={() => setIsSettingsOpen(false)}
         />
       </Animated.View>
-
-      {/* Floating Gear Icon (Hidden when active) */}
-      {!isActive && (
-        <TouchableOpacity
-          style={{ position: 'absolute', bottom: 10, right: 10, padding: 10 }}
-          onPress={() => setIsSettingsOpen(!isSettingsOpen)}
-        >
-          <FontAwesome name="gear" size={35} color={opTheme.tagline} />
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
