@@ -55,6 +55,16 @@ const defaultOperationSettings = (): OperationScopedSettings => ({
     customSet: null,
 });
 
+const normalizeScopedSettingsForOperation = (
+    operation: OperationMode,
+    settings: OperationScopedSettings
+): OperationScopedSettings => {
+    if (operation === 'multdiv' && settings.customSet !== null) {
+        return { ...settings, customSet: null };
+    }
+    return settings;
+};
+
 export function useMathSession() {
     const [operation, setOperation] = useState<OperationMode>('addsub');
     const [settingsByOperation, setSettingsByOperation] = useState<Record<OperationMode, OperationScopedSettings>>({
@@ -72,7 +82,7 @@ export function useMathSession() {
         startMode: 'full',
     });
 
-    const currentOperationSettings = settingsByOperation[operation];
+    const currentOperationSettings = normalizeScopedSettingsForOperation(operation, settingsByOperation[operation]);
     const options: SessionOptions = {
         operation,
         problemOrder: currentOperationSettings.problemOrder,
@@ -172,7 +182,7 @@ export function useMathSession() {
 
         const targetOperation: OperationMode = newOpts.operation ?? operation;
         const prevSettings = settingsByOperation[targetOperation];
-        const nextSettings: OperationScopedSettings = {
+        const nextSettingsRaw: OperationScopedSettings = {
             ...prevSettings,
             ...(newOpts.problemOrder !== undefined ? { problemOrder: newOpts.problemOrder } : {}),
             ...(newOpts.operandOrder !== undefined ? { operandOrder: newOpts.operandOrder } : {}),
@@ -180,6 +190,7 @@ export function useMathSession() {
             ...(newOpts.activeChips !== undefined ? { activeChips: newOpts.activeChips } : {}),
             ...(newOpts.customSet !== undefined ? { customSet: newOpts.customSet } : {}),
         };
+        const nextSettings = normalizeScopedSettingsForOperation(targetOperation, nextSettingsRaw);
 
         const oldMode = prevSettings.customSet || 'digits';
         const newMode = nextSettings.customSet || 'digits';
