@@ -2,7 +2,7 @@ export type OperationMode = 'addsub' | 'multdiv';
 export type ProblemOrder = 'random' | 'standard';
 export type OperandOrder = 'random' | 'standard' | 'reverse';
 export type MissingValueMode = 'result' | 'operand' | 'random';
-export type CustomSet = '10s' | 'doubles' | null;
+export type CustomSet = '10s' | 'doubles' | 'squares' | null;
 export type StartMode = 'full' | 'min';
 
 export interface ProblemSpec {

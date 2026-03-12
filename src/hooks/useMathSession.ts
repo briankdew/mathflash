@@ -42,7 +42,10 @@ const normalizeScopedSettingsForOperation = (
     operation: OperationMode,
     settings: OperationScopedSettings
 ): OperationScopedSettings => {
-    if (operation === 'multdiv' && settings.customSet !== null) {
+    if (operation === 'addsub' && settings.customSet === 'squares') {
+        return { ...settings, customSet: null };
+    }
+    if (operation === 'multdiv' && (settings.customSet === '10s' || settings.customSet === 'doubles')) {
         return { ...settings, customSet: null };
     }
     return settings;

@@ -22,6 +22,11 @@ export class MathEngine {
                 pool.push({ a, b: a, sum: a + a, product: a * a });
             }
             return pool;
+        } else if (options.customSet === 'squares') {
+            for (let a = 1; a <= 9; a++) {
+                pool.push({ a, b: a, sum: a + a, product: a * a });
+            }
+            return pool;
         }
 
         // BRANCH B: Standard Logic (uses 1-9 chips)

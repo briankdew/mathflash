@@ -85,8 +85,10 @@ export function SettingsPanel({
         });
     };
 
-    const setCustomSet = (set: '10s' | 'doubles') => {
-        if (disabled || !isAddSubOperation) return;
+    const setCustomSet = (set: '10s' | 'doubles' | 'squares') => {
+        if (disabled) return;
+        if (isAddSubOperation && set === 'squares') return;
+        if (!isAddSubOperation && set !== 'squares') return;
         const isActivating = options.customSet !== set;
         if (isActivating) {
             updateOptions({ customSet: set, activeChips: [] });
@@ -182,7 +184,7 @@ export function SettingsPanel({
                     </View>
                 </View>
 
-                {isAddSubOperation && (
+                {isAddSubOperation ? (
                     <View style={[styles.controlGroupSquare, { alignItems: 'center' }]}>
                         <Text style={styles.label}>Custom</Text>
                         <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -200,6 +202,21 @@ export function SettingsPanel({
                                 {options.customSet === 'doubles' && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
                                 <Text style={[styles.chipTextMath, options.customSet === 'doubles' && styles.chipTextActiveMath]}>
                                     n+n
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                ) : (
+                    <View style={[styles.controlGroupSquare, { alignItems: 'center' }]}>
+                        <Text style={styles.label}>Custom</Text>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <TouchableOpacity
+                                style={[styles.digitBox, options.customSet === 'squares' && styles.chipActive, disabled && styles.chipDisabled]}
+                                onPress={() => setCustomSet('squares')} disabled={disabled}
+                            >
+                                {options.customSet === 'squares' && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
+                                <Text style={[styles.chipTextMath, options.customSet === 'squares' && styles.chipTextActiveMath]}>
+                                    n^2
                                 </Text>
                             </TouchableOpacity>
                         </View>
