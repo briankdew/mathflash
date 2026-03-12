@@ -4,9 +4,10 @@ export const sessionPrepTimeline = {
   roll: 300,
   postRollPause: 500,
   flip: 300,
-  pauseAfterLeftFlip: 1000,
-  pauseAfterRightFlip: 1000,
-  pauseAfterResultFlip: 1000,
+  pauseAfterLeftFlip: 750,
+  pauseAfterRightFlip: 750,
+  pauseAfterResultFlip: 750,
+  pauseAfterFinalFlip: 750,
 } as const;
 
 export const sessionPrepMarks = {
@@ -33,7 +34,7 @@ export const sessionPrepMarks = {
     sessionPrepTimeline.pauseAfterLeftFlip +
     sessionPrepTimeline.flip +
     sessionPrepTimeline.pauseAfterRightFlip,
-  totalPrep:
+  finalFlipAt:
     sessionPrepTimeline.tuck +
     sessionPrepTimeline.beat +
     sessionPrepTimeline.roll +
@@ -44,4 +45,17 @@ export const sessionPrepMarks = {
     sessionPrepTimeline.pauseAfterRightFlip +
     sessionPrepTimeline.flip +
     sessionPrepTimeline.pauseAfterResultFlip,
+  totalPrep:
+    sessionPrepTimeline.tuck +
+    sessionPrepTimeline.beat +
+    sessionPrepTimeline.roll +
+    sessionPrepTimeline.postRollPause +
+    sessionPrepTimeline.flip +
+    sessionPrepTimeline.pauseAfterLeftFlip +
+    sessionPrepTimeline.flip +
+    sessionPrepTimeline.pauseAfterRightFlip +
+    sessionPrepTimeline.flip +
+    sessionPrepTimeline.pauseAfterResultFlip +
+    sessionPrepTimeline.flip +
+    sessionPrepTimeline.pauseAfterFinalFlip,
 } as const;

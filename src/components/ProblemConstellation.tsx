@@ -46,6 +46,11 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
     const leftFlip = useSharedValue(0);
     const rightFlip = useSharedValue(0);
     const resultFlip = useSharedValue(0);
+    const leftBackTextRotation = useSharedValue(-180);
+    const rightBackTextRotation = useSharedValue(-180);
+    const resultBackTextRotation = useSharedValue(-180);
+    const [isFinalFlipPhase, setIsFinalFlipPhase] = React.useState(false);
+    const [showBlankFinalBackText, setShowBlankFinalBackText] = React.useState(false);
     const flipTimeoutRefs = React.useRef<ReturnType<typeof setTimeout>[]>([]);
 
     React.useEffect(() => {
@@ -65,6 +70,11 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
         leftFlip.value = 0;
         rightFlip.value = 0;
         resultFlip.value = 0;
+        leftBackTextRotation.value = -180;
+        rightBackTextRotation.value = -180;
+        resultBackTextRotation.value = -180;
+        setIsFinalFlipPhase(false);
+        setShowBlankFinalBackText(false);
 
         if (isActive && !problem) {
             const scheduleFlip = (angle: { value: number }, at: number, targetDeg: number = -90) => {
@@ -77,6 +87,27 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
             scheduleFlip(leftFlip, sessionPrepMarks.leftFlipAt, -180);
             scheduleFlip(rightFlip, sessionPrepMarks.rightFlipAt, -180);
             scheduleFlip(resultFlip, sessionPrepMarks.resultFlipAt, -180);
+
+            const finalFlipId = setTimeout(() => {
+                setIsFinalFlipPhase(true);
+                leftFlip.value = withTiming(-360, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
+                rightFlip.value = withTiming(-360, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
+                resultFlip.value = withTiming(-360, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
+            }, sessionPrepMarks.finalFlipAt);
+
+            const blankBackTextId = setTimeout(() => {
+                setShowBlankFinalBackText(true);
+            }, sessionPrepMarks.finalFlipAt + sessionPrepTimeline.flip / 2);
+
+            const reorientBackTextId = setTimeout(() => {
+                // Keep card shells fixed; only reorient hidden back text for clean next-state reveal.
+                const reorientDuration = Math.min(250, sessionPrepTimeline.pauseAfterFinalFlip);
+                leftBackTextRotation.value = withTiming(0, { duration: reorientDuration, easing: Easing.linear });
+                rightBackTextRotation.value = withTiming(0, { duration: reorientDuration, easing: Easing.linear });
+                resultBackTextRotation.value = withTiming(0, { duration: reorientDuration, easing: Easing.linear });
+            }, sessionPrepMarks.finalFlipAt + sessionPrepTimeline.flip + 100);
+
+            flipTimeoutRefs.current.push(finalFlipId, blankBackTextId, reorientBackTextId);
         }
 
         return () => {
@@ -98,11 +129,11 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
     }));
 
     const leftFrontVisibleStyle = useAnimatedStyle(() => ({
-        opacity: leftFlip.value > -90 ? 1 : 0,
+        opacity: isFinalFlipPhase ? (leftFlip.value <= -270 ? 1 : 0) : (leftFlip.value > -90 ? 1 : 0),
     }));
 
     const leftBackVisibleStyle = useAnimatedStyle(() => ({
-        opacity: leftFlip.value > -90 ? 0 : 1,
+        opacity: isFinalFlipPhase ? (leftFlip.value <= -270 ? 0 : 1) : (leftFlip.value > -90 ? 0 : 1),
     }));
 
     const rightCardAnimatedStyle = useAnimatedStyle(() => ({
@@ -111,11 +142,11 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
     }));
 
     const rightFrontVisibleStyle = useAnimatedStyle(() => ({
-        opacity: rightFlip.value > -90 ? 1 : 0,
+        opacity: isFinalFlipPhase ? (rightFlip.value <= -270 ? 1 : 0) : (rightFlip.value > -90 ? 1 : 0),
     }));
 
     const rightBackVisibleStyle = useAnimatedStyle(() => ({
-        opacity: rightFlip.value > -90 ? 0 : 1,
+        opacity: isFinalFlipPhase ? (rightFlip.value <= -270 ? 0 : 1) : (rightFlip.value > -90 ? 0 : 1),
     }));
 
     const resultCardAnimatedStyle = useAnimatedStyle(() => ({
@@ -124,11 +155,23 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
     }));
 
     const resultFrontVisibleStyle = useAnimatedStyle(() => ({
-        opacity: resultFlip.value > -90 ? 1 : 0,
+        opacity: isFinalFlipPhase ? (resultFlip.value <= -270 ? 1 : 0) : (resultFlip.value > -90 ? 1 : 0),
     }));
 
     const resultBackVisibleStyle = useAnimatedStyle(() => ({
-        opacity: resultFlip.value > -90 ? 0 : 1,
+        opacity: isFinalFlipPhase ? (resultFlip.value <= -270 ? 0 : 1) : (resultFlip.value > -90 ? 0 : 1),
+    }));
+
+    const leftBackTextAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ rotateX: `${leftBackTextRotation.value}deg` }],
+    }));
+
+    const rightBackTextAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ rotateX: `${rightBackTextRotation.value}deg` }],
+    }));
+
+    const resultBackTextAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ rotateX: `${resultBackTextRotation.value}deg` }],
     }));
 
     const valL = problem ? (problem.missing === 'left' ? (showCorrect ? problem.left : '') : problem.left) : '--';
@@ -194,22 +237,22 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
 
                 {/* Cards */}
                 <Animated.View style={[styles.card, styles.cardLeft, leftCardAnimatedStyle, leftFrontVisibleStyle]}>
-                    <Text style={[styles.cardText, { color: idleColorL }]}>{valL}</Text>
+                    <Text style={[styles.cardText, { color: idleColorL }]}>{showBlankFinalBackText ? '' : valL}</Text>
                 </Animated.View>
                 <Animated.View style={[styles.card, styles.cardLeft, localStyles.leftCardTopShadow, leftCardAnimatedStyle, leftBackVisibleStyle]}>
-                    <Text style={[styles.cardText, { color: idleColorL }, localStyles.leftBackTextInverted]}>{'1'}</Text>
+                    <Animated.Text style={[styles.cardText, { color: idleColorL }, leftBackTextAnimatedStyle]}>{showBlankFinalBackText ? '' : '1'}</Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.card, styles.cardRight, rightCardAnimatedStyle, rightFrontVisibleStyle]}>
-                    <Text style={[styles.cardText, { color: idleColorR }]}>{valR}</Text>
+                    <Text style={[styles.cardText, { color: idleColorR }]}>{showBlankFinalBackText ? '' : valR}</Text>
                 </Animated.View>
                 <Animated.View style={[styles.card, styles.cardRight, localStyles.rightCardTopShadow, rightCardAnimatedStyle, rightBackVisibleStyle]}>
-                    <Text style={[styles.cardText, { color: idleColorR }, localStyles.rightBackTextInverted]}>{'1'}</Text>
+                    <Animated.Text style={[styles.cardText, { color: idleColorR }, rightBackTextAnimatedStyle]}>{showBlankFinalBackText ? '' : '1'}</Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.cardResult, resultCardAnimatedStyle, resultFrontVisibleStyle]}>
-                    <Text style={[styles.cardText, { color: idleColorRes }]}>{valRes}</Text>
+                    <Text style={[styles.cardText, { color: idleColorRes }]}>{showBlankFinalBackText ? '' : valRes}</Text>
                 </Animated.View>
                 <Animated.View style={[styles.cardResult, localStyles.resultCardTopShadow, resultCardAnimatedStyle, resultBackVisibleStyle]}>
-                    <Text style={[styles.cardText, { color: idleColorRes }, localStyles.resultBackTextInverted]}>{'1'}</Text>
+                    <Animated.Text style={[styles.cardText, { color: idleColorRes }, resultBackTextAnimatedStyle]}>{showBlankFinalBackText ? '' : '1'}</Animated.Text>
                 </Animated.View>
 
                 <View style={styles.cardAnswer}>
@@ -255,14 +298,5 @@ const localStyles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 6,
         elevation: 6,
-    },
-    leftBackTextInverted: {
-        transform: [{ rotateX: '-180deg' }],
-    },
-    rightBackTextInverted: {
-        transform: [{ rotateX: '-180deg' }],
-    },
-    resultBackTextInverted: {
-        transform: [{ rotateX: '-180deg' }],
     },
 });
