@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { MathEngine } from '../lib/MathEngine';
 import { saveLogToCloud } from '../lib/CloudSync';
-import { sessionPrepMarks } from '../lib/sessionPrepTimeline';
+import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import {
     SessionOptions,
     ProblemSpec,
@@ -60,9 +60,11 @@ export function useMathSession() {
     const prepTimeouts = useRef<{
         stadiumHide: ReturnType<typeof setTimeout> | null;
         firstProblem: ReturnType<typeof setTimeout> | null;
+        timerStartDelay: ReturnType<typeof setTimeout> | null;
     }>({
         stadiumHide: null,
         firstProblem: null,
+        timerStartDelay: null,
     });
 
     const clearPrepTimeouts = useCallback(() => {
@@ -73,6 +75,10 @@ export function useMathSession() {
         if (prepTimeouts.current.firstProblem) {
             clearTimeout(prepTimeouts.current.firstProblem);
             prepTimeouts.current.firstProblem = null;
+        }
+        if (prepTimeouts.current.timerStartDelay) {
+            clearTimeout(prepTimeouts.current.timerStartDelay);
+            prepTimeouts.current.timerStartDelay = null;
         }
     }, []);
 
@@ -157,8 +163,11 @@ export function useMathSession() {
 
         // Total visual prep now follows shared staged-flip timeline, then first problem + timer start.
         prepTimeouts.current.firstProblem = setTimeout(() => {
-            timerStart.current = Date.now();
             _nextProblem(pool, cycles - 1);
+            prepTimeouts.current.timerStartDelay = setTimeout(() => {
+                timerStart.current = Date.now();
+                prepTimeouts.current.timerStartDelay = null;
+            }, sessionPrepTimeline.firstProblemDissolve);
             prepTimeouts.current.firstProblem = null;
         }, sessionPrepMarks.totalPrep);
     }, [options, clearPrepTimeouts]);

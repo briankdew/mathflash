@@ -2,6 +2,7 @@ export const sessionPrepTimeline = {
   tuck: 500,
   beat: 150,
   roll: 300,
+  firstProblemDissolve: 220,
   postRollPause: 500,
   flip: 300,
   pauseAfterLeftFlip: 750,

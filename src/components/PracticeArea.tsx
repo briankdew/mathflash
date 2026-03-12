@@ -38,6 +38,15 @@ export function PracticeArea({
     if (isActive) {
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
+      if (clearInputTimeoutRef.current) {
+        clearTimeout(clearInputTimeoutRef.current);
+        clearInputTimeoutRef.current = null;
+      }
+      if (advanceProblemTimeoutRef.current) {
+        clearTimeout(advanceProblemTimeoutRef.current);
+        advanceProblemTimeoutRef.current = null;
+      }
+      setShowCorrect(false);
       inputRef.current?.blur();
       onInputChanged('');
     }

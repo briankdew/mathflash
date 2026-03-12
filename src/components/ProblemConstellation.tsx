@@ -49,8 +49,11 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
     const leftBackTextRotation = useSharedValue(-180);
     const rightBackTextRotation = useSharedValue(-180);
     const resultBackTextRotation = useSharedValue(-180);
-    const [isFinalFlipPhase, setIsFinalFlipPhase] = React.useState(false);
     const [showBlankFinalBackText, setShowBlankFinalBackText] = React.useState(false);
+    const textRevealOpacity = useSharedValue(1);
+    const hasPlayedFirstRevealRef = React.useRef(false);
+    const [showProblemValues, setShowProblemValues] = React.useState(false);
+    const revealFrameRef = React.useRef<number | null>(null);
     const flipTimeoutRefs = React.useRef<ReturnType<typeof setTimeout>[]>([]);
 
     React.useEffect(() => {
@@ -73,10 +76,16 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
         leftBackTextRotation.value = -180;
         rightBackTextRotation.value = -180;
         resultBackTextRotation.value = -180;
-        setIsFinalFlipPhase(false);
         setShowBlankFinalBackText(false);
+        textRevealOpacity.value = 1;
+        hasPlayedFirstRevealRef.current = false;
+        setShowProblemValues(false);
+        if (revealFrameRef.current !== null) {
+            cancelAnimationFrame(revealFrameRef.current);
+            revealFrameRef.current = null;
+        }
 
-        if (isActive && !problem) {
+        if (isActive) {
             const scheduleFlip = (angle: { value: number }, at: number, targetDeg: number = -90) => {
                 const startId = setTimeout(() => {
                     angle.value = withTiming(targetDeg, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
@@ -89,7 +98,6 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
             scheduleFlip(resultFlip, sessionPrepMarks.resultFlipAt, -180);
 
             const finalFlipId = setTimeout(() => {
-                setIsFinalFlipPhase(true);
                 leftFlip.value = withTiming(-360, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
                 rightFlip.value = withTiming(-360, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
                 resultFlip.value = withTiming(-360, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
@@ -107,14 +115,50 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                 resultBackTextRotation.value = withTiming(0, { duration: reorientDuration, easing: Easing.linear });
             }, sessionPrepMarks.finalFlipAt + sessionPrepTimeline.flip + 100);
 
-            flipTimeoutRefs.current.push(finalFlipId, blankBackTextId, reorientBackTextId);
+            const preArmFirstRevealId = setTimeout(() => {
+                // Prevent a one-frame flash before first-problem dissolve kicks in.
+                if (!hasPlayedFirstRevealRef.current) {
+                    textRevealOpacity.value = 0;
+                }
+            }, Math.max(0, sessionPrepMarks.totalPrep - 20));
+
+            flipTimeoutRefs.current.push(finalFlipId, blankBackTextId, reorientBackTextId, preArmFirstRevealId);
         }
 
         return () => {
             flipTimeoutRefs.current.forEach(clearTimeout);
             flipTimeoutRefs.current = [];
         };
-    }, [isActive, problem, leftFlip, rightFlip, resultFlip]);
+    }, [isActive]);
+
+    React.useEffect(() => {
+        if (!isActive) {
+            textRevealOpacity.value = 1;
+            hasPlayedFirstRevealRef.current = false;
+            setShowProblemValues(false);
+            if (revealFrameRef.current !== null) {
+                cancelAnimationFrame(revealFrameRef.current);
+                revealFrameRef.current = null;
+            }
+            return;
+        }
+
+        if (problem && !hasPlayedFirstRevealRef.current) {
+            hasPlayedFirstRevealRef.current = true;
+            setShowProblemValues(false);
+            textRevealOpacity.value = 0;
+            revealFrameRef.current = requestAnimationFrame(() => {
+                setShowProblemValues(true);
+                textRevealOpacity.value = withTiming(1, { duration: sessionPrepTimeline.firstProblemDissolve, easing: Easing.linear });
+                revealFrameRef.current = null;
+            });
+            return;
+        }
+
+        if (problem) {
+            setShowProblemValues(true);
+        }
+    }, [isActive, problem, textRevealOpacity]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [
@@ -128,39 +172,51 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
         transformStyle: 'preserve-3d',
     }));
 
-    const leftFrontVisibleStyle = useAnimatedStyle(() => ({
-        opacity: isFinalFlipPhase ? (leftFlip.value <= -270 ? 1 : 0) : (leftFlip.value > -90 ? 1 : 0),
-    }));
+    const leftFrontVisibleStyle = useAnimatedStyle(() => {
+        const wrapped = ((leftFlip.value % 360) + 360) % 360;
+        const isFrontVisible = wrapped < 90 || wrapped > 270;
+        return { opacity: isFrontVisible ? 1 : 0 };
+    });
 
-    const leftBackVisibleStyle = useAnimatedStyle(() => ({
-        opacity: isFinalFlipPhase ? (leftFlip.value <= -270 ? 0 : 1) : (leftFlip.value > -90 ? 0 : 1),
-    }));
+    const leftBackVisibleStyle = useAnimatedStyle(() => {
+        const wrapped = ((leftFlip.value % 360) + 360) % 360;
+        const isFrontVisible = wrapped < 90 || wrapped > 270;
+        return { opacity: isFrontVisible ? 0 : 1 };
+    });
 
     const rightCardAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{ perspective: 1000 }, { rotateX: `${rightFlip.value}deg` }],
         transformStyle: 'preserve-3d',
     }));
 
-    const rightFrontVisibleStyle = useAnimatedStyle(() => ({
-        opacity: isFinalFlipPhase ? (rightFlip.value <= -270 ? 1 : 0) : (rightFlip.value > -90 ? 1 : 0),
-    }));
+    const rightFrontVisibleStyle = useAnimatedStyle(() => {
+        const wrapped = ((rightFlip.value % 360) + 360) % 360;
+        const isFrontVisible = wrapped < 90 || wrapped > 270;
+        return { opacity: isFrontVisible ? 1 : 0 };
+    });
 
-    const rightBackVisibleStyle = useAnimatedStyle(() => ({
-        opacity: isFinalFlipPhase ? (rightFlip.value <= -270 ? 0 : 1) : (rightFlip.value > -90 ? 0 : 1),
-    }));
+    const rightBackVisibleStyle = useAnimatedStyle(() => {
+        const wrapped = ((rightFlip.value % 360) + 360) % 360;
+        const isFrontVisible = wrapped < 90 || wrapped > 270;
+        return { opacity: isFrontVisible ? 0 : 1 };
+    });
 
     const resultCardAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{ perspective: 1000 }, { rotateX: `${resultFlip.value}deg` }],
         transformStyle: 'preserve-3d',
     }));
 
-    const resultFrontVisibleStyle = useAnimatedStyle(() => ({
-        opacity: isFinalFlipPhase ? (resultFlip.value <= -270 ? 1 : 0) : (resultFlip.value > -90 ? 1 : 0),
-    }));
+    const resultFrontVisibleStyle = useAnimatedStyle(() => {
+        const wrapped = ((resultFlip.value % 360) + 360) % 360;
+        const isFrontVisible = wrapped < 90 || wrapped > 270;
+        return { opacity: isFrontVisible ? 1 : 0 };
+    });
 
-    const resultBackVisibleStyle = useAnimatedStyle(() => ({
-        opacity: isFinalFlipPhase ? (resultFlip.value <= -270 ? 0 : 1) : (resultFlip.value > -90 ? 0 : 1),
-    }));
+    const resultBackVisibleStyle = useAnimatedStyle(() => {
+        const wrapped = ((resultFlip.value % 360) + 360) % 360;
+        const isFrontVisible = wrapped < 90 || wrapped > 270;
+        return { opacity: isFrontVisible ? 0 : 1 };
+    });
 
     const leftBackTextAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{ rotateX: `${leftBackTextRotation.value}deg` }],
@@ -174,9 +230,19 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
         transform: [{ rotateX: `${resultBackTextRotation.value}deg` }],
     }));
 
-    const valL = problem ? (problem.missing === 'left' ? (showCorrect ? problem.left : '') : problem.left) : '--';
-    const valR = problem ? (problem.missing === 'right' ? (showCorrect ? problem.right : '') : problem.right) : '--';
-    const valRes = problem ? (problem.missing === 'result' ? (showCorrect ? problem.result : '') : problem.result) : '---';
+    const firstRevealTextStyle = useAnimatedStyle(() => ({
+        opacity: textRevealOpacity.value,
+    }));
+
+    const valL = problem
+        ? (showProblemValues ? (problem.missing === 'left' ? (showCorrect ? problem.left : '') : problem.left) : '')
+        : '--';
+    const valR = problem
+        ? (showProblemValues ? (problem.missing === 'right' ? (showCorrect ? problem.right : '') : problem.right) : '')
+        : '--';
+    const valRes = problem
+        ? (showProblemValues ? (problem.missing === 'result' ? (showCorrect ? problem.result : '') : problem.result) : '')
+        : '---';
 
     const idleColorL = problem ? opTheme.textOperand : '#c0beb1';
     const idleColorR = problem ? opTheme.textOperand : '#c0beb1';
@@ -237,22 +303,22 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
 
                 {/* Cards */}
                 <Animated.View style={[styles.card, styles.cardLeft, leftCardAnimatedStyle, leftFrontVisibleStyle]}>
-                    <Text style={[styles.cardText, { color: idleColorL }]}>{showBlankFinalBackText ? '' : valL}</Text>
+                    <Animated.Text style={[styles.cardText, { color: idleColorL }, firstRevealTextStyle]}>{showBlankFinalBackText && !problem ? '' : valL}</Animated.Text>
                 </Animated.View>
-                <Animated.View style={[styles.card, styles.cardLeft, localStyles.leftCardTopShadow, leftCardAnimatedStyle, leftBackVisibleStyle]}>
-                    <Animated.Text style={[styles.cardText, { color: idleColorL }, leftBackTextAnimatedStyle]}>{showBlankFinalBackText ? '' : '1'}</Animated.Text>
+                <Animated.View style={[styles.card, styles.cardLeft, localStyles.leftCardTopShadow, leftCardAnimatedStyle, leftBackVisibleStyle, problem && localStyles.hiddenLayer]}>
+                    <Animated.Text style={[styles.cardText, { color: idleColorL }, leftBackTextAnimatedStyle, firstRevealTextStyle]}>{(showBlankFinalBackText && !problem) || problem ? '' : '1'}</Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.card, styles.cardRight, rightCardAnimatedStyle, rightFrontVisibleStyle]}>
-                    <Text style={[styles.cardText, { color: idleColorR }]}>{showBlankFinalBackText ? '' : valR}</Text>
+                    <Animated.Text style={[styles.cardText, { color: idleColorR }, firstRevealTextStyle]}>{showBlankFinalBackText && !problem ? '' : valR}</Animated.Text>
                 </Animated.View>
-                <Animated.View style={[styles.card, styles.cardRight, localStyles.rightCardTopShadow, rightCardAnimatedStyle, rightBackVisibleStyle]}>
-                    <Animated.Text style={[styles.cardText, { color: idleColorR }, rightBackTextAnimatedStyle]}>{showBlankFinalBackText ? '' : '1'}</Animated.Text>
+                <Animated.View style={[styles.card, styles.cardRight, localStyles.rightCardTopShadow, rightCardAnimatedStyle, rightBackVisibleStyle, problem && localStyles.hiddenLayer]}>
+                    <Animated.Text style={[styles.cardText, { color: idleColorR }, rightBackTextAnimatedStyle, firstRevealTextStyle]}>{(showBlankFinalBackText && !problem) || problem ? '' : '1'}</Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.cardResult, resultCardAnimatedStyle, resultFrontVisibleStyle]}>
-                    <Text style={[styles.cardText, { color: idleColorRes }]}>{showBlankFinalBackText ? '' : valRes}</Text>
+                    <Animated.Text style={[styles.cardText, { color: idleColorRes }, firstRevealTextStyle]}>{showBlankFinalBackText && !problem ? '' : valRes}</Animated.Text>
                 </Animated.View>
-                <Animated.View style={[styles.cardResult, localStyles.resultCardTopShadow, resultCardAnimatedStyle, resultBackVisibleStyle]}>
-                    <Animated.Text style={[styles.cardText, { color: idleColorRes }, resultBackTextAnimatedStyle]}>{showBlankFinalBackText ? '' : '1'}</Animated.Text>
+                <Animated.View style={[styles.cardResult, localStyles.resultCardTopShadow, resultCardAnimatedStyle, resultBackVisibleStyle, problem && localStyles.hiddenLayer]}>
+                    <Animated.Text style={[styles.cardText, { color: idleColorRes }, resultBackTextAnimatedStyle, firstRevealTextStyle]}>{(showBlankFinalBackText && !problem) || problem ? '' : '1'}</Animated.Text>
                 </Animated.View>
 
                 <View style={styles.cardAnswer}>
@@ -278,6 +344,9 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
 }
 
 const localStyles = StyleSheet.create({
+    hiddenLayer: {
+        opacity: 0,
+    },
     leftCardTopShadow: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -3 },
