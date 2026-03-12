@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Defs, Filter, FeFlood, FeBlend, FeColorMatrix, FeOffset, FeGaussianBlur, FeComposite, Rect } from 'react-native-svg';
 import { SessionOptions } from '../lib/types';
 import { theme, palette } from '../theme/colors';
@@ -37,9 +37,7 @@ export function SettingsPanel({
     setUseTimer,
     disabled,
 }: SettingsPanelProps) {
-
-    // Track the toggle state independently so it doesn't flip when single chips are touched
-    const [isAllMode, setIsAllMode] = React.useState(options.activeChips.length === 9);
+    const isAllMode = !options.customSet && options.activeChips.length === 9;
 
     const cycleOrder = () => {
         if (disabled) return;
@@ -80,7 +78,6 @@ export function SettingsPanel({
     const toggleAllChips = () => {
         if (disabled) return;
         const nextVal = !isAllMode;
-        setIsAllMode(nextVal);
         updateOptions({
             customSet: null,
             activeChips: nextVal ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []
@@ -91,7 +88,6 @@ export function SettingsPanel({
         if (disabled) return;
         const isActivating = options.customSet !== set;
         if (isActivating) {
-            setIsAllMode(false);
             updateOptions({ customSet: set, activeChips: [] });
         } else {
             updateOptions({ customSet: null, activeChips: [] });

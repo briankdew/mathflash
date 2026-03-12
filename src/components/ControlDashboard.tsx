@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { FontAwesome } from '@expo/vector-icons';
 import { NumberPad } from './NumberPad';
 import { SettingsPanel } from './SettingsPanel';
 import { SessionOptions } from '../lib/types';
+import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { appStyles as styles } from '../theme/App.styles';
 import { theme } from '../theme/colors';
 
@@ -38,6 +39,8 @@ export function ControlDashboard({
   setUseTimer
 }: ControlDashboardProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const untuckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animated values for keypad slide-in
   const keypadHeight = useSharedValue(0);
@@ -46,37 +49,59 @@ export function ControlDashboard({
   const gearOffset = useSharedValue(142);
 
   useEffect(() => {
+    if (rollTimeoutRef.current) {
+      clearTimeout(rollTimeoutRef.current);
+      rollTimeoutRef.current = null;
+    }
+    if (untuckTimeoutRef.current) {
+      clearTimeout(untuckTimeoutRef.current);
+      untuckTimeoutRef.current = null;
+    }
+
     if (isActive) {
       // Step 1: Tuck gear behind the Start Session button
-      gearOffset.value = withTiming(0, { duration: 500, easing: Easing.inOut(Easing.cubic) });
+      gearOffset.value = withTiming(0, { duration: sessionPrepTimeline.tuck, easing: Easing.inOut(Easing.cubic) });
       
       // Step 2: After tuck and beat (500 + 150)
-      setTimeout(() => {
+      rollTimeoutRef.current = setTimeout(() => {
         keypadHeight.value = withTiming(KEYPAD_REVEAL_HEIGHT, {
-          duration: 400,
+          duration: sessionPrepTimeline.roll,
           easing: Easing.linear,
         });
         keypadSlide.value = withTiming(0, {
-          duration: 400,
+          duration: sessionPrepTimeline.roll,
           easing: Easing.linear,
         });
-      }, 650); // 500ms tuck + 150ms beat
+        rollTimeoutRef.current = null;
+      }, sessionPrepMarks.keypadRollStartAt);
     } else {
       // Step 1: Hide keypad (Roll reverse)
       keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
-        duration: 400,
+        duration: sessionPrepTimeline.roll,
         easing: Easing.linear,
       });
       keypadHeight.value = withTiming(0, {
-        duration: 400,
+        duration: sessionPrepTimeline.roll,
         easing: Easing.linear,
       });
 
       // Step 2: After keypad hidden and beat, untuck gear
-      setTimeout(() => {
-        gearOffset.value = withTiming(142, { duration: 500, easing: Easing.out(Easing.cubic) });
-      }, 550); // 400ms roll + 150ms beat
+      untuckTimeoutRef.current = setTimeout(() => {
+        gearOffset.value = withTiming(142, { duration: sessionPrepTimeline.tuck, easing: Easing.out(Easing.cubic) });
+        untuckTimeoutRef.current = null;
+      }, sessionPrepTimeline.roll + sessionPrepTimeline.beat);
     }
+
+    return () => {
+      if (rollTimeoutRef.current) {
+        clearTimeout(rollTimeoutRef.current);
+        rollTimeoutRef.current = null;
+      }
+      if (untuckTimeoutRef.current) {
+        clearTimeout(untuckTimeoutRef.current);
+        untuckTimeoutRef.current = null;
+      }
+    };
   }, [isActive]);
 
   const keypadWrapperStyle = useAnimatedStyle(() => ({

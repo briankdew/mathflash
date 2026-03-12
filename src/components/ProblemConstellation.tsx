@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, TextInput, TouchableOpacity } from 'react-native';
 import Svg, { Path, Ellipse, Defs, Filter, FeDropShadow, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect, FeBlend, FeColorMatrix } from 'react-native-svg';
 import { ProblemDisplay, OperationMode } from '../lib/types';
+import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { theme, getOperationTheme } from '../theme/colors';
 import { constellationStyles as styles } from '../theme/ProblemConstellation.styles';
 import Animated, { useAnimatedStyle, withRepeat, withSequence, withTiming, Easing, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -42,6 +43,10 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
 
     // We only animate the problem constellation to react to errors
     const translateX = useSharedValue(0);
+    const leftFlip = useSharedValue(0);
+    const rightFlip = useSharedValue(0);
+    const resultFlip = useSharedValue(0);
+    const flipTimeoutRefs = React.useRef<ReturnType<typeof setTimeout>[]>([]);
 
     React.useEffect(() => {
         if (shakeTrigger > 0) {
@@ -53,11 +58,61 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
         }
     }, [shakeTrigger, translateX]);
 
+    React.useEffect(() => {
+        flipTimeoutRefs.current.forEach(clearTimeout);
+        flipTimeoutRefs.current = [];
+
+        leftFlip.value = 0;
+        rightFlip.value = 0;
+        resultFlip.value = 0;
+
+        if (isActive && !problem) {
+            const scheduleFlip = (angle: { value: number }, at: number, targetDeg: number = -90) => {
+                const startId = setTimeout(() => {
+                    angle.value = withTiming(targetDeg, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
+                }, at);
+                flipTimeoutRefs.current.push(startId);
+            };
+
+            scheduleFlip(leftFlip, sessionPrepMarks.leftFlipAt, -180);
+            scheduleFlip(rightFlip, sessionPrepMarks.rightFlipAt);
+            scheduleFlip(resultFlip, sessionPrepMarks.resultFlipAt);
+        }
+
+        return () => {
+            flipTimeoutRefs.current.forEach(clearTimeout);
+            flipTimeoutRefs.current = [];
+        };
+    }, [isActive, problem, leftFlip, rightFlip, resultFlip]);
+
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [
             { scale: dynamicScale },
             { translateX: translateX.value }
         ]
+    }));
+
+    const leftCardAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ perspective: 1000 }, { rotateX: `${leftFlip.value}deg` }],
+        transformStyle: 'preserve-3d',
+    }));
+
+    const leftFrontVisibleStyle = useAnimatedStyle(() => ({
+        opacity: leftFlip.value > -90 ? 1 : 0,
+    }));
+
+    const leftBackVisibleStyle = useAnimatedStyle(() => ({
+        opacity: leftFlip.value > -90 ? 0 : 1,
+    }));
+
+    const rightCardAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ perspective: 1000 }, { rotateX: `${rightFlip.value}deg` }],
+        transformStyle: 'preserve-3d',
+    }));
+
+    const resultCardAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ perspective: 1000 }, { rotateX: `${resultFlip.value}deg` }],
+        transformStyle: 'preserve-3d',
     }));
 
     const valL = problem ? (problem.missing === 'left' ? (showCorrect ? problem.left : '') : problem.left) : '--';
@@ -122,15 +177,18 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                 </View>
 
                 {/* Cards */}
-                <View style={[styles.card, styles.cardLeft]}>
+                <Animated.View style={[styles.card, styles.cardLeft, leftCardAnimatedStyle, leftFrontVisibleStyle]}>
                     <Text style={[styles.cardText, { color: idleColorL }]}>{valL}</Text>
-                </View>
-                <View style={[styles.card, styles.cardRight]}>
+                </Animated.View>
+                <Animated.View style={[styles.card, styles.cardLeft, localStyles.leftCardTopShadow, leftCardAnimatedStyle, leftBackVisibleStyle]}>
+                    <Text style={[styles.cardText, { color: idleColorL }, localStyles.leftBackTextInverted]}>{'1'}</Text>
+                </Animated.View>
+                <Animated.View style={[styles.card, styles.cardRight, rightCardAnimatedStyle]}>
                     <Text style={[styles.cardText, { color: idleColorR }]}>{valR}</Text>
-                </View>
-                <View style={styles.cardResult}>
+                </Animated.View>
+                <Animated.View style={[styles.cardResult, resultCardAnimatedStyle]}>
                     <Text style={[styles.cardText, { color: idleColorRes }]}>{valRes}</Text>
-                </View>
+                </Animated.View>
 
                 <View style={styles.cardAnswer}>
                     <AnswerBoxSvg isActive={isActive && !!problem} />
@@ -154,4 +212,15 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
     );
 }
 
-
+const localStyles = StyleSheet.create({
+    leftCardTopShadow: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.5,
+        shadowRadius: 6,
+        elevation: 6,
+    },
+    leftBackTextInverted: {
+        transform: [{ rotateX: '-180deg' }],
+    },
+});

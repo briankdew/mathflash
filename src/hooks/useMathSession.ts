@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { MathEngine } from '../lib/MathEngine';
 import { saveLogToCloud } from '../lib/CloudSync';
+import { sessionPrepMarks } from '../lib/sessionPrepTimeline';
 import {
     SessionOptions,
     ProblemSpec,
@@ -56,6 +57,30 @@ export function useMathSession() {
     });
 
     const timerStart = useRef(0);
+    const prepTimeouts = useRef<{
+        stadiumHide: ReturnType<typeof setTimeout> | null;
+        firstProblem: ReturnType<typeof setTimeout> | null;
+    }>({
+        stadiumHide: null,
+        firstProblem: null,
+    });
+
+    const clearPrepTimeouts = useCallback(() => {
+        if (prepTimeouts.current.stadiumHide) {
+            clearTimeout(prepTimeouts.current.stadiumHide);
+            prepTimeouts.current.stadiumHide = null;
+        }
+        if (prepTimeouts.current.firstProblem) {
+            clearTimeout(prepTimeouts.current.firstProblem);
+            prepTimeouts.current.firstProblem = null;
+        }
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            clearPrepTimeouts();
+        };
+    }, [clearPrepTimeouts]);
 
     // Derived Values
     const getPendingCount = useCallback(() => {
@@ -97,6 +122,8 @@ export function useMathSession() {
     };
 
     const startSession = useCallback(() => {
+        clearPrepTimeouts();
+
         const pool = MathEngine.getFilteredPool(options);
         if (pool.length === 0) {
             // In a real app, maybe trigger an alert here.
@@ -122,15 +149,19 @@ export function useMathSession() {
         setStats({ completed: 0, correctFirst: 0, missedFirst: 0 });
         setMissedProblems([]);
 
-        // Total visual prep: T(500) + B(150) + R(400) + P(1950) = 3000ms
-        // Hide the stadium 1000ms before the problem displays (3000 - 1000 = 2000ms)
-        setTimeout(() => setIsStadiumActive(false), 2000);
-        
-        setTimeout(() => {
+        // Hide the stadium after tuck + beat, as keypad roll starts.
+        prepTimeouts.current.stadiumHide = setTimeout(() => {
+            setIsStadiumActive(false);
+            prepTimeouts.current.stadiumHide = null;
+        }, sessionPrepMarks.stadiumHideAt);
+
+        // Total visual prep now follows shared staged-flip timeline, then first problem + timer start.
+        prepTimeouts.current.firstProblem = setTimeout(() => {
             timerStart.current = Date.now();
             _nextProblem(pool, cycles - 1);
-        }, 3000);
-    }, [options]);
+            prepTimeouts.current.firstProblem = null;
+        }, sessionPrepMarks.totalPrep);
+    }, [options, clearPrepTimeouts]);
 
     const _nextProblem = (currentQueue: ProblemSpec[], remainingCycles: number) => {
         if (currentQueue.length === 0) {
@@ -226,6 +257,7 @@ export function useMathSession() {
     }, [currentProblem, isActive, options]);
 
     const endSession = useCallback(() => {
+        clearPrepTimeouts();
         if (!isActive) return;
 
         const end = new Date();
@@ -266,7 +298,7 @@ export function useMathSession() {
         setIsStadiumActive(true);
         setCurrentProblem(null);
         setQueue([]);
-    }, [isActive, stats, totalProblems, useTimer, options, sessionStart, sessionId]);
+    }, [isActive, stats, totalProblems, useTimer, options, sessionStart, sessionId, clearPrepTimeouts]);
 
     const advanceToNextProblem = useCallback(() => {
         _nextProblem(queue, metrics.current.cyclesRemaining);

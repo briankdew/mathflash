@@ -30,6 +30,8 @@ export function PracticeArea({
   const inputRef = useRef<TextInput>(null);
   const [shakeTrigger, setShakeTrigger] = useState(0);
   const [showCorrect, setShowCorrect] = useState(false);
+  const clearInputTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const advanceProblemTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-focus when active
   React.useEffect(() => {
@@ -41,38 +43,58 @@ export function PracticeArea({
     }
   }, [isActive]);
 
-  const handleSubmit = () => {
-    if (!inputValue) return;
-    const res = onCheckAnswer(inputValue, true);
+  React.useEffect(() => {
+    return () => {
+      if (clearInputTimeoutRef.current) {
+        clearTimeout(clearInputTimeoutRef.current);
+        clearInputTimeoutRef.current = null;
+      }
+      if (advanceProblemTimeoutRef.current) {
+        clearTimeout(advanceProblemTimeoutRef.current);
+        advanceProblemTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const processAnswer = (value: string, forceComplete: boolean) => {
+    if (!value) return;
+    const res = onCheckAnswer(value, forceComplete);
 
     if (res === 'wrong') {
       setShakeTrigger(prev => prev + 1);
-      setTimeout(() => onInputChanged(''), 400);
+      if (clearInputTimeoutRef.current) {
+        clearTimeout(clearInputTimeoutRef.current);
+      }
+      clearInputTimeoutRef.current = setTimeout(() => {
+        onInputChanged('');
+        clearInputTimeoutRef.current = null;
+      }, 400);
     } else if (res === 'correct') {
       setShowCorrect(true);
-      setTimeout(() => {
+      if (advanceProblemTimeoutRef.current) {
+        clearTimeout(advanceProblemTimeoutRef.current);
+      }
+      advanceProblemTimeoutRef.current = setTimeout(() => {
         onInputChanged('');
         setShowCorrect(false);
         onAdvanceProblem();
+        advanceProblemTimeoutRef.current = null;
       }, 500);
     }
+  };
+
+  const handleSubmit = () => {
+    processAnswer(inputValue, true);
   };
 
   const handleInput = (text: string) => {
     onInputChanged(text);
-    const res = onCheckAnswer(text, false);
-    if (res === 'correct') {
-      setShowCorrect(true);
-      setTimeout(() => {
-        onInputChanged('');
-        setShowCorrect(false);
-        onAdvanceProblem();
-      }, 500);
-    } else if (res === 'wrong') {
-      setShakeTrigger(prev => prev + 1);
-      setTimeout(() => onInputChanged(''), 400);
-    }
   };
+
+  React.useEffect(() => {
+    if (!isActive) return;
+    processAnswer(inputValue, false);
+  }, [inputValue, isActive]);
 
   return (
     <View style={styles.constellationWrapper}>
