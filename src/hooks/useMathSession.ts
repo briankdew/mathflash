@@ -3,6 +3,12 @@ import { MathEngine } from '../lib/MathEngine';
 import { saveLogToCloud } from '../lib/CloudSync';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import {
+    OperationMode,
+    ProblemOrder,
+    OperandOrder,
+    MissingValueMode,
+    CustomSet,
+    StartMode,
     SessionOptions,
     ProblemSpec,
     ProblemDisplay,
@@ -15,26 +21,72 @@ function generateSessionId() {
     return 'mf-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
 }
 
+type ModePrefs = {
+    digits: { problemOrder: ProblemOrder; operandOrder: OperandOrder; missingValue: MissingValueMode };
+    '10s': { problemOrder: ProblemOrder; operandOrder: OperandOrder; missingValue: MissingValueMode };
+    doubles: { problemOrder: ProblemOrder; operandOrder: OperandOrder; missingValue: MissingValueMode };
+};
+
+type OperationScopedSettings = {
+    problemOrder: ProblemOrder;
+    operandOrder: OperandOrder;
+    missingValue: MissingValueMode;
+    activeChips: number[];
+    customSet: CustomSet;
+};
+
+type GlobalSettings = {
+    practiceCycles: number;
+    useTimer: boolean;
+    startMode: StartMode;
+};
+
+const defaultModePrefs = (): ModePrefs => ({
+    digits: { problemOrder: 'random', operandOrder: 'random', missingValue: 'random' },
+    '10s': { problemOrder: 'standard', operandOrder: 'random', missingValue: 'operand' },
+    doubles: { problemOrder: 'standard', operandOrder: 'standard', missingValue: 'result' },
+});
+
+const defaultOperationSettings = (): OperationScopedSettings => ({
+    problemOrder: 'random',
+    operandOrder: 'random',
+    missingValue: 'random',
+    activeChips: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    customSet: null,
+});
+
 export function useMathSession() {
-    // Mode-specific preferences to maintain "Tactile Memory" during a session
-    const [modePrefs, setModePrefs] = useState({
-        digits: { problemOrder: 'random' as const, operandOrder: 'random' as const, missingValue: 'random' as const },
-        '10s': { problemOrder: 'standard' as const, operandOrder: 'random' as const, missingValue: 'operand' as const },
-        doubles: { problemOrder: 'standard' as const, operandOrder: 'standard' as const, missingValue: 'result' as const },
+    const [operation, setOperation] = useState<OperationMode>('addsub');
+    const [settingsByOperation, setSettingsByOperation] = useState<Record<OperationMode, OperationScopedSettings>>({
+        addsub: defaultOperationSettings(),
+        multdiv: defaultOperationSettings(),
     });
-
-    const [options, setOptions] = useState<SessionOptions>({
-        operation: 'addsub',
-        problemOrder: 'random',
-        operandOrder: 'random',
-        missingValue: 'random',
-        startMode: 'full',
-        activeChips: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        customSet: null,
+    // Mode-specific preferences to maintain "Tactile Memory" during a session, per operation.
+    const [modePrefsByOperation, setModePrefsByOperation] = useState<Record<OperationMode, ModePrefs>>({
+        addsub: defaultModePrefs(),
+        multdiv: defaultModePrefs(),
+    });
+    const [globalSettings, setGlobalSettings] = useState<GlobalSettings>({
         practiceCycles: 1,
+        useTimer: true,
+        startMode: 'full',
     });
 
-    const [useTimer, setUseTimer] = useState(true);
+    const currentOperationSettings = settingsByOperation[operation];
+    const options: SessionOptions = {
+        operation,
+        problemOrder: currentOperationSettings.problemOrder,
+        operandOrder: currentOperationSettings.operandOrder,
+        missingValue: currentOperationSettings.missingValue,
+        startMode: globalSettings.startMode,
+        activeChips: currentOperationSettings.activeChips,
+        customSet: currentOperationSettings.customSet,
+        practiceCycles: globalSettings.practiceCycles,
+    };
+    const useTimer = globalSettings.useTimer;
+    const setUseTimer = (val: boolean) => {
+        setGlobalSettings(prev => ({ ...prev, useTimer: val }));
+    };
 
     // Session State
     const [isActive, setIsActive] = useState(false);
@@ -91,41 +143,75 @@ export function useMathSession() {
 
     // Derived Values
     const getPendingCount = useCallback(() => {
-        let pool = MathEngine.getFilteredPool(options);
+        const pool = MathEngine.getFilteredPool(options);
         const cycles = Math.max(1, Math.min(5, options.practiceCycles));
         return pool.length * cycles;
     }, [options]);
 
     const updateOptions = (newOpts: Partial<SessionOptions>) => {
-        setOptions((prev) => {
-            const next = { ...prev, ...newOpts };
+        if (newOpts.operation) {
+            setOperation(newOpts.operation);
+        }
+        if (newOpts.practiceCycles !== undefined || newOpts.startMode !== undefined) {
+            setGlobalSettings(prev => ({
+                ...prev,
+                ...(newOpts.practiceCycles !== undefined ? { practiceCycles: newOpts.practiceCycles } : {}),
+                ...(newOpts.startMode !== undefined ? { startMode: newOpts.startMode } : {}),
+            }));
+        }
 
-            // Determine if we are switching modes
-            const oldMode = prev.customSet || 'digits';
-            const newMode = next.customSet || 'digits';
+        const hasScopedChanges = (
+            newOpts.problemOrder !== undefined ||
+            newOpts.operandOrder !== undefined ||
+            newOpts.missingValue !== undefined ||
+            newOpts.activeChips !== undefined ||
+            newOpts.customSet !== undefined
+        );
 
-            if (oldMode !== newMode) {
-                // We are switching modes: Load this mode's previous custom tweaks
-                const prefs = modePrefs[(newMode || 'digits') as keyof typeof modePrefs];
-                next.problemOrder = prefs.problemOrder;
-                next.operandOrder = prefs.operandOrder;
-                next.missingValue = prefs.missingValue;
-            } else {
-                // We are staying in the same mode: Save any tweaks to PO, OO, or MV
-                if (newOpts.problemOrder || newOpts.operandOrder || newOpts.missingValue) {
-                    setModePrefs(prevPrefs => ({
-                        ...prevPrefs,
-                        [(newMode || 'digits') as keyof typeof modePrefs]: {
-                            problemOrder: next.problemOrder,
-                            operandOrder: next.operandOrder,
-                            missingValue: next.missingValue,
-                        }
-                    }));
-                }
-            }
+        if (!hasScopedChanges) return;
 
-            return next;
-        });
+        const targetOperation: OperationMode = newOpts.operation ?? operation;
+        const prevSettings = settingsByOperation[targetOperation];
+        const nextSettings: OperationScopedSettings = {
+            ...prevSettings,
+            ...(newOpts.problemOrder !== undefined ? { problemOrder: newOpts.problemOrder } : {}),
+            ...(newOpts.operandOrder !== undefined ? { operandOrder: newOpts.operandOrder } : {}),
+            ...(newOpts.missingValue !== undefined ? { missingValue: newOpts.missingValue } : {}),
+            ...(newOpts.activeChips !== undefined ? { activeChips: newOpts.activeChips } : {}),
+            ...(newOpts.customSet !== undefined ? { customSet: newOpts.customSet } : {}),
+        };
+
+        const oldMode = prevSettings.customSet || 'digits';
+        const newMode = nextSettings.customSet || 'digits';
+
+        let finalSettings = nextSettings;
+        if (oldMode !== newMode) {
+            const modePrefs = modePrefsByOperation[targetOperation];
+            const prefs = modePrefs[(newMode || 'digits') as keyof ModePrefs];
+            finalSettings = {
+                ...finalSettings,
+                problemOrder: prefs.problemOrder,
+                operandOrder: prefs.operandOrder,
+                missingValue: prefs.missingValue,
+            };
+        } else if (newOpts.problemOrder !== undefined || newOpts.operandOrder !== undefined || newOpts.missingValue !== undefined) {
+            setModePrefsByOperation(prev => ({
+                ...prev,
+                [targetOperation]: {
+                    ...prev[targetOperation],
+                    [(newMode || 'digits') as keyof ModePrefs]: {
+                        problemOrder: finalSettings.problemOrder,
+                        operandOrder: finalSettings.operandOrder,
+                        missingValue: finalSettings.missingValue,
+                    },
+                },
+            }));
+        }
+
+        setSettingsByOperation(prev => ({
+            ...prev,
+            [targetOperation]: finalSettings,
+        }));
     };
 
     const startSession = useCallback(() => {
