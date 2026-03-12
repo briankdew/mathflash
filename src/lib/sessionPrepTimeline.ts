@@ -46,6 +46,11 @@ export const sessionPrepMarks = {
     sessionPrepTimeline.pauseAfterRightFlip +
     sessionPrepTimeline.flip +
     sessionPrepTimeline.pauseAfterResultFlip,
+  finalFlipAtMin:
+    sessionPrepTimeline.tuck +
+    sessionPrepTimeline.beat +
+    sessionPrepTimeline.roll +
+    sessionPrepTimeline.postRollPause,
   totalPrep:
     sessionPrepTimeline.tuck +
     sessionPrepTimeline.beat +
@@ -57,6 +62,13 @@ export const sessionPrepMarks = {
     sessionPrepTimeline.pauseAfterRightFlip +
     sessionPrepTimeline.flip +
     sessionPrepTimeline.pauseAfterResultFlip +
+    sessionPrepTimeline.flip +
+    sessionPrepTimeline.pauseAfterFinalFlip,
+  totalPrepMin:
+    sessionPrepTimeline.tuck +
+    sessionPrepTimeline.beat +
+    sessionPrepTimeline.roll +
+    sessionPrepTimeline.postRollPause +
     sessionPrepTimeline.flip +
     sessionPrepTimeline.pauseAfterFinalFlip,
 } as const;

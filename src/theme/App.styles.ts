@@ -76,7 +76,6 @@ export const appStyles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 6,
         elevation: 6,
-        marginBottom: 10,
     },
     startBtnText: {
         color: '#fff',

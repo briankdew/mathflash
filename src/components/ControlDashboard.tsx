@@ -12,6 +12,10 @@ import { theme } from '../theme/colors';
 // Keypad dimensions
 const KEYPAD_CONTENT_HEIGHT = 232;
 const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 20;
+const SETTINGS_REVEAL_MARGIN = 12;
+const SETTINGS_FALLBACK_HEIGHT = 240;
+const START_BUTTON_HEIGHT = 35;
+const GEAR_SIZE = 33;
 
 interface ControlDashboardProps {
   isActive: boolean;
@@ -39,12 +43,15 @@ export function ControlDashboard({
   setUseTimer
 }: ControlDashboardProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsMeasuredHeight, setSettingsMeasuredHeight] = useState(0);
   const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const untuckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animated values for keypad slide-in
   const keypadHeight = useSharedValue(0);
   const keypadSlide = useSharedValue(-KEYPAD_CONTENT_HEIGHT);
+  const settingsHeight = useSharedValue(0);
+  const settingsSlide = useSharedValue(-(SETTINGS_FALLBACK_HEIGHT + SETTINGS_REVEAL_MARGIN));
   // Gear tucked behind button: 0. Fully out: 142 (Left edge = 107.5 button edge + 18u gap + 16.5 half width of 33px gear)
   const gearOffset = useSharedValue(142);
 
@@ -117,13 +124,37 @@ export function ControlDashboard({
     transform: [{ translateX: gearOffset.value }],
   }));
 
+  useEffect(() => {
+    const settingsTargetHeight = (settingsMeasuredHeight > 0 ? settingsMeasuredHeight : SETTINGS_FALLBACK_HEIGHT) + SETTINGS_REVEAL_MARGIN;
+
+    if (isSettingsOpen) {
+      settingsHeight.value = withTiming(settingsTargetHeight, {
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
+      });
+      settingsSlide.value = withTiming(0, {
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
+      });
+    } else {
+      settingsSlide.value = withTiming(-settingsTargetHeight, {
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
+      });
+      settingsHeight.value = withTiming(0, {
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
+      });
+    }
+  }, [isSettingsOpen, settingsMeasuredHeight, settingsHeight, settingsSlide]);
+
   const settingsWrapperStyle = useAnimatedStyle(() => ({
-    height: withTiming(isSettingsOpen ? 550 : 0, {
-       duration: 350,
-       easing: Easing.out(Easing.cubic),
-    }),
-    opacity: withTiming(isSettingsOpen ? 1 : 0),
+    height: settingsHeight.value,
     overflow: 'hidden',
+  }));
+
+  const settingsContentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: settingsSlide.value }],
   }));
 
   return (
@@ -146,15 +177,15 @@ export function ControlDashboard({
       </Animated.View>
 
       {/* Primary Action Button Row */}
-      <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: '100%', height: START_BUTTON_HEIGHT, alignItems: 'center', justifyContent: 'center' }}>
         <Animated.View style={[
-          { position: 'absolute', zIndex: 0, marginBottom: 10 },
+          { position: 'absolute', zIndex: 0, top: (START_BUTTON_HEIGHT - GEAR_SIZE) / 2 },
           gearStyle
         ]}>
           <TouchableOpacity
             style={{ 
-              width: 33, 
-              height: 33, 
+              width: GEAR_SIZE, 
+              height: GEAR_SIZE, 
               justifyContent: 'center', 
               alignItems: 'center',
             }}
@@ -178,13 +209,24 @@ export function ControlDashboard({
 
       {/* Expandable Settings */}
       <Animated.View style={[{ width: '100%' }, settingsWrapperStyle]}>
-        <SettingsPanel
-          options={options}
-          updateOptions={onUpdateOptions}
-          useTimer={useTimer}
-          setUseTimer={setUseTimer}
-          disabled={isActive}
-        />
+        <Animated.View style={[{ width: '100%' }, settingsContentStyle]}>
+          <View
+            onLayout={(event) => {
+              const h = Math.ceil(event.nativeEvent.layout.height);
+              if (h > 0 && h !== settingsMeasuredHeight) {
+                setSettingsMeasuredHeight(h);
+              }
+            }}
+          >
+            <SettingsPanel
+              options={options}
+              updateOptions={onUpdateOptions}
+              useTimer={useTimer}
+              setUseTimer={setUseTimer}
+              disabled={isActive}
+            />
+          </View>
+        </Animated.View>
       </Animated.View>
     </View>
   );

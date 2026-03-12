@@ -166,6 +166,19 @@ export function SettingsPanel({
                             </Text>
                         </TouchableOpacity>
                     </View>
+                    <View style={styles.controlGroupSquare}>
+                        <Text style={styles.label}>Start</Text>
+                        <TouchableOpacity
+                            style={[styles.timerBox, options.startMode === 'full' && styles.chipActive, disabled && styles.chipDisabled]}
+                            onPress={() => updateOptions({ startMode: options.startMode === 'full' ? 'min' : 'full' })}
+                            disabled={disabled}
+                        >
+                            {options.startMode === 'full' && <InnerShadowBox width={44} height={44} rx={10} fill="#C0BEB1" />}
+                            <Text style={[styles.chipTextAllClr, options.startMode === 'full' && styles.chipTextActive]}>
+                                {options.startMode === 'full' ? "Full" : "Min"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <View style={[styles.controlGroupSquare, { alignItems: 'center' }]}>
@@ -197,6 +210,7 @@ export function SettingsPanel({
 
 const styles = StyleSheet.create({
     container: {
+        marginTop: 10,
         paddingVertical: 10,
         paddingHorizontal: 20,
         backgroundColor: 'transparent',

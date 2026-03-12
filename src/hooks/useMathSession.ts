@@ -28,6 +28,7 @@ export function useMathSession() {
         problemOrder: 'random',
         operandOrder: 'random',
         missingValue: 'random',
+        startMode: 'full',
         activeChips: [1, 2, 3, 4, 5, 6, 7, 8, 9],
         customSet: null,
         practiceCycles: 1,
@@ -90,7 +91,7 @@ export function useMathSession() {
 
     // Derived Values
     const getPendingCount = useCallback(() => {
-        const pool = MathEngine.getFilteredPool(options);
+        let pool = MathEngine.getFilteredPool(options);
         const cycles = Math.max(1, Math.min(5, options.practiceCycles));
         return pool.length * cycles;
     }, [options]);
@@ -130,7 +131,7 @@ export function useMathSession() {
     const startSession = useCallback(() => {
         clearPrepTimeouts();
 
-        const pool = MathEngine.getFilteredPool(options);
+        let pool = MathEngine.getFilteredPool(options);
         if (pool.length === 0) {
             // In a real app, maybe trigger an alert here.
             console.warn("No Problem Set Selected");
@@ -138,7 +139,7 @@ export function useMathSession() {
         }
 
         if (options.problemOrder === 'random') {
-            MathEngine.shuffle(pool);
+            pool = MathEngine.shuffle(pool);
         }
 
         const cycles = Math.max(1, Math.min(5, options.practiceCycles));
@@ -161,6 +162,8 @@ export function useMathSession() {
             prepTimeouts.current.stadiumHide = null;
         }, sessionPrepMarks.stadiumHideAt);
 
+        const prepTotal = options.startMode === 'min' ? sessionPrepMarks.totalPrepMin : sessionPrepMarks.totalPrep;
+
         // Total visual prep now follows shared staged-flip timeline, then first problem + timer start.
         prepTimeouts.current.firstProblem = setTimeout(() => {
             _nextProblem(pool, cycles - 1);
@@ -169,14 +172,14 @@ export function useMathSession() {
                 prepTimeouts.current.timerStartDelay = null;
             }, sessionPrepTimeline.firstProblemDissolve);
             prepTimeouts.current.firstProblem = null;
-        }, sessionPrepMarks.totalPrep);
+        }, prepTotal);
     }, [options, clearPrepTimeouts]);
 
     const _nextProblem = (currentQueue: ProblemSpec[], remainingCycles: number) => {
         if (currentQueue.length === 0) {
             if (remainingCycles > 0) {
                 let pool = MathEngine.getFilteredPool(options);
-                if (options.problemOrder === 'random') MathEngine.shuffle(pool);
+                if (options.problemOrder === 'random') pool = MathEngine.shuffle(pool);
 
                 if (pool.length === 0) {
                     endSession();

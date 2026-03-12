@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, TextInput, TouchableOpacity } from 'react-native';
 import Svg, { Path, Ellipse, Defs, Filter, FeDropShadow, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect, FeBlend, FeColorMatrix } from 'react-native-svg';
-import { ProblemDisplay, OperationMode } from '../lib/types';
+import { ProblemDisplay, OperationMode, StartMode } from '../lib/types';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { theme, getOperationTheme } from '../theme/colors';
 import { constellationStyles as styles } from '../theme/ProblemConstellation.styles';
@@ -27,6 +27,7 @@ const AnswerBoxSvg = ({ isActive }: { isActive: boolean }) => (
 interface ProblemConstellationProps {
     problem: ProblemDisplay | null;
     operation: OperationMode;
+    startMode?: StartMode;
     shakeTrigger?: number; // pass a random value to trigger a shake
     renderInput?: React.ReactNode;
     showCorrect?: boolean;
@@ -35,7 +36,7 @@ interface ProblemConstellationProps {
     onToggleOperation?: () => void;
 }
 
-export function ProblemConstellation({ problem, operation, shakeTrigger = 0, renderInput, showCorrect = false, isActive = false, isStadiumActive = true, onToggleOperation }: ProblemConstellationProps) {
+export function ProblemConstellation({ problem, operation, startMode = 'full', shakeTrigger = 0, renderInput, showCorrect = false, isActive = false, isStadiumActive = true, onToggleOperation }: ProblemConstellationProps) {
     const opTheme = getOperationTheme(operation);
     const { width } = useWindowDimensions();
 
@@ -86,6 +87,10 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
         }
 
         if (isActive) {
+            const isMinStart = startMode === 'min';
+            const prepCompleteAt = isMinStart ? sessionPrepMarks.totalPrepMin : sessionPrepMarks.totalPrep;
+            const finalFlipAt = isMinStart ? sessionPrepMarks.finalFlipAtMin : sessionPrepMarks.finalFlipAt;
+
             const scheduleFlip = (angle: { value: number }, at: number, targetDeg: number = -90) => {
                 const startId = setTimeout(() => {
                     angle.value = withTiming(targetDeg, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
@@ -93,19 +98,22 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                 flipTimeoutRefs.current.push(startId);
             };
 
-            scheduleFlip(leftFlip, sessionPrepMarks.leftFlipAt, -180);
-            scheduleFlip(rightFlip, sessionPrepMarks.rightFlipAt, -180);
-            scheduleFlip(resultFlip, sessionPrepMarks.resultFlipAt, -180);
+            if (!isMinStart) {
+                scheduleFlip(leftFlip, sessionPrepMarks.leftFlipAt, -180);
+                scheduleFlip(rightFlip, sessionPrepMarks.rightFlipAt, -180);
+                scheduleFlip(resultFlip, sessionPrepMarks.resultFlipAt, -180);
+            }
 
             const finalFlipId = setTimeout(() => {
-                leftFlip.value = withTiming(-360, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
-                rightFlip.value = withTiming(-360, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
-                resultFlip.value = withTiming(-360, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
-            }, sessionPrepMarks.finalFlipAt);
+                const finalTarget = isMinStart ? -180 : -360;
+                leftFlip.value = withTiming(finalTarget, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
+                rightFlip.value = withTiming(finalTarget, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
+                resultFlip.value = withTiming(finalTarget, { duration: sessionPrepTimeline.flip, easing: Easing.linear });
+            }, finalFlipAt);
 
             const blankBackTextId = setTimeout(() => {
                 setShowBlankFinalBackText(true);
-            }, sessionPrepMarks.finalFlipAt + sessionPrepTimeline.flip / 2);
+            }, finalFlipAt + sessionPrepTimeline.flip / 2);
 
             const reorientBackTextId = setTimeout(() => {
                 // Keep card shells fixed; only reorient hidden back text for clean next-state reveal.
@@ -113,14 +121,21 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                 leftBackTextRotation.value = withTiming(0, { duration: reorientDuration, easing: Easing.linear });
                 rightBackTextRotation.value = withTiming(0, { duration: reorientDuration, easing: Easing.linear });
                 resultBackTextRotation.value = withTiming(0, { duration: reorientDuration, easing: Easing.linear });
-            }, sessionPrepMarks.finalFlipAt + sessionPrepTimeline.flip + 100);
+            }, finalFlipAt + sessionPrepTimeline.flip + 100);
 
             const preArmFirstRevealId = setTimeout(() => {
                 // Prevent a one-frame flash before first-problem dissolve kicks in.
                 if (!hasPlayedFirstRevealRef.current) {
                     textRevealOpacity.value = 0;
                 }
-            }, Math.max(0, sessionPrepMarks.totalPrep - 20));
+                if (isMinStart) {
+                    // Keep Min mode to a single visible flip, then quietly normalize shell orientation
+                    // right before first-problem dissolve.
+                    leftFlip.value = -360;
+                    rightFlip.value = -360;
+                    resultFlip.value = -360;
+                }
+            }, Math.max(0, prepCompleteAt - 20));
 
             flipTimeoutRefs.current.push(finalFlipId, blankBackTextId, reorientBackTextId, preArmFirstRevealId);
         }
@@ -129,7 +144,7 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
             flipTimeoutRefs.current.forEach(clearTimeout);
             flipTimeoutRefs.current = [];
         };
-    }, [isActive]);
+    }, [isActive, startMode]);
 
     React.useEffect(() => {
         if (!isActive) {
@@ -266,25 +281,31 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
             <View style={styles.anchor}>
                 {/* Operation Mode Label */}
                 <View style={styles.operationLabelContainer}>
-                    <Svg width="353" height="36" viewBox="0 0 353 36" style={{ position: 'absolute' }}>
-                        <Defs>
-                            <Filter id="stadiumShadow" x="-0.03" y="-0.15" width="1.06" height="1.3" filterUnits="objectBoundingBox">
-                                <FeFlood floodOpacity="0" result="BackgroundImageFix" />
-                                <FeBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                                <FeColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-                                <FeOffset dy="1.5" />
-                                <FeGaussianBlur stdDeviation="1.5" />
-                                <FeComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1" />
-                                <FeColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0" />
-                                <FeBlend mode="normal" in2="shape" result="effect1_innerShadow" />
-                            </Filter>
-                        </Defs>
-                        {isStadiumActive ? (
+                    {isStadiumActive ? (
+                        <Svg key="stadium-shadow" width="353" height="36" viewBox="0 0 353 36" style={{ position: 'absolute' }}>
+                            <Defs>
+                                <Filter id="stadiumShadow" x="-0.03" y="-0.15" width="1.06" height="1.3" filterUnits="objectBoundingBox">
+                                    <FeFlood floodOpacity="0" result="BackgroundImageFix" />
+                                    <FeBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+                                    <FeColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+                                    <FeOffset dy="1.5" />
+                                    <FeGaussianBlur stdDeviation="1.5" />
+                                    <FeComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1" />
+                                    <FeColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0" />
+                                    <FeBlend mode="normal" in2="shape" result="effect1_innerShadow" />
+                                </Filter>
+                            </Defs>
                             <Rect width="353" height="36" rx="18" fill="#FFFFFF" filter="url(#stadiumShadow)" />
-                        ) : (
-                            <Rect width="353" height="36" rx="18" fill="none" stroke={stadiumBorderColor} strokeWidth="1" />
-                        )}
-                    </Svg>
+                        </Svg>
+                    ) : (
+                        <View
+                            style={[
+                                localStyles.stadiumBorderOnly,
+                                { borderColor: stadiumBorderColor }
+                            ]}
+                            pointerEvents="none"
+                        />
+                    )}
                     <View style={styles.operationMiniIconLeft} pointerEvents="none">
                         <MainMiniIcon />
                     </View>
@@ -327,7 +348,7 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                 </Animated.View>
                 <Animated.View style={[styles.card, styles.cardLeft, localStyles.leftCardTopShadow, leftCardAnimatedStyle, leftBackVisibleStyle, problem && localStyles.hiddenLayer]}>
                     <Animated.Text style={[localStyles.backTextBase, localStyles.operandBackText, { color: prepBackTextColors.ready }, leftBackTextAnimatedStyle, firstRevealTextStyle]}>
-                        {(showBlankFinalBackText && !problem) || problem ? '' : 'ready...'}
+                        {(showBlankFinalBackText && !problem) || problem || startMode === 'min' ? '' : 'ready...'}
                     </Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.card, styles.cardRight, rightCardAnimatedStyle, rightFrontVisibleStyle]}>
@@ -335,7 +356,7 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                 </Animated.View>
                 <Animated.View style={[styles.card, styles.cardRight, localStyles.rightCardTopShadow, rightCardAnimatedStyle, rightBackVisibleStyle, problem && localStyles.hiddenLayer]}>
                     <Animated.Text style={[localStyles.backTextBase, localStyles.operandBackText, { color: prepBackTextColors.set }, rightBackTextAnimatedStyle, firstRevealTextStyle]}>
-                        {(showBlankFinalBackText && !problem) || problem ? '' : 'set...'}
+                        {(showBlankFinalBackText && !problem) || problem || startMode === 'min' ? '' : 'set...'}
                     </Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.cardResult, resultCardAnimatedStyle, resultFrontVisibleStyle]}>
@@ -343,7 +364,7 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                 </Animated.View>
                 <Animated.View style={[styles.cardResult, localStyles.resultCardTopShadow, resultCardAnimatedStyle, resultBackVisibleStyle, problem && localStyles.hiddenLayer]}>
                     <Animated.Text style={[localStyles.backTextBase, localStyles.resultBackText, { color: prepBackTextColors.result }, resultBackTextAnimatedStyle, firstRevealTextStyle]}>
-                        {(showBlankFinalBackText && !problem) || problem ? '' : prepResultLabel}
+                        {(showBlankFinalBackText && !problem) || problem || startMode === 'min' ? '' : prepResultLabel}
                     </Animated.Text>
                 </Animated.View>
 
@@ -408,5 +429,13 @@ const localStyles = StyleSheet.create({
     resultBackText: {
         fontFamily: 'Nunito_800ExtraBold_Italic',
         fontSize: 43,
+    },
+    stadiumBorderOnly: {
+        position: 'absolute',
+        width: 353,
+        height: 36,
+        borderRadius: 18,
+        borderWidth: 1,
+        backgroundColor: 'transparent',
     },
 });

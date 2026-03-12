@@ -110,6 +110,7 @@ export function PracticeArea({
       <ProblemConstellation
         problem={currentProblem}
         operation={options.operation}
+        startMode={options.startMode}
         shakeTrigger={shakeTrigger}
         showCorrect={showCorrect}
         isActive={isActive}

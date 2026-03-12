@@ -3,6 +3,7 @@ export type ProblemOrder = 'random' | 'standard';
 export type OperandOrder = 'random' | 'standard' | 'reverse';
 export type MissingValueMode = 'result' | 'operand' | 'random';
 export type CustomSet = '10s' | 'doubles' | null;
+export type StartMode = 'full' | 'min';
 
 export interface ProblemSpec {
   a: number;
@@ -29,6 +30,7 @@ export interface SessionOptions {
   problemOrder: ProblemOrder;
   operandOrder: OperandOrder;
   missingValue: MissingValueMode;
+  startMode: StartMode;
   activeChips: number[]; // e.g. [1, 2, 3] usually 1-9
   customSet: CustomSet;
   practiceCycles: number;
