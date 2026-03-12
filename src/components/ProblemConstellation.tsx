@@ -247,6 +247,10 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
     const idleColorL = problem ? opTheme.textOperand : '#c0beb1';
     const idleColorR = problem ? opTheme.textOperand : '#c0beb1';
     const idleColorRes = problem ? opTheme.textResult : '#a7a597';
+    const prepBackTextColors = operation === 'addsub'
+        ? { ready: '#85A8CD', set: '#53789E', result: '#224A71' }
+        : { ready: '#91AE85', set: '#49683B', result: '#325124' };
+    const prepResultLabel = operation === 'addsub' ? 'add!' : 'multiply!';
 
     const MainIcon = operation === 'addsub' ? IconPlus : IconTimes;
     const InvIcon = operation === 'addsub' ? IconMinus : IconDivide;
@@ -306,19 +310,25 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                     <Animated.Text style={[styles.cardText, { color: idleColorL }, firstRevealTextStyle]}>{showBlankFinalBackText && !problem ? '' : valL}</Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.card, styles.cardLeft, localStyles.leftCardTopShadow, leftCardAnimatedStyle, leftBackVisibleStyle, problem && localStyles.hiddenLayer]}>
-                    <Animated.Text style={[styles.cardText, { color: idleColorL }, leftBackTextAnimatedStyle, firstRevealTextStyle]}>{(showBlankFinalBackText && !problem) || problem ? '' : '1'}</Animated.Text>
+                    <Animated.Text style={[localStyles.backTextBase, localStyles.operandBackText, { color: prepBackTextColors.ready }, leftBackTextAnimatedStyle, firstRevealTextStyle]}>
+                        {(showBlankFinalBackText && !problem) || problem ? '' : 'ready...'}
+                    </Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.card, styles.cardRight, rightCardAnimatedStyle, rightFrontVisibleStyle]}>
                     <Animated.Text style={[styles.cardText, { color: idleColorR }, firstRevealTextStyle]}>{showBlankFinalBackText && !problem ? '' : valR}</Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.card, styles.cardRight, localStyles.rightCardTopShadow, rightCardAnimatedStyle, rightBackVisibleStyle, problem && localStyles.hiddenLayer]}>
-                    <Animated.Text style={[styles.cardText, { color: idleColorR }, rightBackTextAnimatedStyle, firstRevealTextStyle]}>{(showBlankFinalBackText && !problem) || problem ? '' : '1'}</Animated.Text>
+                    <Animated.Text style={[localStyles.backTextBase, localStyles.operandBackText, { color: prepBackTextColors.set }, rightBackTextAnimatedStyle, firstRevealTextStyle]}>
+                        {(showBlankFinalBackText && !problem) || problem ? '' : 'set...'}
+                    </Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.cardResult, resultCardAnimatedStyle, resultFrontVisibleStyle]}>
                     <Animated.Text style={[styles.cardText, { color: idleColorRes }, firstRevealTextStyle]}>{showBlankFinalBackText && !problem ? '' : valRes}</Animated.Text>
                 </Animated.View>
                 <Animated.View style={[styles.cardResult, localStyles.resultCardTopShadow, resultCardAnimatedStyle, resultBackVisibleStyle, problem && localStyles.hiddenLayer]}>
-                    <Animated.Text style={[styles.cardText, { color: idleColorRes }, resultBackTextAnimatedStyle, firstRevealTextStyle]}>{(showBlankFinalBackText && !problem) || problem ? '' : '1'}</Animated.Text>
+                    <Animated.Text style={[localStyles.backTextBase, localStyles.resultBackText, { color: prepBackTextColors.result }, resultBackTextAnimatedStyle, firstRevealTextStyle]}>
+                        {(showBlankFinalBackText && !problem) || problem ? '' : prepResultLabel}
+                    </Animated.Text>
                 </Animated.View>
 
                 <View style={styles.cardAnswer}>
@@ -367,5 +377,20 @@ const localStyles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 6,
         elevation: 6,
+    },
+    backTextBase: {
+        zIndex: 10,
+        textShadowColor: 'transparent',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 0,
+    },
+    operandBackText: {
+        fontFamily: 'Nunito_700Bold',
+        fontWeight: '700',
+        fontSize: 40,
+    },
+    resultBackText: {
+        fontFamily: 'Nunito_800ExtraBold_Italic',
+        fontSize: 43,
     },
 });

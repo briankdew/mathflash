@@ -13,7 +13,7 @@ import { PracticeArea } from './src/components/PracticeArea';
 import { ControlDashboard } from './src/components/ControlDashboard';
 import { useMathSession } from './src/hooks/useMathSession';
 import { theme, getOperationTheme } from './src/theme/colors';
-import { useFonts, Nunito_700Bold } from '@expo-google-fonts/nunito';
+import { useFonts, Nunito_700Bold, Nunito_800ExtraBold_Italic } from '@expo-google-fonts/nunito';
 import { Archivo_400Regular } from '@expo-google-fonts/archivo';
 import { Fredoka_400Regular } from '@expo-google-fonts/fredoka';
 import { NotoSans_500Medium } from '@expo-google-fonts/noto-sans';
@@ -27,6 +27,7 @@ export default function App() {
 
   let [fontsLoaded] = useFonts({
     Nunito_700Bold,
+    Nunito_800ExtraBold_Italic,
     Archivo_400Regular,
     Fredoka_400Regular,
     NotoSans_500Medium,
