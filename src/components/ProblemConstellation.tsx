@@ -75,8 +75,8 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
             };
 
             scheduleFlip(leftFlip, sessionPrepMarks.leftFlipAt, -180);
-            scheduleFlip(rightFlip, sessionPrepMarks.rightFlipAt);
-            scheduleFlip(resultFlip, sessionPrepMarks.resultFlipAt);
+            scheduleFlip(rightFlip, sessionPrepMarks.rightFlipAt, -180);
+            scheduleFlip(resultFlip, sessionPrepMarks.resultFlipAt, -180);
         }
 
         return () => {
@@ -110,9 +110,25 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
         transformStyle: 'preserve-3d',
     }));
 
+    const rightFrontVisibleStyle = useAnimatedStyle(() => ({
+        opacity: rightFlip.value > -90 ? 1 : 0,
+    }));
+
+    const rightBackVisibleStyle = useAnimatedStyle(() => ({
+        opacity: rightFlip.value > -90 ? 0 : 1,
+    }));
+
     const resultCardAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{ perspective: 1000 }, { rotateX: `${resultFlip.value}deg` }],
         transformStyle: 'preserve-3d',
+    }));
+
+    const resultFrontVisibleStyle = useAnimatedStyle(() => ({
+        opacity: resultFlip.value > -90 ? 1 : 0,
+    }));
+
+    const resultBackVisibleStyle = useAnimatedStyle(() => ({
+        opacity: resultFlip.value > -90 ? 0 : 1,
     }));
 
     const valL = problem ? (problem.missing === 'left' ? (showCorrect ? problem.left : '') : problem.left) : '--';
@@ -183,11 +199,17 @@ export function ProblemConstellation({ problem, operation, shakeTrigger = 0, ren
                 <Animated.View style={[styles.card, styles.cardLeft, localStyles.leftCardTopShadow, leftCardAnimatedStyle, leftBackVisibleStyle]}>
                     <Text style={[styles.cardText, { color: idleColorL }, localStyles.leftBackTextInverted]}>{'1'}</Text>
                 </Animated.View>
-                <Animated.View style={[styles.card, styles.cardRight, rightCardAnimatedStyle]}>
+                <Animated.View style={[styles.card, styles.cardRight, rightCardAnimatedStyle, rightFrontVisibleStyle]}>
                     <Text style={[styles.cardText, { color: idleColorR }]}>{valR}</Text>
                 </Animated.View>
-                <Animated.View style={[styles.cardResult, resultCardAnimatedStyle]}>
+                <Animated.View style={[styles.card, styles.cardRight, localStyles.rightCardTopShadow, rightCardAnimatedStyle, rightBackVisibleStyle]}>
+                    <Text style={[styles.cardText, { color: idleColorR }, localStyles.rightBackTextInverted]}>{'1'}</Text>
+                </Animated.View>
+                <Animated.View style={[styles.cardResult, resultCardAnimatedStyle, resultFrontVisibleStyle]}>
                     <Text style={[styles.cardText, { color: idleColorRes }]}>{valRes}</Text>
+                </Animated.View>
+                <Animated.View style={[styles.cardResult, localStyles.resultCardTopShadow, resultCardAnimatedStyle, resultBackVisibleStyle]}>
+                    <Text style={[styles.cardText, { color: idleColorRes }, localStyles.resultBackTextInverted]}>{'1'}</Text>
                 </Animated.View>
 
                 <View style={styles.cardAnswer}>
@@ -220,7 +242,27 @@ const localStyles = StyleSheet.create({
         shadowRadius: 6,
         elevation: 6,
     },
+    rightCardTopShadow: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.5,
+        shadowRadius: 6,
+        elevation: 6,
+    },
+    resultCardTopShadow: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.5,
+        shadowRadius: 6,
+        elevation: 6,
+    },
     leftBackTextInverted: {
+        transform: [{ rotateX: '-180deg' }],
+    },
+    rightBackTextInverted: {
+        transform: [{ rotateX: '-180deg' }],
+    },
+    resultBackTextInverted: {
         transform: [{ rotateX: '-180deg' }],
     },
 });

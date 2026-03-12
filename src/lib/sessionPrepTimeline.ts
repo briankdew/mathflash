@@ -4,8 +4,8 @@ export const sessionPrepTimeline = {
   roll: 300,
   postRollPause: 500,
   flip: 300,
-  pauseAfterLeftFlip: 700,
-  pauseAfterRightFlip: 700,
+  pauseAfterLeftFlip: 1000,
+  pauseAfterRightFlip: 1000,
   pauseAfterResultFlip: 1000,
 } as const;
 
