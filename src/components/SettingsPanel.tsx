@@ -37,6 +37,7 @@ export function SettingsPanel({
     setUseTimer,
     disabled,
 }: SettingsPanelProps) {
+    const isAddSubOperation = options.operation === 'addsub';
     const isAllMode = !options.customSet && options.activeChips.length === 9;
 
     const cycleOrder = () => {
@@ -85,7 +86,7 @@ export function SettingsPanel({
     };
 
     const setCustomSet = (set: '10s' | 'doubles') => {
-        if (disabled) return;
+        if (disabled || !isAddSubOperation) return;
         const isActivating = options.customSet !== set;
         if (isActivating) {
             updateOptions({ customSet: set, activeChips: [] });
@@ -181,27 +182,29 @@ export function SettingsPanel({
                     </View>
                 </View>
 
-                <View style={[styles.controlGroupSquare, { alignItems: 'center' }]}>
-                    <Text style={styles.label}>Custom</Text>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity
-                            style={[styles.digitBox, options.customSet === '10s' && styles.chipActive, disabled && styles.chipDisabled]}
-                            onPress={() => setCustomSet('10s')} disabled={disabled}
-                        >
-                            {options.customSet === '10s' && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
-                            <Text style={[styles.chipText, options.customSet === '10s' && styles.chipTextActive]}>10's</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.digitBox, options.customSet === 'doubles' && styles.chipActive, disabled && styles.chipDisabled]}
-                            onPress={() => setCustomSet('doubles')} disabled={disabled}
-                        >
-                            {options.customSet === 'doubles' && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
-                            <Text style={[styles.chipTextMath, options.customSet === 'doubles' && styles.chipTextActiveMath]}>
-                                n+n
-                            </Text>
-                        </TouchableOpacity>
+                {isAddSubOperation && (
+                    <View style={[styles.controlGroupSquare, { alignItems: 'center' }]}>
+                        <Text style={styles.label}>Custom</Text>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <TouchableOpacity
+                                style={[styles.digitBox, options.customSet === '10s' && styles.chipActive, disabled && styles.chipDisabled]}
+                                onPress={() => setCustomSet('10s')} disabled={disabled}
+                            >
+                                {options.customSet === '10s' && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
+                                <Text style={[styles.chipText, options.customSet === '10s' && styles.chipTextActive]}>10's</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.digitBox, options.customSet === 'doubles' && styles.chipActive, disabled && styles.chipDisabled]}
+                                onPress={() => setCustomSet('doubles')} disabled={disabled}
+                            >
+                                {options.customSet === 'doubles' && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
+                                <Text style={[styles.chipTextMath, options.customSet === 'doubles' && styles.chipTextActiveMath]}>
+                                    n+n
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                )}
             </View>
 
         </View>
