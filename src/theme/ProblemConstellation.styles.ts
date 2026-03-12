@@ -22,26 +22,47 @@ export const constellationStyles = StyleSheet.create({
     },
     operationLabelContainer: {
         position: 'absolute',
-        top: -162.5, // 10px precisely above the -117.5 operand card bound
-        left: -165, // Centers the 330px width shape horizontally
-        width: 330,
-        height: 35,
+        top: -163.5, // Shifted up 1px to maintain a 9px logo-to-selector gap
+        left: -176.5, // Centers the 353px width shape horizontally
+        width: 353,
+        height: 36,
         justifyContent: 'center',
         alignItems: 'center',
         flexDirection: 'row',
     },
     operationLabel: {
+        height: 36,
         flexDirection: 'row',
         justifyContent: 'center',
-        alignItems: 'baseline',
+        alignItems: 'center',
     },
     operationTextLeft: {
         fontSize: 30,
+        lineHeight: 36,
         fontFamily: 'Fredoka_400Regular',
     },
     operationTextRight: {
         fontSize: 30,
+        lineHeight: 36,
         fontFamily: 'Fredoka_400Regular',
+    },
+    operationMiniIconLeft: {
+        position: 'absolute',
+        left: 7,
+        top: (36 - 23) / 2,
+        width: 23,
+        height: 23,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    operationMiniIconRight: {
+        position: 'absolute',
+        right: 7,
+        top: (36 - 23) / 2,
+        width: 23,
+        height: 23,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     card: {
         position: 'absolute',
