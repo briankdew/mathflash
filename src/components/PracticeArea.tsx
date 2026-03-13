@@ -8,6 +8,7 @@ interface PracticeAreaProps {
   currentProblem: ProblemDisplay | null;
   options: SessionOptions;
   isActive: boolean;
+  isInputEnabled: boolean;
   onCheckAnswer: (input: string, forceComplete: boolean) => 'correct' | 'wrong' | 'incomplete';
   onAdvanceProblem: () => void;
   onInputChanged: (val: string) => void;
@@ -18,6 +19,7 @@ export function PracticeArea({
   currentProblem,
   options,
   isActive,
+  isInputEnabled,
   onCheckAnswer,
   onAdvanceProblem,
   onInputChanged,
@@ -31,7 +33,7 @@ export function PracticeArea({
 
   // Auto-focus when active
   React.useEffect(() => {
-    if (isActive) {
+    if (isActive && isInputEnabled) {
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
       if (clearInputTimeoutRef.current) {
@@ -44,9 +46,11 @@ export function PracticeArea({
       }
       setShowCorrect(false);
       inputRef.current?.blur();
-      onInputChanged('');
+      if (!isInputEnabled) {
+        onInputChanged('');
+      }
     }
-  }, [isActive]);
+  }, [isActive, isInputEnabled, onInputChanged]);
 
   React.useEffect(() => {
     return () => {
@@ -89,17 +93,19 @@ export function PracticeArea({
   };
 
   const handleSubmit = () => {
+    if (!isInputEnabled) return;
     processAnswer(inputValue, true);
   };
 
   const handleInput = (text: string) => {
+    if (!isInputEnabled) return;
     onInputChanged(text);
   };
 
   React.useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || !isInputEnabled) return;
     processAnswer(inputValue, false);
-  }, [inputValue, isActive]);
+  }, [inputValue, isActive, isInputEnabled]);
 
   return (
     <View style={styles.constellationWrapper}>
@@ -119,7 +125,7 @@ export function PracticeArea({
             value={inputValue}
             onChangeText={handleInput}
             onSubmitEditing={handleSubmit}
-            editable={isActive}
+            editable={isActive && isInputEnabled}
             autoFocus={false}
             showSoftInputOnFocus={false}
             caretHidden={true}

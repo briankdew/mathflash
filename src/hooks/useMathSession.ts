@@ -84,6 +84,7 @@ export function useMathSession() {
 
     // Session State
     const [isActive, setIsActive] = useState(false);
+    const [isInputEnabled, setIsInputEnabled] = useState(false);
     const [isStadiumActive, setIsStadiumActive] = useState(true);
     const [sessionId, setSessionId] = useState('');
     const [sessionStart, setSessionStart] = useState<Date | null>(null);
@@ -108,10 +109,12 @@ export function useMathSession() {
         stadiumHide: ReturnType<typeof setTimeout> | null;
         firstProblem: ReturnType<typeof setTimeout> | null;
         timerStartDelay: ReturnType<typeof setTimeout> | null;
+        inputUnlock: ReturnType<typeof setTimeout> | null;
     }>({
         stadiumHide: null,
         firstProblem: null,
         timerStartDelay: null,
+        inputUnlock: null,
     });
 
     const clearPrepTimeouts = useCallback(() => {
@@ -126,6 +129,10 @@ export function useMathSession() {
         if (prepTimeouts.current.timerStartDelay) {
             clearTimeout(prepTimeouts.current.timerStartDelay);
             prepTimeouts.current.timerStartDelay = null;
+        }
+        if (prepTimeouts.current.inputUnlock) {
+            clearTimeout(prepTimeouts.current.inputUnlock);
+            prepTimeouts.current.inputUnlock = null;
         }
     }, []);
 
@@ -218,6 +225,7 @@ export function useMathSession() {
         metrics.current.cyclesRemaining = cyclesRemaining;
 
         setIsActive(true);
+        setIsInputEnabled(false);
         setSessionId(generateSessionId());
         setSessionStart(new Date());
         metrics.current.sessionCompletionMsTotal = 0;
@@ -239,6 +247,10 @@ export function useMathSession() {
             prepTimeouts.current.timerStartDelay = setTimeout(() => {
                 timerStart.current = Date.now();
                 prepTimeouts.current.timerStartDelay = null;
+            }, sessionPrepTimeline.firstProblemDissolve);
+            prepTimeouts.current.inputUnlock = setTimeout(() => {
+                setIsInputEnabled(true);
+                prepTimeouts.current.inputUnlock = null;
             }, sessionPrepTimeline.firstProblemDissolve);
             prepTimeouts.current.firstProblem = null;
         }, prepTotal);
@@ -376,6 +388,7 @@ export function useMathSession() {
         });
 
         setIsActive(false);
+        setIsInputEnabled(false);
         setIsStadiumActive(true);
         setCurrentProblem(null);
         setQueue([]);
@@ -391,6 +404,7 @@ export function useMathSession() {
         useTimer,
         setUseTimer,
         isActive,
+        isInputEnabled,
         isStadiumActive,
         currentProblem,
         stats,

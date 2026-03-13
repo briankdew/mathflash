@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
-import { FontAwesome } from '@expo/vector-icons';
 import { NumberPad } from './NumberPad';
 import { OperationSelector } from './OperationSelector';
 import { SettingsPanel } from './SettingsPanel';
+import { IconSettingsAddSub, IconSettingsMulDiv } from './icons/MathIcons';
 import { SessionOptions } from '../lib/types';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { appStyles as styles } from '../theme/App.styles';
@@ -21,6 +21,7 @@ const GEAR_SIZE = 33;
 
 interface ControlDashboardProps {
   isActive: boolean;
+  isInputEnabled: boolean;
   isStadiumActive: boolean;
   options: SessionOptions;
   opTheme: { textOperand: string; textResult: string; logoMath: string; logoFlash: string; tagline: string; btnBg: string; };
@@ -35,6 +36,7 @@ interface ControlDashboardProps {
 
 export function ControlDashboard({
   isActive,
+  isInputEnabled,
   isStadiumActive,
   options,
   opTheme,
@@ -165,7 +167,7 @@ export function ControlDashboard({
     <View style={styles.keypadBlock}>
       {/* Animated Keypad View */}
       <Animated.View 
-        pointerEvents={isActive ? 'auto' : 'none'}
+        pointerEvents={isActive && isInputEnabled ? 'auto' : 'none'}
         style={[
           { alignItems: 'center', width: '100%', backgroundColor: theme.bg, zIndex: 10 }, 
           keypadWrapperStyle
@@ -175,7 +177,7 @@ export function ControlDashboard({
           <NumberPad
             onDigit={onDigitInput}
             onClear={onClearInput}
-            disabled={!isActive}
+            disabled={!isActive || !isInputEnabled}
           />
         </Animated.View>
       </Animated.View>
@@ -196,7 +198,11 @@ export function ControlDashboard({
             onPress={() => !isActive && setIsSettingsOpen(!isSettingsOpen)}
             disabled={isActive}
           >
-            <FontAwesome name="gear" size={33} color={opTheme.tagline} />
+            {options.operation === 'multdiv' ? (
+              <IconSettingsMulDiv size={35} />
+            ) : (
+              <IconSettingsAddSub size={35} />
+            )}
           </TouchableOpacity>
         </Animated.View>
 

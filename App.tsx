@@ -24,6 +24,14 @@ export default function App() {
   const session = useMathSession();
   const opTheme = getOperationTheme(session.options.operation);
   const [inputValue, setInputValue] = useState('');
+  const handleDigitInput = (digit: string) => {
+    if (!session.isInputEnabled) return;
+    setInputValue(prev => prev + digit);
+  };
+  const handleInputChanged = (value: string) => {
+    if (!session.isInputEnabled && value !== '') return;
+    setInputValue(value);
+  };
 
   let [fontsLoaded] = useFonts({
     Nunito_700Bold,
@@ -55,9 +63,10 @@ export default function App() {
                 currentProblem={session.currentProblem}
                 options={session.options}
                 isActive={session.isActive}
+                isInputEnabled={session.isInputEnabled}
                 onCheckAnswer={(input, force) => session.checkAnswer(input, force)}
                 onAdvanceProblem={session.advanceToNextProblem}
-                onInputChanged={setInputValue}
+                onInputChanged={handleInputChanged}
                 inputValue={inputValue}
               />
 
@@ -78,8 +87,9 @@ export default function App() {
                   opTheme={opTheme}
                   onStartSession={session.startSession}
                   onEndSession={session.endSession}
-                  onDigitInput={(d) => setInputValue(prev => prev + d)}
+                  onDigitInput={handleDigitInput}
                   onClearInput={() => setInputValue('')}
+                  isInputEnabled={session.isInputEnabled}
                   onUpdateOptions={session.updateOptions}
                   useTimer={session.useTimer}
                   setUseTimer={session.setUseTimer}
