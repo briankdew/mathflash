@@ -55,8 +55,6 @@ export default function App() {
                 currentProblem={session.currentProblem}
                 options={session.options}
                 isActive={session.isActive}
-                isStadiumActive={session.isStadiumActive}
-                onToggleOperation={() => session.updateOptions({ operation: session.options.operation === 'addsub' ? 'multdiv' : 'addsub' })}
                 onCheckAnswer={(input, force) => session.checkAnswer(input, force)}
                 onAdvanceProblem={session.advanceToNextProblem}
                 onInputChanged={setInputValue}
@@ -75,6 +73,7 @@ export default function App() {
 
                 <ControlDashboard
                   isActive={session.isActive}
+                  isStadiumActive={session.isStadiumActive}
                   options={session.options}
                   opTheme={opTheme}
                   onStartSession={session.startSession}

@@ -28,6 +28,7 @@ type GlobalSettings = {
     practiceCycles: number;
     useTimer: boolean;
     startMode: SessionOptions['startMode'];
+    setsMode: SessionOptions['setsMode'];
 };
 
 const defaultOperationSettings = (): OperationScopedSettings => ({
@@ -61,6 +62,7 @@ export function useMathSession() {
         practiceCycles: 1,
         useTimer: true,
         startMode: 'full',
+        setsMode: 'cycles',
     });
 
     const currentOperationSettings = normalizeScopedSettingsForOperation(operation, settingsByOperation[operation]);
@@ -70,6 +72,7 @@ export function useMathSession() {
         operandOrder: currentOperationSettings.operandOrder,
         missingValue: currentOperationSettings.missingValue,
         startMode: globalSettings.startMode,
+        setsMode: globalSettings.setsMode,
         activeChips: currentOperationSettings.activeChips,
         customSet: currentOperationSettings.customSet,
         practiceCycles: globalSettings.practiceCycles,
@@ -143,11 +146,12 @@ export function useMathSession() {
         if (newOpts.operation) {
             setOperation(newOpts.operation);
         }
-        if (newOpts.practiceCycles !== undefined || newOpts.startMode !== undefined) {
+        if (newOpts.practiceCycles !== undefined || newOpts.startMode !== undefined || newOpts.setsMode !== undefined) {
             setGlobalSettings(prev => ({
                 ...prev,
                 ...(newOpts.practiceCycles !== undefined ? { practiceCycles: newOpts.practiceCycles } : {}),
                 ...(newOpts.startMode !== undefined ? { startMode: newOpts.startMode } : {}),
+                ...(newOpts.setsMode !== undefined ? { setsMode: newOpts.setsMode } : {}),
             }));
         }
 
@@ -182,22 +186,36 @@ export function useMathSession() {
     const startSession = useCallback(() => {
         clearPrepTimeouts();
 
-        let pool = MathEngine.getFilteredPool(options);
-        if (pool.length === 0) {
+        const basePool = MathEngine.getFilteredPool(options);
+        if (basePool.length === 0) {
             // In a real app, maybe trigger an alert here.
             console.warn("No Problem Set Selected");
             return;
         }
 
-        if (options.problemOrder === 'random') {
-            pool = MathEngine.shuffle(pool);
+        const cycles = Math.max(1, Math.min(5, options.practiceCycles));
+        const useCombinedSet = cycles > 1 && options.setsMode === 'single';
+
+        let initialQueue: ProblemSpec[] = [];
+        let cyclesRemaining = 0;
+        if (useCombinedSet) {
+            for (const p of basePool) {
+                for (let i = 0; i < cycles; i++) {
+                    initialQueue.push(p);
+                }
+            }
+            if (options.problemOrder === 'random') {
+                initialQueue = MathEngine.shuffle(initialQueue);
+            }
+            cyclesRemaining = 0;
+        } else {
+            initialQueue = options.problemOrder === 'random' ? MathEngine.shuffle(basePool) : [...basePool];
+            cyclesRemaining = cycles - 1;
         }
 
-        const cycles = Math.max(1, Math.min(5, options.practiceCycles));
-
-        setQueue(pool);
-        setTotalProblems(pool.length * cycles);
-        metrics.current.cyclesRemaining = cycles - 1;
+        setQueue(initialQueue);
+        setTotalProblems(basePool.length * cycles);
+        metrics.current.cyclesRemaining = cyclesRemaining;
 
         setIsActive(true);
         setSessionId(generateSessionId());
@@ -207,7 +225,7 @@ export function useMathSession() {
         setStats({ completed: 0, correctFirst: 0, missedFirst: 0 });
         setMissedProblems([]);
 
-        // Hide the stadium after tuck + beat, as keypad roll starts.
+        // Preserve original selector visual sequence state.
         prepTimeouts.current.stadiumHide = setTimeout(() => {
             setIsStadiumActive(false);
             prepTimeouts.current.stadiumHide = null;
@@ -217,7 +235,7 @@ export function useMathSession() {
 
         // Total visual prep now follows shared staged-flip timeline, then first problem + timer start.
         prepTimeouts.current.firstProblem = setTimeout(() => {
-            _nextProblem(pool, cycles - 1);
+            _nextProblem(initialQueue, cyclesRemaining);
             prepTimeouts.current.timerStartDelay = setTimeout(() => {
                 timerStart.current = Date.now();
                 prepTimeouts.current.timerStartDelay = null;

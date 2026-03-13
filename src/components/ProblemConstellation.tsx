@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Path, Ellipse, Defs, Filter, FeDropShadow, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect, FeBlend, FeColorMatrix } from 'react-native-svg';
 import { ProblemDisplay, OperationMode, StartMode } from '../lib/types';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
@@ -7,7 +7,7 @@ import { theme, getOperationTheme } from '../theme/colors';
 import { constellationStyles as styles } from '../theme/ProblemConstellation.styles';
 import Animated, { useAnimatedStyle, withRepeat, withSequence, withTiming, Easing, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { IconPlus, IconMinus, IconTimes, IconDivide, MiniIconPlus, MiniIconMinus, MiniIconTimes, MiniIconDivide } from './icons/MathIcons';
+import { IconPlus, IconMinus, IconTimes, IconDivide } from './icons/MathIcons';
 
 const AnswerBoxSvg = ({ isActive }: { isActive: boolean }) => (
     <Svg width="100%" height="100%" viewBox="0 0 215 110" style={StyleSheet.absoluteFill} pointerEvents="none" focusable={false}>
@@ -32,11 +32,9 @@ interface ProblemConstellationProps {
     renderInput?: React.ReactNode;
     showCorrect?: boolean;
     isActive?: boolean;
-    isStadiumActive?: boolean;
-    onToggleOperation?: () => void;
 }
 
-export function ProblemConstellation({ problem, operation, startMode = 'full', shakeTrigger = 0, renderInput, showCorrect = false, isActive = false, isStadiumActive = true, onToggleOperation }: ProblemConstellationProps) {
+export function ProblemConstellation({ problem, operation, startMode = 'full', shakeTrigger = 0, renderInput, showCorrect = false, isActive = false }: ProblemConstellationProps) {
     const opTheme = getOperationTheme(operation);
     const { width } = useWindowDimensions();
 
@@ -262,7 +260,6 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', s
     const idleColorL = problem ? opTheme.textOperand : '#c0beb1';
     const idleColorR = problem ? opTheme.textOperand : '#c0beb1';
     const idleColorRes = problem ? opTheme.textResult : '#a7a597';
-    const stadiumBorderColor = operation === 'addsub' ? '#A6C1DE' : '#AFC6A6';
     const prepBackTextColors = operation === 'addsub'
         ? { ready: '#85A8CD', set: '#53789E', result: '#224A71' }
         : { ready: '#91AE85', set: '#49683B', result: '#325124' };
@@ -270,8 +267,6 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', s
 
     const MainIcon = operation === 'addsub' ? IconPlus : IconTimes;
     const InvIcon = operation === 'addsub' ? IconMinus : IconDivide;
-    const MainMiniIcon = operation === 'addsub' ? MiniIconPlus : MiniIconTimes;
-    const InvMiniIcon = operation === 'addsub' ? MiniIconMinus : MiniIconDivide;
 
     // React Native scales the entire view using an absolute transform.
     // The absolute positions mimic the web's translation from the center.
@@ -279,57 +274,6 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', s
     return (
         <Animated.View style={[styles.container, animatedStyle]}>
             <View style={styles.anchor}>
-                {/* Operation Mode Label */}
-                <View style={styles.operationLabelContainer}>
-                    {isStadiumActive ? (
-                        <Svg key="stadium-shadow" width="353" height="36" viewBox="0 0 353 36" style={{ position: 'absolute' }}>
-                            <Defs>
-                                <Filter id="stadiumShadow" x="-0.03" y="-0.15" width="1.06" height="1.3" filterUnits="objectBoundingBox">
-                                    <FeFlood floodOpacity="0" result="BackgroundImageFix" />
-                                    <FeBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                                    <FeColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-                                    <FeOffset dy="1.5" />
-                                    <FeGaussianBlur stdDeviation="1.5" />
-                                    <FeComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1" />
-                                    <FeColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0" />
-                                    <FeBlend mode="normal" in2="shape" result="effect1_innerShadow" />
-                                </Filter>
-                            </Defs>
-                            <Rect width="353" height="36" rx="18" fill="#FFFFFF" filter="url(#stadiumShadow)" />
-                        </Svg>
-                    ) : (
-                        <View
-                            style={[
-                                localStyles.stadiumBorderOnly,
-                                { borderColor: stadiumBorderColor }
-                            ]}
-                            pointerEvents="none"
-                        />
-                    )}
-                    <View style={styles.operationMiniIconLeft} pointerEvents="none">
-                        <MainMiniIcon />
-                    </View>
-                    <View style={styles.operationMiniIconRight} pointerEvents="none">
-                        <InvMiniIcon />
-                    </View>
-                    {isActive ? (
-                        <View style={styles.operationLabel}>
-                            <Text style={[styles.operationTextLeft, { color: opTheme.logoMath }]}>{operation === 'addsub' ? 'addition' : 'multiplication'}</Text>
-                            <Text style={[styles.operationTextRight, { color: opTheme.logoFlash }]}>{operation === 'addsub' ? 'subtraction' : 'division'}</Text>
-                        </View>
-                    ) : (
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPress={onToggleOperation}
-                            style={styles.operationLabel}
-                            hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }}
-                        >
-                            <Text style={[styles.operationTextLeft, { color: opTheme.logoMath }]}>{operation === 'addsub' ? 'addition' : 'multiplication'}</Text>
-                            <Text style={[styles.operationTextRight, { color: opTheme.logoFlash }]}>{operation === 'addsub' ? 'subtraction' : 'division'}</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
                 {/* Ellipses */}
                 <View style={[styles.ellipseLarge, { zIndex: -1 }]}>
                     <Svg width="100%" height="100%">
@@ -429,13 +373,5 @@ const localStyles = StyleSheet.create({
     resultBackText: {
         fontFamily: 'Nunito_800ExtraBold_Italic',
         fontSize: 43,
-    },
-    stadiumBorderOnly: {
-        position: 'absolute',
-        width: 353,
-        height: 36,
-        borderRadius: 18,
-        borderWidth: 1,
-        backgroundColor: 'transparent',
     },
 });

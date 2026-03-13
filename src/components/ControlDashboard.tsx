@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { FontAwesome } from '@expo/vector-icons';
 import { NumberPad } from './NumberPad';
+import { OperationSelector } from './OperationSelector';
 import { SettingsPanel } from './SettingsPanel';
 import { SessionOptions } from '../lib/types';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
@@ -12,13 +13,15 @@ import { theme } from '../theme/colors';
 // Keypad dimensions
 const KEYPAD_CONTENT_HEIGHT = 232;
 const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 20;
-const SETTINGS_REVEAL_MARGIN = 12;
+const SETTINGS_REVEAL_MARGIN = 5;
 const SETTINGS_FALLBACK_HEIGHT = 240;
 const START_BUTTON_HEIGHT = 35;
+const START_BUTTON_MARGIN_BOTTOM = 20;
 const GEAR_SIZE = 33;
 
 interface ControlDashboardProps {
   isActive: boolean;
+  isStadiumActive: boolean;
   options: SessionOptions;
   opTheme: { textOperand: string; textResult: string; logoMath: string; logoFlash: string; tagline: string; btnBg: string; };
   onStartSession: () => void;
@@ -32,6 +35,7 @@ interface ControlDashboardProps {
 
 export function ControlDashboard({
   isActive,
+  isStadiumActive,
   options,
   opTheme,
   onStartSession,
@@ -177,7 +181,7 @@ export function ControlDashboard({
       </Animated.View>
 
       {/* Primary Action Button Row */}
-      <View style={{ width: '100%', height: START_BUTTON_HEIGHT, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: '100%', height: START_BUTTON_HEIGHT + START_BUTTON_MARGIN_BOTTOM, alignItems: 'center', justifyContent: 'flex-start' }}>
         <Animated.View style={[
           { position: 'absolute', zIndex: 0, top: (START_BUTTON_HEIGHT - GEAR_SIZE) / 2 },
           gearStyle
@@ -206,6 +210,13 @@ export function ControlDashboard({
           </Text>
         </TouchableOpacity>
       </View>
+
+      <OperationSelector
+        operation={options.operation}
+        isActive={isActive}
+        isStadiumActive={isStadiumActive}
+        onToggleOperation={() => onUpdateOptions({ operation: options.operation === 'addsub' ? 'multdiv' : 'addsub' })}
+      />
 
       {/* Expandable Settings */}
       <Animated.View style={[{ width: '100%' }, settingsWrapperStyle]}>

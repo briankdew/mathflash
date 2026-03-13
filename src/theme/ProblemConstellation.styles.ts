@@ -3,7 +3,7 @@ import { theme } from './colors';
 
 export const constellationStyles = StyleSheet.create({
     container: {
-        height: 415, // Extended 10px to top
+        height: 370, // Tightened after moving operation selector out of this container
         alignItems: 'center',
         width: '100%',
     },
@@ -18,7 +18,7 @@ export const constellationStyles = StyleSheet.create({
         width: 0,
         height: 0,
         position: 'relative',
-        top: 162.5, // Pushes the center (0,0) down 10px further
+        top: 117.5, // Align operand-card tops to container top
     },
     operationLabelContainer: {
         position: 'absolute',
