@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Path, Ellipse, Defs, Filter, FeDropShadow, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect, FeBlend, FeColorMatrix } from 'react-native-svg';
-import { ProblemDisplay, OperationMode, StartMode } from '../lib/types';
+import { ProblemDisplay, OperationMode, StartMode, SessionPhase } from '../lib/types';
+import { isSessionPhasePreparing } from '../lib/sessionPhases';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { theme, getOperationTheme } from '../theme/colors';
 import { constellationStyles as styles } from '../theme/ProblemConstellation.styles';
@@ -28,15 +29,17 @@ interface ProblemConstellationProps {
     problem: ProblemDisplay | null;
     operation: OperationMode;
     startMode?: StartMode;
+    phase: SessionPhase;
     shakeTrigger?: number; // pass a random value to trigger a shake
     renderInput?: React.ReactNode;
     showCorrect?: boolean;
     isActive?: boolean;
 }
 
-export function ProblemConstellation({ problem, operation, startMode = 'full', shakeTrigger = 0, renderInput, showCorrect = false, isActive = false }: ProblemConstellationProps) {
+export function ProblemConstellation({ problem, operation, startMode = 'full', phase, shakeTrigger = 0, renderInput, showCorrect = false, isActive = false }: ProblemConstellationProps) {
     const opTheme = getOperationTheme(operation);
     const { width } = useWindowDimensions();
+    const isPreparing = isSessionPhasePreparing(phase);
 
     const dynamicScale = 1; // Locked to 1 to honor exact Figma coordinates
 
@@ -52,7 +55,6 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', s
     const textRevealOpacity = useSharedValue(1);
     const hasPlayedFirstRevealRef = React.useRef(false);
     const [showProblemValues, setShowProblemValues] = React.useState(false);
-    const revealFrameRef = React.useRef<number | null>(null);
     const flipTimeoutRefs = React.useRef<ReturnType<typeof setTimeout>[]>([]);
 
     React.useEffect(() => {
@@ -66,25 +68,23 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', s
     }, [shakeTrigger, translateX]);
 
     React.useEffect(() => {
-        flipTimeoutRefs.current.forEach(clearTimeout);
-        flipTimeoutRefs.current = [];
+        if (phase === 'idle' || isPreparing) {
+            flipTimeoutRefs.current.forEach(clearTimeout);
+            flipTimeoutRefs.current = [];
 
-        leftFlip.value = 0;
-        rightFlip.value = 0;
-        resultFlip.value = 0;
-        leftBackTextRotation.value = -180;
-        rightBackTextRotation.value = -180;
-        resultBackTextRotation.value = -180;
-        setShowBlankFinalBackText(false);
-        textRevealOpacity.value = 1;
-        hasPlayedFirstRevealRef.current = false;
-        setShowProblemValues(false);
-        if (revealFrameRef.current !== null) {
-            cancelAnimationFrame(revealFrameRef.current);
-            revealFrameRef.current = null;
+            leftFlip.value = 0;
+            rightFlip.value = 0;
+            resultFlip.value = 0;
+            leftBackTextRotation.value = -180;
+            rightBackTextRotation.value = -180;
+            resultBackTextRotation.value = -180;
+            setShowBlankFinalBackText(false);
+            textRevealOpacity.value = 1;
+            hasPlayedFirstRevealRef.current = false;
+            setShowProblemValues(false);
         }
 
-        if (isActive) {
+        if (isPreparing) {
             const isMinStart = startMode === 'min';
             const prepCompleteAt = isMinStart ? sessionPrepMarks.totalPrepMin : sessionPrepMarks.totalPrep;
             const finalFlipAt = isMinStart ? sessionPrepMarks.finalFlipAtMin : sessionPrepMarks.finalFlipAt;
@@ -142,36 +142,31 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', s
             flipTimeoutRefs.current.forEach(clearTimeout);
             flipTimeoutRefs.current = [];
         };
-    }, [isActive, startMode]);
+    }, [phase, isPreparing, startMode]);
 
     React.useEffect(() => {
-        if (!isActive) {
+        if (phase === 'idle') {
             textRevealOpacity.value = 1;
             hasPlayedFirstRevealRef.current = false;
             setShowProblemValues(false);
-            if (revealFrameRef.current !== null) {
-                cancelAnimationFrame(revealFrameRef.current);
-                revealFrameRef.current = null;
-            }
             return;
         }
 
         if (problem && !hasPlayedFirstRevealRef.current) {
             hasPlayedFirstRevealRef.current = true;
-            setShowProblemValues(false);
+            leftFlip.value = -360;
+            rightFlip.value = -360;
+            resultFlip.value = -360;
             textRevealOpacity.value = 0;
-            revealFrameRef.current = requestAnimationFrame(() => {
-                setShowProblemValues(true);
-                textRevealOpacity.value = withTiming(1, { duration: sessionPrepTimeline.firstProblemDissolve, easing: Easing.linear });
-                revealFrameRef.current = null;
-            });
+            setShowProblemValues(true);
+            textRevealOpacity.value = withTiming(1, { duration: sessionPrepTimeline.firstProblemDissolve, easing: Easing.linear });
             return;
         }
 
         if (problem) {
             setShowProblemValues(true);
         }
-    }, [isActive, problem, textRevealOpacity]);
+    }, [phase, problem, textRevealOpacity]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   StyleSheet,
   View,
@@ -23,15 +23,8 @@ import { appStyles as styles } from './src/theme/App.styles';
 export default function App() {
   const session = useMathSession();
   const opTheme = getOperationTheme(session.options.operation);
-  const [inputValue, setInputValue] = useState('');
-  const handleDigitInput = (digit: string) => {
-    if (!session.isInputEnabled) return;
-    setInputValue(prev => prev + digit);
-  };
-  const handleInputChanged = (value: string) => {
-    if (!session.isInputEnabled && value !== '') return;
-    setInputValue(value);
-  };
+  const pendingCount = session.getPendingCount();
+  const selectedCountColor = !session.isActive && pendingCount === 0 ? '#890124' : theme.textMuted;
 
   let [fontsLoaded] = useFonts({
     Nunito_700Bold,
@@ -62,33 +55,35 @@ export default function App() {
               <PracticeArea
                 currentProblem={session.currentProblem}
                 options={session.options}
+                phase={session.phase}
                 isActive={session.isActive}
                 isInputEnabled={session.isInputEnabled}
-                onCheckAnswer={(input, force) => session.checkAnswer(input, force)}
+                onCheckAnswer={session.submitAnswer}
                 onAdvanceProblem={session.advanceToNextProblem}
-                onInputChanged={handleInputChanged}
-                inputValue={inputValue}
+                onInputChanged={session.setInputValue}
+                inputValue={session.inputValue}
               />
 
               <View style={styles.inputArea}>
                 <View style={[styles.statsBlock, { marginTop: 4 }]}>
-                  <Text style={[styles.countText, { lineHeight: 22 }]}>
+                  <Text style={[styles.countText, { lineHeight: 22, color: selectedCountColor }]}>
                     {session.isActive && !!session.currentProblem ? 'Problems remaining: ' : 'Problems selected: '}
-                    <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22 }}>
-                      {session.isActive && !!session.currentProblem ? session.totalProblems - session.stats.completed : session.getPendingCount()}
+                    <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22, color: selectedCountColor }}>
+                      {session.isActive && !!session.currentProblem ? session.totalProblems - session.stats.completed : pendingCount}
                     </Text>
                   </Text>
                 </View>
 
                 <ControlDashboard
+                  phase={session.phase}
                   isActive={session.isActive}
                   isStadiumActive={session.isStadiumActive}
                   options={session.options}
                   opTheme={opTheme}
                   onStartSession={session.startSession}
                   onEndSession={session.endSession}
-                  onDigitInput={handleDigitInput}
-                  onClearInput={() => setInputValue('')}
+                  onDigitInput={session.appendInputDigit}
+                  onClearInput={session.clearInputValue}
                   isInputEnabled={session.isInputEnabled}
                   onUpdateOptions={session.updateOptions}
                   useTimer={session.useTimer}

@@ -2,14 +2,23 @@ import React, { useRef, useState } from 'react';
 import { View, TextInput } from 'react-native';
 import { appStyles as styles } from '../theme/App.styles';
 import { ProblemConstellation } from './ProblemConstellation';
-import { ProblemDisplay, SessionOptions } from '../lib/types';
+import {
+  AnswerCheckResult,
+  ProblemDisplay,
+  SessionOptions,
+  SessionPhase,
+} from '../lib/types';
+
+const WRONG_ANSWER_CLEAR_DELAY_MS = 400;
+const CORRECT_ANSWER_ADVANCE_DELAY_MS = 500;
 
 interface PracticeAreaProps {
   currentProblem: ProblemDisplay | null;
   options: SessionOptions;
+  phase: SessionPhase;
   isActive: boolean;
   isInputEnabled: boolean;
-  onCheckAnswer: (input: string, forceComplete: boolean) => 'correct' | 'wrong' | 'incomplete';
+  onCheckAnswer: (forceComplete: boolean) => AnswerCheckResult;
   onAdvanceProblem: () => void;
   onInputChanged: (val: string) => void;
   inputValue: string;
@@ -18,6 +27,7 @@ interface PracticeAreaProps {
 export function PracticeArea({
   currentProblem,
   options,
+  phase,
   isActive,
   isInputEnabled,
   onCheckAnswer,
@@ -65,9 +75,9 @@ export function PracticeArea({
     };
   }, []);
 
-  const processAnswer = (value: string, forceComplete: boolean) => {
-    if (!value) return;
-    const res = onCheckAnswer(value, forceComplete);
+  const processAnswer = (forceComplete: boolean) => {
+    if (!inputValue) return;
+    const res = onCheckAnswer(forceComplete);
 
     if (res === 'wrong') {
       setShakeTrigger(prev => prev + 1);
@@ -77,7 +87,7 @@ export function PracticeArea({
       clearInputTimeoutRef.current = setTimeout(() => {
         onInputChanged('');
         clearInputTimeoutRef.current = null;
-      }, 400);
+      }, WRONG_ANSWER_CLEAR_DELAY_MS);
     } else if (res === 'correct') {
       setShowCorrect(true);
       if (advanceProblemTimeoutRef.current) {
@@ -88,13 +98,13 @@ export function PracticeArea({
         setShowCorrect(false);
         onAdvanceProblem();
         advanceProblemTimeoutRef.current = null;
-      }, 500);
+      }, CORRECT_ANSWER_ADVANCE_DELAY_MS);
     }
   };
 
   const handleSubmit = () => {
     if (!isInputEnabled) return;
-    processAnswer(inputValue, true);
+    processAnswer(true);
   };
 
   const handleInput = (text: string) => {
@@ -104,7 +114,7 @@ export function PracticeArea({
 
   React.useEffect(() => {
     if (!isActive || !isInputEnabled) return;
-    processAnswer(inputValue, false);
+    processAnswer(false);
   }, [inputValue, isActive, isInputEnabled]);
 
   return (
@@ -113,6 +123,7 @@ export function PracticeArea({
         problem={currentProblem}
         operation={options.operation}
         startMode={options.startMode}
+        phase={phase}
         shakeTrigger={shakeTrigger}
         showCorrect={showCorrect}
         isActive={isActive}

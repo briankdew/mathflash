@@ -5,6 +5,23 @@ export type MissingValueMode = 'result' | 'operand' | 'random';
 export type CustomSet = '10s' | 'doubles' | 'squares' | null;
 export type SetsMode = 'cycles' | 'single';
 export type StartMode = 'full' | 'min';
+export type AnswerCheckResult = 'correct' | 'wrong' | 'incomplete';
+export type SessionPhase =
+  | 'idle'
+  | 'preparing'
+  | 'revealingProblem'
+  | 'awaitingAnswer'
+  | 'feedbackPendingAdvance';
+
+export interface SessionPrepSchedule {
+  startMode: StartMode;
+  prepDurationMs: number;
+  stadiumHideAtMs: number;
+  firstProblemAtMs: number;
+  timerStartDelayMs: number;
+  inputUnlockDelayMs: number;
+  inputUnlockAtMs: number;
+}
 
 export interface ProblemSpec {
   a: number;

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Defs, Filter, FeFlood, FeBlend, FeColorMatrix, FeOffset, FeGaussianBlur, FeComposite, Rect } from 'react-native-svg';
 import { SessionOptions } from '../lib/types';
+import { SessionOptionsUpdate } from '../lib/sessionOptions';
 import { theme, palette } from '../theme/colors';
 
 const InnerShadowBox = ({ width, height, rx, fill }: { width: number; height: number; rx: number, fill: string }) => (
@@ -24,7 +25,7 @@ const InnerShadowBox = ({ width, height, rx, fill }: { width: number; height: nu
 
 interface SettingsPanelProps {
     options: SessionOptions;
-    updateOptions: (opts: Partial<SessionOptions>) => void;
+    updateOptions: (update: SessionOptionsUpdate) => void;
     useTimer: boolean;
     setUseTimer: (val: boolean) => void;
     disabled?: boolean;
@@ -42,72 +43,42 @@ export function SettingsPanel({
 
     const cycleOrder = () => {
         if (disabled) return;
-        updateOptions({ problemOrder: options.problemOrder === 'random' ? 'standard' : 'random' });
+        updateOptions({ type: 'cycleProblemOrder' });
     };
 
     const cycleOperandOrder = () => {
         if (disabled) return;
-        const orders: SessionOptions['operandOrder'][] = ['random', 'standard', 'reverse'];
-        const nextIdx = (orders.indexOf(options.operandOrder) + 1) % orders.length;
-        updateOptions({ operandOrder: orders[nextIdx] });
+        updateOptions({ type: 'cycleOperandOrder' });
     };
 
     const cycleMissing = () => {
         if (disabled) return;
-        const missingOps: SessionOptions['missingValue'][] = ['random', 'result', 'operand'];
-        const nextIdx = (missingOps.indexOf(options.missingValue) + 1) % missingOps.length;
-        updateOptions({ missingValue: missingOps[nextIdx] });
+        updateOptions({ type: 'cycleMissingValue' });
     };
 
     const cyclePracticeCycles = () => {
         if (disabled) return;
-        const nextCycles = options.practiceCycles >= 5 ? 1 : options.practiceCycles + 1;
-        // When moving into multi-cycle mode, default SETS to n-cycles behavior.
-        const nextSetsMode = nextCycles > 1 ? 'cycles' : options.setsMode;
-        updateOptions({ practiceCycles: nextCycles, setsMode: nextSetsMode });
+        updateOptions({ type: 'cyclePracticeCycles' });
     };
 
     const toggleSetsMode = () => {
         if (disabled || options.practiceCycles <= 1) return;
-        updateOptions({ setsMode: options.setsMode === 'cycles' ? 'single' : 'cycles' });
+        updateOptions({ type: 'toggleSetsMode' });
     };
 
     const toggleChip = (val: number) => {
         if (disabled) return;
-
-        if (options.customSet) {
-            updateOptions({ customSet: null, activeChips: [val] });
-            return;
-        }
-
-        const current = new Set(options.activeChips);
-        if (current.has(val)) {
-            current.delete(val);
-        } else {
-            current.add(val);
-        }
-        updateOptions({ activeChips: Array.from(current).sort((a, b) => a - b) });
+        updateOptions({ type: 'toggleChip', value: val });
     };
 
     const toggleAllChips = () => {
         if (disabled) return;
-        const nextVal = !isAllMode;
-        updateOptions({
-            customSet: null,
-            activeChips: nextVal ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []
-        });
+        updateOptions({ type: 'toggleAllChips' });
     };
 
     const setCustomSet = (set: '10s' | 'doubles' | 'squares') => {
         if (disabled) return;
-        if (isAddSubOperation && set === 'squares') return;
-        if (!isAddSubOperation && set !== 'squares') return;
-        const isActivating = options.customSet !== set;
-        if (isActivating) {
-            updateOptions({ customSet: set, activeChips: [] });
-        } else {
-            updateOptions({ customSet: null, activeChips: [] });
-        }
+        updateOptions({ type: 'toggleCustomSet', customSet: set });
     };
 
     return (
@@ -238,7 +209,7 @@ export function SettingsPanel({
                     <Text style={styles.label}>START</Text>
                     <TouchableOpacity
                         style={[styles.timerBox, options.startMode === 'full' && styles.chipActive, disabled && styles.chipDisabled]}
-                        onPress={() => updateOptions({ startMode: options.startMode === 'full' ? 'min' : 'full' })}
+                        onPress={() => updateOptions({ type: 'toggleStartMode' })}
                         disabled={disabled}
                     >
                         {options.startMode === 'full' && <InnerShadowBox width={44} height={44} rx={10} fill="#C0BEB1" />}

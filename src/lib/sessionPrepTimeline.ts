@@ -1,3 +1,5 @@
+import { SessionPrepSchedule, StartMode } from './types';
+
 export const sessionPrepTimeline = {
   tuck: 500,
   beat: 150,
@@ -72,3 +74,17 @@ export const sessionPrepMarks = {
     sessionPrepTimeline.flip +
     sessionPrepTimeline.pauseAfterFinalFlip,
 } as const;
+
+export function getSessionPrepSchedule(startMode: StartMode): SessionPrepSchedule {
+  const prepDurationMs = startMode === 'min' ? sessionPrepMarks.totalPrepMin : sessionPrepMarks.totalPrep;
+
+  return {
+    startMode,
+    prepDurationMs,
+    stadiumHideAtMs: sessionPrepMarks.stadiumHideAt,
+    firstProblemAtMs: prepDurationMs,
+    timerStartDelayMs: sessionPrepTimeline.firstProblemDissolve,
+    inputUnlockDelayMs: sessionPrepTimeline.firstProblemDissolve,
+    inputUnlockAtMs: prepDurationMs + sessionPrepTimeline.firstProblemDissolve,
+  };
+}

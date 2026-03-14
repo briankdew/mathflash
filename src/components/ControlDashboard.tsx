@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { NumberPad } from './NumberPad';
 import { OperationSelector } from './OperationSelector';
 import { SettingsPanel } from './SettingsPanel';
 import { IconSettingsAddSub, IconSettingsMulDiv } from './icons/MathIcons';
-import { SessionOptions } from '../lib/types';
+import { SessionOptions, SessionPhase } from '../lib/types';
+import { SessionOptionsUpdate } from '../lib/sessionOptions';
+import { isSessionPhaseActive } from '../lib/sessionPhases';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { appStyles as styles } from '../theme/App.styles';
 import { theme } from '../theme/colors';
@@ -18,8 +20,10 @@ const SETTINGS_FALLBACK_HEIGHT = 240;
 const START_BUTTON_HEIGHT = 35;
 const START_BUTTON_MARGIN_BOTTOM = 20;
 const GEAR_SIZE = 33;
+const START_BUTTON_FLASH_DURATION_MS = 180;
 
 interface ControlDashboardProps {
+  phase: SessionPhase;
   isActive: boolean;
   isInputEnabled: boolean;
   isStadiumActive: boolean;
@@ -29,12 +33,13 @@ interface ControlDashboardProps {
   onEndSession: () => void;
   onDigitInput: (d: string) => void;
   onClearInput: () => void;
-  onUpdateOptions: (opts: Partial<SessionOptions>) => void;
+  onUpdateOptions: (update: SessionOptionsUpdate) => void;
   useTimer: boolean;
   setUseTimer: (val: boolean) => void;
 }
 
 export function ControlDashboard({
+  phase,
   isActive,
   isInputEnabled,
   isStadiumActive,
@@ -50,8 +55,11 @@ export function ControlDashboard({
 }: ControlDashboardProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsMeasuredHeight, setSettingsMeasuredHeight] = useState(0);
+  const [isStartButtonFlashActive, setIsStartButtonFlashActive] = useState(false);
   const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const untuckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startButtonFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetSessionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animated values for keypad slide-in
   const keypadHeight = useSharedValue(0);
@@ -60,6 +68,8 @@ export function ControlDashboard({
   const settingsSlide = useSharedValue(-(SETTINGS_FALLBACK_HEIGHT + SETTINGS_REVEAL_MARGIN));
   // Gear tucked behind button: 0. Fully out: 142 (Left edge = 107.5 button edge + 18u gap + 16.5 half width of 33px gear)
   const gearOffset = useSharedValue(142);
+  const isSessionInProgress = isSessionPhaseActive(phase);
+  const startButtonPressedColor = options.operation === 'addsub' ? '#07345b' : '#1d3c0b';
 
   useEffect(() => {
     if (rollTimeoutRef.current) {
@@ -71,7 +81,7 @@ export function ControlDashboard({
       untuckTimeoutRef.current = null;
     }
 
-    if (isActive) {
+    if (isSessionInProgress) {
       // Step 1: Tuck gear behind the Start Session button
       gearOffset.value = withTiming(0, { duration: sessionPrepTimeline.tuck, easing: Easing.inOut(Easing.cubic) });
       
@@ -115,7 +125,46 @@ export function ControlDashboard({
         untuckTimeoutRef.current = null;
       }
     };
-  }, [isActive]);
+  }, [isSessionInProgress]);
+
+  useEffect(() => {
+    return () => {
+      if (startButtonFlashTimeoutRef.current) {
+        clearTimeout(startButtonFlashTimeoutRef.current);
+        startButtonFlashTimeoutRef.current = null;
+      }
+      if (resetSessionTimeoutRef.current) {
+        clearTimeout(resetSessionTimeoutRef.current);
+        resetSessionTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const triggerStartButtonFlash = () => {
+    setIsStartButtonFlashActive(true);
+    if (startButtonFlashTimeoutRef.current) {
+      clearTimeout(startButtonFlashTimeoutRef.current);
+    }
+    startButtonFlashTimeoutRef.current = setTimeout(() => {
+      setIsStartButtonFlashActive(false);
+      startButtonFlashTimeoutRef.current = null;
+    }, START_BUTTON_FLASH_DURATION_MS);
+  };
+
+  const handlePrimaryActionPress = () => {
+    if (isActive) {
+      if (resetSessionTimeoutRef.current) {
+        clearTimeout(resetSessionTimeoutRef.current);
+      }
+      resetSessionTimeoutRef.current = setTimeout(() => {
+        onEndSession();
+        resetSessionTimeoutRef.current = null;
+      }, START_BUTTON_FLASH_DURATION_MS);
+      return;
+    }
+
+    onStartSession();
+  };
 
   const keypadWrapperStyle = useAnimatedStyle(() => ({
     height: keypadHeight.value,
@@ -206,22 +255,31 @@ export function ControlDashboard({
           </TouchableOpacity>
         </Animated.View>
 
-        <TouchableOpacity
-          style={[styles.startBtn, { backgroundColor: opTheme.textOperand, zIndex: 1 }]}
-          onPress={() => isActive ? onEndSession() : onStartSession()}
-          activeOpacity={0.9}
+        <Pressable
+          style={[
+            styles.startBtn,
+            {
+              backgroundColor: isStartButtonFlashActive ? startButtonPressedColor : opTheme.textOperand,
+              zIndex: 1,
+            },
+          ]}
+          onPressIn={triggerStartButtonFlash}
+          onPress={handlePrimaryActionPress}
         >
           <Text style={styles.startBtnText}>
             {isActive ? 'Reset Session' : 'Start Session'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <OperationSelector
         operation={options.operation}
         isActive={isActive}
         isStadiumActive={isStadiumActive}
-        onToggleOperation={() => onUpdateOptions({ operation: options.operation === 'addsub' ? 'multdiv' : 'addsub' })}
+        onToggleOperation={() => onUpdateOptions({
+          type: 'setOperation',
+          operation: options.operation === 'addsub' ? 'multdiv' : 'addsub',
+        })}
       />
 
       {/* Expandable Settings */}
