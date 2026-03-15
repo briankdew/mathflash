@@ -87,5 +87,12 @@ export const appStyles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Archivo_400Regular',
         color: theme.textMuted,
+    },
+    voiceStatusText: {
+        minHeight: 16,
+        marginTop: 4,
+        fontSize: 12,
+        fontFamily: 'Archivo_400Regular',
+        color: theme.textMuted,
     }
 });

@@ -24,16 +24,19 @@ import {
     SessionOptionsUpdate,
 } from '../lib/sessionOptions';
 import {
+    AnswerAttempt,
     AnswerCheckResult,
     OperationMode,
     ProblemSpec,
     ProblemDisplay,
+    SessionInputMode,
     SessionStats,
     MissedProblem,
     SessionPhase,
     SessionOptions,
 } from '../lib/types';
 import { useSessionInput } from './session/useSessionInput';
+import { useVoiceAnswerInput } from './useVoiceAnswerInput';
 
 // Fallback UUID generation
 function generateSessionId() {
@@ -62,6 +65,8 @@ export function useMathSession() {
     const [isActive, setIsActive] = useState(false);
     const [isInputEnabled, setIsInputEnabled] = useState(false);
     const [isStadiumActive, setIsStadiumActive] = useState(true);
+    const [inputMode, setInputModeState] = useState<SessionInputMode>('keypad');
+    const [voiceListeningArmed, setVoiceListeningArmedState] = useState(false);
     const [sessionId, setSessionId] = useState('');
     const [sessionStart, setSessionStart] = useState<Date | null>(null);
 
@@ -99,6 +104,39 @@ export function useMathSession() {
         timerStartDelay: null,
         inputUnlock: null,
     });
+    const setVoiceListeningArmed = useCallback((value: boolean) => {
+        setVoiceListeningArmedState(value);
+    }, []);
+
+    const setInputMode = useCallback((nextMode: SessionInputMode) => {
+        if (isActive) return;
+        setInputModeState(nextMode);
+        setVoiceListeningArmed(false);
+        resetInputValue();
+    }, [isActive, resetInputValue, setVoiceListeningArmed]);
+
+    const {
+        voiceState,
+        voiceMetrics,
+        ensureReadyForSession,
+        clearPendingAttempt,
+        resetSessionMetrics,
+    } = useVoiceAnswerInput({
+        enabled: inputMode === 'voice',
+        shouldListen:
+            inputMode === 'voice' &&
+            isActive &&
+            isInputEnabled &&
+            phase === 'awaitingAnswer' &&
+            voiceListeningArmed &&
+            currentProblem !== null,
+        isSessionActive: isActive,
+        currentProblem,
+        options,
+        onValidAttemptCaptured: () => {
+            setVoiceListeningArmed(false);
+        },
+    });
 
     const clearPrepTimeouts = useCallback(() => {
         if (prepTimeouts.current.stadiumHide) {
@@ -125,6 +163,36 @@ export function useMathSession() {
         };
     }, [clearPrepTimeouts]);
 
+    useEffect(() => {
+        if (inputMode !== 'voice') {
+            return;
+        }
+
+        setInputValue(voiceState.transcriptPreview);
+    }, [inputMode, setInputValue, voiceState.transcriptPreview]);
+
+    useEffect(() => {
+        if (
+            inputMode === 'voice' &&
+            isActive &&
+            isInputEnabled &&
+            phase === 'awaitingAnswer' &&
+            currentProblem
+        ) {
+            setVoiceListeningArmed(true);
+            return;
+        }
+
+        setVoiceListeningArmed(false);
+    }, [
+        currentProblem,
+        inputMode,
+        isActive,
+        isInputEnabled,
+        phase,
+        setVoiceListeningArmed,
+    ]);
+
     // Derived Values
     const getPendingCount = useCallback(() => {
         const pool = MathEngine.getFilteredPool(options);
@@ -144,8 +212,15 @@ export function useMathSession() {
         setGlobalSettings(nextState.globalSettings);
     }, [operation, settingsByOperation, globalSettings]);
 
-    const startSession = useCallback(() => {
+    const startSession = useCallback(async () => {
         clearPrepTimeouts();
+
+        if (inputMode === 'voice') {
+            const isVoiceReady = await ensureReadyForSession();
+            if (!isVoiceReady) {
+                return;
+            }
+        }
 
         const basePool = MathEngine.getFilteredPool(options);
         if (basePool.length === 0) {
@@ -165,7 +240,9 @@ export function useMathSession() {
         setIsActive(true);
         setIsInputEnabled(false);
         setIsStadiumActive(true);
+        setVoiceListeningArmed(false);
         resetInputValue();
+        resetSessionMetrics();
         setCurrentProblem(null);
         setSessionId(generateSessionId());
         setSessionStart(new Date());
@@ -194,7 +271,15 @@ export function useMathSession() {
             }, prepSchedule.inputUnlockDelayMs);
             prepTimeouts.current.firstProblem = null;
         }, prepSchedule.firstProblemAtMs);
-    }, [options, clearPrepTimeouts, resetInputValue]);
+    }, [
+        clearPrepTimeouts,
+        ensureReadyForSession,
+        inputMode,
+        options,
+        resetInputValue,
+        resetSessionMetrics,
+        setVoiceListeningArmed,
+    ]);
 
     const _nextProblem = (
         currentQueue: ProblemSpec[],
@@ -220,11 +305,11 @@ export function useMathSession() {
         setPhase(nextPhase);
     };
 
-    const checkAnswer = useCallback((inputStr: string, forceComplete: boolean = false): AnswerCheckResult => {
+    const checkAnswer = useCallback((attempt: AnswerAttempt, forceComplete: boolean = false): AnswerCheckResult => {
         const evaluation = evaluateAnswerInput({
             currentProblem,
             isActive,
-            inputStr,
+            attempt,
             forceComplete,
         });
 
@@ -252,23 +337,27 @@ export function useMathSession() {
 
         if (currentProblem) {
             setMissedProblems(prev =>
-                appendMissedProblem(prev, currentProblem, inputStr, options.operation)
+                appendMissedProblem(prev, currentProblem, attempt.value, options.operation)
             );
         }
 
         return 'wrong';
     }, [currentProblem, isActive, options]);
 
+    const submitAnswerAttempt = useCallback((attempt: AnswerAttempt, forceComplete: boolean = false): AnswerCheckResult => {
+        return checkAnswer(attempt, forceComplete);
+    }, [checkAnswer]);
+
     const submitAnswer = useCallback((forceComplete: boolean = false): AnswerCheckResult => {
-        return checkAnswer(inputValue, forceComplete);
-    }, [checkAnswer, inputValue]);
+        return submitAnswerAttempt({
+            value: inputValue,
+            source: 'keypad',
+        }, forceComplete);
+    }, [inputValue, submitAnswerAttempt]);
 
     const endSession = useCallback(() => {
         clearPrepTimeouts();
         if (!isActive) return;
-
-        const end = new Date();
-        const elapsedSec = Math.round((Date.now() - timerStart.current) / 1000);
 
         saveLogToCloud(buildSessionLogPayload({
             options,
@@ -278,16 +367,32 @@ export function useMathSession() {
             totalProblems,
             useTimer,
             sessionCompletionMsTotal: metrics.current.sessionCompletionMsTotal,
+            inputMode,
+            voiceMetrics,
         }));
 
         setIsActive(false);
         setIsInputEnabled(false);
         setIsStadiumActive(true);
+        setVoiceListeningArmed(false);
         resetInputValue();
         setCurrentProblem(null);
         setQueue([]);
         setPhase('idle');
-    }, [isActive, stats, totalProblems, useTimer, options, sessionStart, sessionId, clearPrepTimeouts, resetInputValue]);
+    }, [
+        clearPrepTimeouts,
+        inputMode,
+        isActive,
+        options,
+        resetInputValue,
+        sessionId,
+        sessionStart,
+        setVoiceListeningArmed,
+        stats,
+        totalProblems,
+        useTimer,
+        voiceMetrics,
+    ]);
 
     const advanceToNextProblem = useCallback(() => {
         _nextProblem(queue, metrics.current.cyclesRemaining);
@@ -302,6 +407,9 @@ export function useMathSession() {
         isActive,
         isInputEnabled,
         isStadiumActive,
+        inputMode,
+        setInputMode,
+        voiceState,
         inputValue,
         appendInputDigit,
         setInputValue,
@@ -313,8 +421,12 @@ export function useMathSession() {
         getPendingCount,
         startSession,
         checkAnswer,
+        submitAnswerAttempt,
         submitAnswer,
         endSession,
-        advanceToNextProblem
+        advanceToNextProblem,
+        pauseVoiceInput: () => setVoiceListeningArmed(false),
+        resumeVoiceInput: () => setVoiceListeningArmed(true),
+        clearPendingVoiceAttempt: clearPendingAttempt,
     };
 }

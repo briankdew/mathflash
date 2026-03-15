@@ -58,9 +58,14 @@ export default function App() {
                 phase={session.phase}
                 isActive={session.isActive}
                 isInputEnabled={session.isInputEnabled}
-                onCheckAnswer={session.submitAnswer}
+                inputMode={session.inputMode}
+                voiceState={session.voiceState}
+                onCheckAnswer={session.submitAnswerAttempt}
                 onAdvanceProblem={session.advanceToNextProblem}
                 onInputChanged={session.setInputValue}
+                onPauseVoiceInput={session.pauseVoiceInput}
+                onResumeVoiceInput={session.resumeVoiceInput}
+                onClearPendingVoiceAttempt={session.clearPendingVoiceAttempt}
                 inputValue={session.inputValue}
               />
 
@@ -78,10 +83,15 @@ export default function App() {
                   phase={session.phase}
                   isActive={session.isActive}
                   isStadiumActive={session.isStadiumActive}
+                  inputMode={session.inputMode}
+                  voiceState={session.voiceState}
                   options={session.options}
                   opTheme={opTheme}
                   onStartSession={session.startSession}
                   onEndSession={session.endSession}
+                  onToggleInputMode={() =>
+                    session.setInputMode(session.inputMode === 'keypad' ? 'voice' : 'keypad')
+                  }
                   onDigitInput={session.appendInputDigit}
                   onClearInput={session.clearInputValue}
                   isInputEnabled={session.isInputEnabled}

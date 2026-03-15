@@ -4,13 +4,13 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from '
 import { NumberPad } from './NumberPad';
 import { OperationSelector } from './OperationSelector';
 import { SettingsPanel } from './SettingsPanel';
-import { IconSettingsAddSub, IconSettingsMulDiv } from './icons/MathIcons';
-import { SessionOptions, SessionPhase } from '../lib/types';
+import { IconAudioMicrophone, IconSettingsAddSub, IconSettingsMulDiv } from './icons/MathIcons';
+import { SessionInputMode, SessionOptions, SessionPhase, VoiceInputState } from '../lib/types';
 import { SessionOptionsUpdate } from '../lib/sessionOptions';
 import { isSessionPhaseActive } from '../lib/sessionPhases';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { appStyles as styles } from '../theme/App.styles';
-import { theme } from '../theme/colors';
+import { palette, theme } from '../theme/colors';
 
 // Keypad dimensions
 const KEYPAD_CONTENT_HEIGHT = 232;
@@ -19,19 +19,25 @@ const SETTINGS_REVEAL_MARGIN = 5;
 const SETTINGS_FALLBACK_HEIGHT = 240;
 const START_BUTTON_HEIGHT = 35;
 const START_BUTTON_MARGIN_BOTTOM = 20;
+const START_BUTTON_WIDTH = 215;
 const GEAR_SIZE = 40;
 const GEAR_REVEAL_OFFSET = 145.5;
 const START_BUTTON_FLASH_DURATION_MS = 180;
+const MIC_BUTTON_SIZE = 34;
+const MIC_BUTTON_GAP = 12;
 
 interface ControlDashboardProps {
   phase: SessionPhase;
   isActive: boolean;
   isInputEnabled: boolean;
   isStadiumActive: boolean;
+  inputMode: SessionInputMode;
+  voiceState: VoiceInputState;
   options: SessionOptions;
   opTheme: { textOperand: string; textResult: string; logoMath: string; logoFlash: string; tagline: string; btnBg: string; };
-  onStartSession: () => void;
+  onStartSession: () => void | Promise<void>;
   onEndSession: () => void;
+  onToggleInputMode: () => void;
   onDigitInput: (d: string) => void;
   onClearInput: () => void;
   onUpdateOptions: (update: SessionOptionsUpdate) => void;
@@ -44,10 +50,13 @@ export function ControlDashboard({
   isActive,
   isInputEnabled,
   isStadiumActive,
+  inputMode,
+  voiceState,
   options,
   opTheme,
   onStartSession,
   onEndSession,
+  onToggleInputMode,
   onDigitInput,
   onClearInput,
   onUpdateOptions,
@@ -67,10 +76,16 @@ export function ControlDashboard({
   const keypadSlide = useSharedValue(-KEYPAD_CONTENT_HEIGHT);
   const settingsHeight = useSharedValue(0);
   const settingsSlide = useSharedValue(-(SETTINGS_FALLBACK_HEIGHT + SETTINGS_REVEAL_MARGIN));
-  // Gear tucked behind button: 0. Fully out based on start button edge, gap, and half gear width.
   const gearOffset = useSharedValue(GEAR_REVEAL_OFFSET);
   const isSessionInProgress = isSessionPhaseActive(phase);
   const startButtonPressedColor = options.operation === 'addsub' ? '#07345b' : '#1d3c0b';
+  const isVoiceToggleDisabled =
+    isActive ||
+    (inputMode === 'keypad' &&
+      (!voiceState.platformSupported || !voiceState.isAvailable));
+  const voiceStatusText = inputMode === 'voice'
+    ? (voiceState.statusLabel || voiceState.errorMessage)
+    : '';
 
   useEffect(() => {
     if (rollTimeoutRef.current) {
@@ -84,20 +99,34 @@ export function ControlDashboard({
 
     if (isSessionInProgress) {
       // Step 1: Tuck gear behind the Start Session button
-      gearOffset.value = withTiming(0, { duration: sessionPrepTimeline.tuck, easing: Easing.inOut(Easing.cubic) });
-      
-      // Step 2: After tuck and beat (500 + 150)
-      rollTimeoutRef.current = setTimeout(() => {
-        keypadHeight.value = withTiming(KEYPAD_REVEAL_HEIGHT, {
+      gearOffset.value = withTiming(0, {
+        duration: sessionPrepTimeline.tuck,
+        easing: Easing.inOut(Easing.cubic),
+      });
+
+      if (inputMode === 'keypad') {
+        // Step 2: After tuck and beat (500 + 150)
+        rollTimeoutRef.current = setTimeout(() => {
+          keypadHeight.value = withTiming(KEYPAD_REVEAL_HEIGHT, {
+            duration: sessionPrepTimeline.roll,
+            easing: Easing.linear,
+          });
+          keypadSlide.value = withTiming(0, {
+            duration: sessionPrepTimeline.roll,
+            easing: Easing.linear,
+          });
+          rollTimeoutRef.current = null;
+        }, sessionPrepMarks.keypadRollStartAt);
+      } else {
+        keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
           duration: sessionPrepTimeline.roll,
           easing: Easing.linear,
         });
-        keypadSlide.value = withTiming(0, {
+        keypadHeight.value = withTiming(0, {
           duration: sessionPrepTimeline.roll,
           easing: Easing.linear,
         });
-        rollTimeoutRef.current = null;
-      }, sessionPrepMarks.keypadRollStartAt);
+      }
     } else {
       // Step 1: Hide keypad (Roll reverse)
       keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
@@ -111,7 +140,10 @@ export function ControlDashboard({
 
       // Step 2: After keypad hidden and beat, untuck gear
       untuckTimeoutRef.current = setTimeout(() => {
-        gearOffset.value = withTiming(GEAR_REVEAL_OFFSET, { duration: sessionPrepTimeline.tuck, easing: Easing.out(Easing.cubic) });
+        gearOffset.value = withTiming(GEAR_REVEAL_OFFSET, {
+          duration: sessionPrepTimeline.tuck,
+          easing: Easing.out(Easing.cubic),
+        });
         untuckTimeoutRef.current = null;
       }, sessionPrepTimeline.roll + sessionPrepTimeline.beat);
     }
@@ -126,7 +158,7 @@ export function ControlDashboard({
         untuckTimeoutRef.current = null;
       }
     };
-  }, [isSessionInProgress]);
+  }, [inputMode, isSessionInProgress]);
 
   useEffect(() => {
     return () => {
@@ -227,17 +259,33 @@ export function ControlDashboard({
           <NumberPad
             onDigit={onDigitInput}
             onClear={onClearInput}
-            disabled={!isActive || !isInputEnabled}
+            disabled={!isActive || !isInputEnabled || inputMode !== 'keypad'}
           />
         </Animated.View>
       </Animated.View>
 
       {/* Primary Action Button Row */}
-      <View style={{ width: '100%', height: START_BUTTON_HEIGHT + START_BUTTON_MARGIN_BOTTOM, alignItems: 'center', justifyContent: 'flex-start' }}>
-        <Animated.View style={[
-          { position: 'absolute', zIndex: 0, top: (START_BUTTON_HEIGHT - GEAR_SIZE) / 2 },
-          gearStyle
-        ]}>
+      <View
+        style={{
+          width: '100%',
+          height: START_BUTTON_HEIGHT + START_BUTTON_MARGIN_BOTTOM,
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          position: 'relative',
+          overflow: 'visible',
+        }}
+      >
+        <Animated.View
+          pointerEvents="box-none"
+          style={[
+            {
+              position: 'absolute',
+              zIndex: 0,
+              top: (START_BUTTON_HEIGHT - GEAR_SIZE) / 2,
+            },
+            gearStyle
+          ]}
+        >
           <TouchableOpacity
             style={{ 
               width: GEAR_SIZE, 
@@ -259,6 +307,33 @@ export function ControlDashboard({
 
         <Pressable
           style={[
+            {
+              position: 'absolute',
+              left: '50%',
+              marginLeft: -(START_BUTTON_WIDTH / 2) - MIC_BUTTON_SIZE - MIC_BUTTON_GAP,
+              top: (START_BUTTON_HEIGHT - MIC_BUTTON_SIZE) / 2,
+              width: MIC_BUTTON_SIZE,
+              height: MIC_BUTTON_SIZE,
+              borderRadius: MIC_BUTTON_SIZE / 2,
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: inputMode === 'voice' ? opTheme.textOperand : palette.beige[1],
+              opacity: isVoiceToggleDisabled ? 0.38 : 1,
+              zIndex: 2,
+            },
+          ]}
+          onPress={onToggleInputMode}
+          disabled={isVoiceToggleDisabled}
+        >
+          <IconAudioMicrophone
+            width={18}
+            shellFill={inputMode === 'voice' ? palette.red[7] : palette.beige[5]}
+            detailFill={inputMode === 'voice' ? palette.bg : palette.beige[2]}
+          />
+        </Pressable>
+
+        <Pressable
+          style={[
             styles.startBtn,
             {
               backgroundColor: isStartButtonFlashActive ? startButtonPressedColor : opTheme.textOperand,
@@ -272,6 +347,20 @@ export function ControlDashboard({
             {isActive ? 'Reset Session' : 'Start Session'}
           </Text>
         </Pressable>
+
+        <Text
+          pointerEvents="none"
+          style={[
+            styles.voiceStatusText,
+            {
+              position: 'absolute',
+              top: START_BUTTON_HEIGHT + 2,
+              opacity: voiceStatusText ? 1 : 0,
+            }
+          ]}
+        >
+          {voiceStatusText || ' '}
+        </Text>
       </View>
 
       <OperationSelector

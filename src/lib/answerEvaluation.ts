@@ -1,9 +1,9 @@
-import { AnswerCheckResult, ProblemDisplay } from './types';
+import { AnswerAttempt, AnswerCheckResult, ProblemDisplay } from './types';
 
 interface EvaluateAnswerInputArgs {
     currentProblem: ProblemDisplay | null;
     isActive: boolean;
-    inputStr: string;
+    attempt: AnswerAttempt;
     forceComplete: boolean;
     nowMs?: number;
 }
@@ -16,7 +16,7 @@ export interface AnswerEvaluationResult {
 export function evaluateAnswerInput({
     currentProblem,
     isActive,
-    inputStr,
+    attempt,
     forceComplete,
     nowMs = performance.now(),
 }: EvaluateAnswerInputArgs): AnswerEvaluationResult {
@@ -24,6 +24,7 @@ export function evaluateAnswerInput({
         return { result: 'incomplete', attemptMs: null };
     }
 
+    const inputStr = attempt.value;
     const userVal = parseInt(inputStr, 10);
     const correctStr = String(currentProblem.correct);
 
@@ -37,7 +38,8 @@ export function evaluateAnswerInput({
     }
 
     const presentedTime = currentProblem.presentedAtPerf || nowMs;
-    const attemptMs = Math.max(0, nowMs - presentedTime);
+    const completedAtPerfMs = attempt.completedAtPerfMs ?? nowMs;
+    const attemptMs = Math.max(0, completedAtPerfMs - presentedTime);
 
     return {
         result: userVal === currentProblem.correct ? 'correct' : 'wrong',

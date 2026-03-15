@@ -36,7 +36,14 @@
       }
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow MathFlash to use the microphone for spoken answers.",
+          "speechRecognitionPermission": "Allow MathFlash to recognize spoken answers."
+        }
+      ]
     ]
   }
 }

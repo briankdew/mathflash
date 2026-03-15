@@ -3,10 +3,13 @@ import { View, TextInput } from 'react-native';
 import { appStyles as styles } from '../theme/App.styles';
 import { ProblemConstellation } from './ProblemConstellation';
 import {
+  AnswerAttempt,
   AnswerCheckResult,
   ProblemDisplay,
+  SessionInputMode,
   SessionOptions,
   SessionPhase,
+  VoiceInputState,
 } from '../lib/types';
 
 const WRONG_ANSWER_CLEAR_DELAY_MS = 400;
@@ -18,9 +21,14 @@ interface PracticeAreaProps {
   phase: SessionPhase;
   isActive: boolean;
   isInputEnabled: boolean;
-  onCheckAnswer: (forceComplete: boolean) => AnswerCheckResult;
+  inputMode: SessionInputMode;
+  voiceState: VoiceInputState;
+  onCheckAnswer: (attempt: AnswerAttempt, forceComplete: boolean) => AnswerCheckResult;
   onAdvanceProblem: () => void;
   onInputChanged: (val: string) => void;
+  onPauseVoiceInput: () => void;
+  onResumeVoiceInput: () => void;
+  onClearPendingVoiceAttempt: () => void;
   inputValue: string;
 }
 
@@ -30,9 +38,14 @@ export function PracticeArea({
   phase,
   isActive,
   isInputEnabled,
+  inputMode,
+  voiceState,
   onCheckAnswer,
   onAdvanceProblem,
   onInputChanged,
+  onPauseVoiceInput,
+  onResumeVoiceInput,
+  onClearPendingVoiceAttempt,
   inputValue
 }: PracticeAreaProps) {
   const inputRef = useRef<TextInput>(null);
@@ -43,7 +56,7 @@ export function PracticeArea({
 
   // Auto-focus when active
   React.useEffect(() => {
-    if (isActive && isInputEnabled) {
+    if (inputMode === 'keypad' && isActive && isInputEnabled) {
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
       if (clearInputTimeoutRef.current) {
@@ -75,21 +88,26 @@ export function PracticeArea({
     };
   }, []);
 
-  const processAnswer = (forceComplete: boolean) => {
-    if (!inputValue) return;
-    const res = onCheckAnswer(forceComplete);
+  const processAnswer = (attempt: AnswerAttempt, forceComplete: boolean) => {
+    if (!attempt.value) return;
+    const res = onCheckAnswer(attempt, forceComplete);
 
     if (res === 'wrong') {
       setShakeTrigger(prev => prev + 1);
+      onPauseVoiceInput();
       if (clearInputTimeoutRef.current) {
         clearTimeout(clearInputTimeoutRef.current);
       }
       clearInputTimeoutRef.current = setTimeout(() => {
         onInputChanged('');
+        if (inputMode === 'voice' && isActive && isInputEnabled) {
+          onResumeVoiceInput();
+        }
         clearInputTimeoutRef.current = null;
       }, WRONG_ANSWER_CLEAR_DELAY_MS);
     } else if (res === 'correct') {
       setShowCorrect(true);
+      onPauseVoiceInput();
       if (advanceProblemTimeoutRef.current) {
         clearTimeout(advanceProblemTimeoutRef.current);
       }
@@ -103,8 +121,11 @@ export function PracticeArea({
   };
 
   const handleSubmit = () => {
-    if (!isInputEnabled) return;
-    processAnswer(true);
+    if (!isInputEnabled || inputMode !== 'keypad') return;
+    processAnswer({
+      value: inputValue,
+      source: 'keypad',
+    }, true);
   };
 
   const handleInput = (text: string) => {
@@ -113,9 +134,32 @@ export function PracticeArea({
   };
 
   React.useEffect(() => {
-    if (!isActive || !isInputEnabled) return;
-    processAnswer(false);
-  }, [inputValue, isActive, isInputEnabled]);
+    if (!isActive || !isInputEnabled || inputMode !== 'keypad') return;
+    processAnswer({
+      value: inputValue,
+      source: 'keypad',
+    }, false);
+  }, [inputMode, inputValue, isActive, isInputEnabled]);
+
+  React.useEffect(() => {
+    if (
+      inputMode !== 'voice' ||
+      !isActive ||
+      !isInputEnabled ||
+      !voiceState.pendingAttempt
+    ) {
+      return;
+    }
+
+    processAnswer(voiceState.pendingAttempt, true);
+    onClearPendingVoiceAttempt();
+  }, [
+    inputMode,
+    isActive,
+    isInputEnabled,
+    onClearPendingVoiceAttempt,
+    voiceState.pendingAttempt,
+  ]);
 
   return (
     <View style={styles.constellationWrapper}>
@@ -136,7 +180,7 @@ export function PracticeArea({
             value={inputValue}
             onChangeText={handleInput}
             onSubmitEditing={handleSubmit}
-            editable={isActive && isInputEnabled}
+            editable={inputMode === 'keypad' && isActive && isInputEnabled}
             autoFocus={false}
             showSoftInputOnFocus={false}
             caretHidden={true}

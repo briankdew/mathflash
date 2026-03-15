@@ -1,4 +1,9 @@
-import { SessionOptions, SessionStats } from './types';
+import {
+    SessionInputMode,
+    SessionOptions,
+    SessionStats,
+    VoiceSessionMetrics,
+} from './types';
 
 interface BuildSessionLogPayloadArgs {
     options: SessionOptions;
@@ -8,6 +13,8 @@ interface BuildSessionLogPayloadArgs {
     totalProblems: number;
     useTimer: boolean;
     sessionCompletionMsTotal: number;
+    inputMode: SessionInputMode;
+    voiceMetrics: VoiceSessionMetrics;
 }
 
 export function buildSessionLogPayload({
@@ -18,6 +25,8 @@ export function buildSessionLogPayload({
     totalProblems,
     useTimer,
     sessionCompletionMsTotal,
+    inputMode,
+    voiceMetrics,
 }: BuildSessionLogPayloadArgs): Record<string, string> {
     const completed = stats.completed;
     const correctFirst = stats.correctFirst;
@@ -63,6 +72,12 @@ export function buildSessionLogPayload({
         'Accuracy (%)':
             completed > 0 ? (100 * (correctFirst / completed)).toFixed(0) : '0',
         'Calculation speed (sec/prob)': useTimer ? speed : '',
+        'Input mode': inputMode,
+        'Voice retry count': voiceMetrics.retryCount.toString(),
+        'Voice no-speech count': voiceMetrics.noSpeechCount.toString(),
+        'Voice no-match count': voiceMetrics.noMatchCount.toString(),
+        'Voice ambiguous final count': voiceMetrics.ambiguousFinalCount.toString(),
+        'Voice processing total (ms)': voiceMetrics.processingMsTotal.toFixed(0),
         // Formatting other columns omitted for brevity but should be hydrated before saveLogToCloud is called natively.
     };
 }
