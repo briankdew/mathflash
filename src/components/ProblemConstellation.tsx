@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
-import Svg, { Path, Ellipse, Defs, Filter, FeDropShadow, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect, FeBlend, FeColorMatrix } from 'react-native-svg';
+import { View, Text, StyleSheet } from 'react-native';
+import Svg, { Ellipse, Defs, Filter, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect } from 'react-native-svg';
 import { ProblemDisplay, OperationMode, StartMode, SessionPhase } from '../lib/types';
 import { isSessionPhasePreparing } from '../lib/sessionPhases';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { theme, getOperationTheme } from '../theme/colors';
 import { constellationStyles as styles } from '../theme/ProblemConstellation.styles';
-import Animated, { useAnimatedStyle, withRepeat, withSequence, withTiming, Easing, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withRepeat, withSequence, withTiming, Easing, useSharedValue } from 'react-native-reanimated';
 
 import { IconPlus, IconMinus, IconTimes, IconDivide } from './icons/MathIcons';
 
@@ -38,7 +38,6 @@ interface ProblemConstellationProps {
 
 export function ProblemConstellation({ problem, operation, startMode = 'full', phase, shakeTrigger = 0, renderInput, showCorrect = false, isActive = false }: ProblemConstellationProps) {
     const opTheme = getOperationTheme(operation);
-    const { width } = useWindowDimensions();
     const isPreparing = isSessionPhasePreparing(phase);
 
     const dynamicScale = 1; // Locked to 1 to honor exact Figma coordinates
@@ -123,6 +122,13 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
                 resultBackTextRotation.value = withTiming(0, { duration: reorientDuration, easing: Easing.linear });
             }, finalFlipAt + sessionPrepTimeline.flip + 100);
 
+            const operatorColorDissolveId = setTimeout(() => {
+                operatorRevealOpacity.value = withTiming(1, {
+                    duration: sessionPrepTimeline.operatorColorDissolve,
+                    easing: Easing.linear,
+                });
+            }, finalFlipAt);
+
             const preArmFirstRevealId = setTimeout(() => {
                 // Prevent a one-frame flash before first-problem dissolve kicks in.
                 if (!hasPlayedFirstRevealRef.current) {
@@ -137,7 +143,7 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
                 }
             }, Math.max(0, prepCompleteAt - 20));
 
-            flipTimeoutRefs.current.push(finalFlipId, blankBackTextId, reorientBackTextId, preArmFirstRevealId);
+            flipTimeoutRefs.current.push(finalFlipId, blankBackTextId, reorientBackTextId, operatorColorDissolveId, preArmFirstRevealId);
         }
 
         return () => {
@@ -161,18 +167,15 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
             rightFlip.value = -360;
             resultFlip.value = -360;
             textRevealOpacity.value = 0;
-            operatorRevealOpacity.value = 0;
             setShowProblemValues(true);
             textRevealOpacity.value = withTiming(1, { duration: sessionPrepTimeline.firstProblemDissolve, easing: Easing.linear });
-            operatorRevealOpacity.value = withTiming(1, { duration: sessionPrepTimeline.firstProblemDissolve, easing: Easing.linear });
             return;
         }
 
         if (problem) {
             setShowProblemValues(true);
-            operatorRevealOpacity.value = 1;
         }
-    }, [phase, problem, textRevealOpacity, operatorRevealOpacity]);
+    }, [phase, problem, textRevealOpacity]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [

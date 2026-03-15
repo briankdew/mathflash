@@ -48,7 +48,7 @@ export function useMathSession() {
     });
     const [globalSettings, setGlobalSettings] = useState<GlobalSessionSettings>({
         useTimer: true,
-        startMode: 'full',
+        startMode: 'min',
     });
 
     const options: SessionOptions = getSessionOptions(operation, settingsByOperation, globalSettings);

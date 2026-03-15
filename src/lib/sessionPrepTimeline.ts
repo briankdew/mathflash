@@ -5,6 +5,8 @@ export const sessionPrepTimeline = {
   beat: 150,
   roll: 300,
   firstProblemDissolve: 220,
+  operatorColorDissolve: 300,
+  pauseAfterOperatorDissolve: 0,
   postRollPause: 500,
   flip: 300,
   pauseAfterLeftFlip: 750,
@@ -12,6 +14,31 @@ export const sessionPrepTimeline = {
   pauseAfterResultFlip: 750,
   pauseAfterFinalFlip: 750,
 } as const;
+
+const fullFinalFlipAt =
+  sessionPrepTimeline.tuck +
+  sessionPrepTimeline.beat +
+  sessionPrepTimeline.roll +
+  sessionPrepTimeline.postRollPause +
+  sessionPrepTimeline.flip +
+  sessionPrepTimeline.pauseAfterLeftFlip +
+  sessionPrepTimeline.flip +
+  sessionPrepTimeline.pauseAfterRightFlip +
+  sessionPrepTimeline.flip +
+  sessionPrepTimeline.pauseAfterResultFlip;
+
+const minFinalFlipAt =
+  sessionPrepTimeline.tuck +
+  sessionPrepTimeline.beat +
+  sessionPrepTimeline.roll +
+  sessionPrepTimeline.postRollPause;
+
+// After the shared final flip starts, the card-flip branch and operator-color branch run in parallel.
+// First-problem reveal waits for whichever branch finishes later.
+const postFinalSharedWindow = Math.max(
+  sessionPrepTimeline.flip + sessionPrepTimeline.pauseAfterFinalFlip,
+  sessionPrepTimeline.operatorColorDissolve + sessionPrepTimeline.pauseAfterOperatorDissolve,
+);
 
 export const sessionPrepMarks = {
   stadiumHideAt: sessionPrepTimeline.tuck + sessionPrepTimeline.beat,
@@ -37,42 +64,10 @@ export const sessionPrepMarks = {
     sessionPrepTimeline.pauseAfterLeftFlip +
     sessionPrepTimeline.flip +
     sessionPrepTimeline.pauseAfterRightFlip,
-  finalFlipAt:
-    sessionPrepTimeline.tuck +
-    sessionPrepTimeline.beat +
-    sessionPrepTimeline.roll +
-    sessionPrepTimeline.postRollPause +
-    sessionPrepTimeline.flip +
-    sessionPrepTimeline.pauseAfterLeftFlip +
-    sessionPrepTimeline.flip +
-    sessionPrepTimeline.pauseAfterRightFlip +
-    sessionPrepTimeline.flip +
-    sessionPrepTimeline.pauseAfterResultFlip,
-  finalFlipAtMin:
-    sessionPrepTimeline.tuck +
-    sessionPrepTimeline.beat +
-    sessionPrepTimeline.roll +
-    sessionPrepTimeline.postRollPause,
-  totalPrep:
-    sessionPrepTimeline.tuck +
-    sessionPrepTimeline.beat +
-    sessionPrepTimeline.roll +
-    sessionPrepTimeline.postRollPause +
-    sessionPrepTimeline.flip +
-    sessionPrepTimeline.pauseAfterLeftFlip +
-    sessionPrepTimeline.flip +
-    sessionPrepTimeline.pauseAfterRightFlip +
-    sessionPrepTimeline.flip +
-    sessionPrepTimeline.pauseAfterResultFlip +
-    sessionPrepTimeline.flip +
-    sessionPrepTimeline.pauseAfterFinalFlip,
-  totalPrepMin:
-    sessionPrepTimeline.tuck +
-    sessionPrepTimeline.beat +
-    sessionPrepTimeline.roll +
-    sessionPrepTimeline.postRollPause +
-    sessionPrepTimeline.flip +
-    sessionPrepTimeline.pauseAfterFinalFlip,
+  finalFlipAt: fullFinalFlipAt,
+  finalFlipAtMin: minFinalFlipAt,
+  totalPrep: fullFinalFlipAt + postFinalSharedWindow,
+  totalPrepMin: minFinalFlipAt + postFinalSharedWindow,
 } as const;
 
 export function getSessionPrepSchedule(startMode: StartMode): SessionPrepSchedule {
