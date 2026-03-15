@@ -2,7 +2,26 @@ export type OperationMode = 'addsub' | 'multdiv';
 export type ProblemOrder = 'random' | 'standard';
 export type OperandOrder = 'random' | 'standard' | 'reverse';
 export type MissingValueMode = 'result' | 'operand' | 'random';
-export type CustomSet = '10s' | 'doubles' | null;
+export type CustomSet = '10s' | 'doubles' | 'squares' | null;
+export type SetsMode = 'cycles' | 'single';
+export type StartMode = 'full' | 'min';
+export type AnswerCheckResult = 'correct' | 'wrong' | 'incomplete';
+export type SessionPhase =
+  | 'idle'
+  | 'preparing'
+  | 'revealingProblem'
+  | 'awaitingAnswer'
+  | 'feedbackPendingAdvance';
+
+export interface SessionPrepSchedule {
+  startMode: StartMode;
+  prepDurationMs: number;
+  stadiumHideAtMs: number;
+  firstProblemAtMs: number;
+  timerStartDelayMs: number;
+  inputUnlockDelayMs: number;
+  inputUnlockAtMs: number;
+}
 
 export interface ProblemSpec {
   a: number;
@@ -29,6 +48,8 @@ export interface SessionOptions {
   problemOrder: ProblemOrder;
   operandOrder: OperandOrder;
   missingValue: MissingValueMode;
+  startMode: StartMode;
+  setsMode: SetsMode;
   activeChips: number[]; // e.g. [1, 2, 3] usually 1-9
   customSet: CustomSet;
   practiceCycles: number;

@@ -1,13 +1,39 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { MathEngine } from '../lib/MathEngine';
 import { saveLogToCloud } from '../lib/CloudSync';
+import { evaluateAnswerInput } from '../lib/answerEvaluation';
+import { getSessionPrepSchedule } from '../lib/sessionPrepTimeline';
 import {
-    SessionOptions,
+    createProblemDisplay,
+    createSessionQueue,
+    getPracticeCycles,
+    resolveNextProblem,
+} from '../lib/sessionProgression';
+import {
+    appendMissedProblem,
+    recordCorrectAnswer,
+    recordWrongAnswer,
+} from '../lib/sessionStats';
+import { buildSessionLogPayload } from '../lib/sessionTelemetry';
+import {
+    applySessionOptionsUpdate,
+    defaultOperationSettings,
+    getSessionOptions,
+    GlobalSessionSettings,
+    SettingsByOperation,
+    SessionOptionsUpdate,
+} from '../lib/sessionOptions';
+import {
+    AnswerCheckResult,
+    OperationMode,
     ProblemSpec,
     ProblemDisplay,
     SessionStats,
     MissedProblem,
+    SessionPhase,
+    SessionOptions,
 } from '../lib/types';
+import { useSessionInput } from './session/useSessionInput';
 
 // Fallback UUID generation
 function generateSessionId() {
@@ -15,27 +41,27 @@ function generateSessionId() {
 }
 
 export function useMathSession() {
-    // Mode-specific preferences to maintain "Tactile Memory" during a session
-    const [modePrefs, setModePrefs] = useState({
-        digits: { problemOrder: 'random' as const, operandOrder: 'random' as const, missingValue: 'random' as const },
-        '10s': { problemOrder: 'standard' as const, operandOrder: 'random' as const, missingValue: 'operand' as const },
-        doubles: { problemOrder: 'standard' as const, operandOrder: 'standard' as const, missingValue: 'result' as const },
+    const [operation, setOperation] = useState<OperationMode>('addsub');
+    const [settingsByOperation, setSettingsByOperation] = useState<SettingsByOperation>({
+        addsub: defaultOperationSettings(),
+        multdiv: defaultOperationSettings(),
+    });
+    const [globalSettings, setGlobalSettings] = useState<GlobalSessionSettings>({
+        useTimer: true,
+        startMode: 'min',
     });
 
-    const [options, setOptions] = useState<SessionOptions>({
-        operation: 'addsub',
-        problemOrder: 'random',
-        operandOrder: 'random',
-        missingValue: 'random',
-        activeChips: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        customSet: null,
-        practiceCycles: 1,
-    });
-
-    const [useTimer, setUseTimer] = useState(true);
+    const options: SessionOptions = getSessionOptions(operation, settingsByOperation, globalSettings);
+    const useTimer = globalSettings.useTimer;
+    const setUseTimer = (val: boolean) => {
+        setGlobalSettings(prev => ({ ...prev, useTimer: val }));
+    };
 
     // Session State
+    const [phase, setPhase] = useState<SessionPhase>('idle');
     const [isActive, setIsActive] = useState(false);
+    const [isInputEnabled, setIsInputEnabled] = useState(false);
+    const [isStadiumActive, setIsStadiumActive] = useState(true);
     const [sessionId, setSessionId] = useState('');
     const [sessionStart, setSessionStart] = useState<Date | null>(null);
 
@@ -55,221 +81,231 @@ export function useMathSession() {
     });
 
     const timerStart = useRef(0);
+    const {
+        inputValue,
+        appendInputDigit,
+        setInputValue,
+        clearInputValue,
+        resetInputValue,
+    } = useSessionInput(isInputEnabled);
+    const prepTimeouts = useRef<{
+        stadiumHide: ReturnType<typeof setTimeout> | null;
+        firstProblem: ReturnType<typeof setTimeout> | null;
+        timerStartDelay: ReturnType<typeof setTimeout> | null;
+        inputUnlock: ReturnType<typeof setTimeout> | null;
+    }>({
+        stadiumHide: null,
+        firstProblem: null,
+        timerStartDelay: null,
+        inputUnlock: null,
+    });
+
+    const clearPrepTimeouts = useCallback(() => {
+        if (prepTimeouts.current.stadiumHide) {
+            clearTimeout(prepTimeouts.current.stadiumHide);
+            prepTimeouts.current.stadiumHide = null;
+        }
+        if (prepTimeouts.current.firstProblem) {
+            clearTimeout(prepTimeouts.current.firstProblem);
+            prepTimeouts.current.firstProblem = null;
+        }
+        if (prepTimeouts.current.timerStartDelay) {
+            clearTimeout(prepTimeouts.current.timerStartDelay);
+            prepTimeouts.current.timerStartDelay = null;
+        }
+        if (prepTimeouts.current.inputUnlock) {
+            clearTimeout(prepTimeouts.current.inputUnlock);
+            prepTimeouts.current.inputUnlock = null;
+        }
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            clearPrepTimeouts();
+        };
+    }, [clearPrepTimeouts]);
 
     // Derived Values
     const getPendingCount = useCallback(() => {
         const pool = MathEngine.getFilteredPool(options);
-        const cycles = Math.max(1, Math.min(5, options.practiceCycles));
+        const cycles = getPracticeCycles(options.practiceCycles);
         return pool.length * cycles;
     }, [options]);
 
-    const updateOptions = (newOpts: Partial<SessionOptions>) => {
-        setOptions((prev) => {
-            const next = { ...prev, ...newOpts };
+    const updateOptions = useCallback((update: SessionOptionsUpdate) => {
+        const nextState = applySessionOptionsUpdate({
+            operation,
+            settingsByOperation,
+            globalSettings,
+        }, update);
 
-            // Determine if we are switching modes
-            const oldMode = prev.customSet || 'digits';
-            const newMode = next.customSet || 'digits';
-
-            if (oldMode !== newMode) {
-                // We are switching modes: Load this mode's previous custom tweaks
-                const prefs = modePrefs[(newMode || 'digits') as keyof typeof modePrefs];
-                next.problemOrder = prefs.problemOrder;
-                next.operandOrder = prefs.operandOrder;
-                next.missingValue = prefs.missingValue;
-            } else {
-                // We are staying in the same mode: Save any tweaks to PO, OO, or MV
-                if (newOpts.problemOrder || newOpts.operandOrder || newOpts.missingValue) {
-                    setModePrefs(prevPrefs => ({
-                        ...prevPrefs,
-                        [(newMode || 'digits') as keyof typeof modePrefs]: {
-                            problemOrder: next.problemOrder,
-                            operandOrder: next.operandOrder,
-                            missingValue: next.missingValue,
-                        }
-                    }));
-                }
-            }
-
-            return next;
-        });
-    };
+        setOperation(nextState.operation);
+        setSettingsByOperation(nextState.settingsByOperation);
+        setGlobalSettings(nextState.globalSettings);
+    }, [operation, settingsByOperation, globalSettings]);
 
     const startSession = useCallback(() => {
-        const pool = MathEngine.getFilteredPool(options);
-        if (pool.length === 0) {
-            // In a real app, maybe trigger an alert here.
+        clearPrepTimeouts();
+
+        const basePool = MathEngine.getFilteredPool(options);
+        if (basePool.length === 0) {
             console.warn("No Problem Set Selected");
             return;
         }
 
-        if (options.problemOrder === 'random') {
-            MathEngine.shuffle(pool);
-        }
+        const { initialQueue, cyclesRemaining, totalProblems } = createSessionQueue(basePool, options);
 
-        const cycles = Math.max(1, Math.min(5, options.practiceCycles));
+        setQueue(initialQueue);
+        setTotalProblems(totalProblems);
+        metrics.current.cyclesRemaining = cyclesRemaining;
 
-        setQueue(pool);
-        setTotalProblems(pool.length * cycles);
-        metrics.current.cyclesRemaining = cycles - 1;
+        const prepSchedule = getSessionPrepSchedule(options.startMode);
 
+        setPhase('preparing');
         setIsActive(true);
+        setIsInputEnabled(false);
+        setIsStadiumActive(true);
+        resetInputValue();
+        setCurrentProblem(null);
         setSessionId(generateSessionId());
         setSessionStart(new Date());
-        timerStart.current = Date.now();
         metrics.current.sessionCompletionMsTotal = 0;
 
         setStats({ completed: 0, correctFirst: 0, missedFirst: 0 });
         setMissedProblems([]);
 
-        _nextProblem(pool, cycles - 1);
-    }, [options]);
+        // Preserve original selector visual sequence state.
+        prepTimeouts.current.stadiumHide = setTimeout(() => {
+            setIsStadiumActive(false);
+            prepTimeouts.current.stadiumHide = null;
+        }, prepSchedule.stadiumHideAtMs);
 
-    const _nextProblem = (currentQueue: ProblemSpec[], remainingCycles: number) => {
-        if (currentQueue.length === 0) {
-            if (remainingCycles > 0) {
-                let pool = MathEngine.getFilteredPool(options);
-                if (options.problemOrder === 'random') MathEngine.shuffle(pool);
+        // Total visual prep now follows shared staged-flip timeline, then first problem + timer start.
+        prepTimeouts.current.firstProblem = setTimeout(() => {
+            _nextProblem(initialQueue, cyclesRemaining, 'revealingProblem');
+            prepTimeouts.current.timerStartDelay = setTimeout(() => {
+                timerStart.current = Date.now();
+                prepTimeouts.current.timerStartDelay = null;
+            }, prepSchedule.timerStartDelayMs);
+            prepTimeouts.current.inputUnlock = setTimeout(() => {
+                setIsInputEnabled(true);
+                setPhase('awaitingAnswer');
+                prepTimeouts.current.inputUnlock = null;
+            }, prepSchedule.inputUnlockDelayMs);
+            prepTimeouts.current.firstProblem = null;
+        }, prepSchedule.firstProblemAtMs);
+    }, [options, clearPrepTimeouts, resetInputValue]);
 
-                if (pool.length === 0) {
-                    endSession();
-                    return;
-                }
+    const _nextProblem = (
+        currentQueue: ProblemSpec[],
+        remainingCycles: number,
+        nextPhase: SessionPhase = 'awaitingAnswer'
+    ) => {
+        const resolution = resolveNextProblem(currentQueue, remainingCycles, options);
 
-                metrics.current.cyclesRemaining = remainingCycles - 1;
-
-                const p = pool.shift()!;
-                setQueue(pool);
-                _setCurrent(p);
-            } else {
-                endSession();
-            }
-        } else {
-            const q = [...currentQueue];
-            const p = q.shift()!;
-            setQueue(q);
-            _setCurrent(p);
+        if (resolution.type === 'end') {
+            endSession();
+            return;
         }
+
+        metrics.current.cyclesRemaining = resolution.cyclesRemaining;
+        setQueue(resolution.queue);
+        _setCurrent(resolution.problem, nextPhase);
     };
 
-    const _setCurrent = (p: ProblemSpec) => {
+    const _setCurrent = (p: ProblemSpec, nextPhase: SessionPhase = 'awaitingAnswer') => {
         metrics.current.isFirstTry = true;
         metrics.current.wrongAnswerCount = 0;
-        const display = MathEngine.configureProblemDisplay(p, options);
-        display.presentedAtPerf = performance.now();
-        display.attempts = 0;
-        setCurrentProblem(display);
+        setCurrentProblem(createProblemDisplay(p, options));
+        setPhase(nextPhase);
     };
 
-    const checkAnswer = useCallback((inputStr: string, forceComplete: boolean = false): 'correct' | 'wrong' | 'incomplete' => {
-        if (!currentProblem || !isActive) return 'incomplete';
+    const checkAnswer = useCallback((inputStr: string, forceComplete: boolean = false): AnswerCheckResult => {
+        const evaluation = evaluateAnswerInput({
+            currentProblem,
+            isActive,
+            inputStr,
+            forceComplete,
+        });
 
-        // Accept empty strings or partials if not forcing
-        const userVal = parseInt(inputStr, 10);
-        const correctStr = String(currentProblem.correct);
-
-        if (isNaN(userVal) || (!forceComplete && inputStr.length < correctStr.length && userVal !== currentProblem.correct)) {
-            return 'incomplete';
+        if (evaluation.result === 'incomplete') {
+            return evaluation.result;
         }
 
-        const now = performance.now();
-        const presentedTime = currentProblem.presentedAtPerf || now;
-        const attemptMs = Math.max(0, now - presentedTime);
+        if (evaluation.result === 'correct') {
+            metrics.current.sessionCompletionMsTotal += evaluation.attemptMs ?? 0;
+            setPhase('feedbackPendingAdvance');
 
-        // Provide Answer
-        if (userVal === currentProblem.correct) {
-            metrics.current.sessionCompletionMsTotal += attemptMs;
-
-            setStats(prev => ({
-                ...prev,
-                completed: prev.completed + 1,
-                correctFirst: metrics.current.isFirstTry ? prev.correctFirst + 1 : prev.correctFirst
-            }));
+            setStats(prev => recordCorrectAnswer(prev, metrics.current.isFirstTry));
 
             // Advance after small delay (handled by UI)
             return 'correct';
-        } else {
-            if (metrics.current.isFirstTry) {
-                setStats(prev => ({ ...prev, missedFirst: prev.missedFirst + 1 }));
-                metrics.current.isFirstTry = false;
-            }
-
-            metrics.current.wrongAnswerCount += 1;
-
-            // Log Missed Problem
-            setMissedProblems(prev => {
-                const stdA = Math.min(currentProblem.left, currentProblem.right);
-                const stdB = Math.max(currentProblem.left, currentProblem.right);
-
-                const existing = prev.find(m => m.a === stdA && m.b === stdB);
-                if (existing) {
-                    return prev.map(m => m === existing ? { ...m, guesses: [...m.guesses, inputStr] } : m);
-                } else {
-                    return [...prev, {
-                        a: stdA,
-                        b: stdB,
-                        res: currentProblem.result,
-                        op: options.operation === 'addsub' ? '+' : '×',
-                        guesses: [inputStr]
-                    }];
-                }
-            });
-            return 'wrong';
         }
+
+        const wasFirstTry = metrics.current.isFirstTry;
+        if (wasFirstTry) {
+            setStats(prev => recordWrongAnswer(prev, wasFirstTry));
+            metrics.current.isFirstTry = false;
+        }
+
+        metrics.current.wrongAnswerCount += 1;
+
+        if (currentProblem) {
+            setMissedProblems(prev =>
+                appendMissedProblem(prev, currentProblem, inputStr, options.operation)
+            );
+        }
+
+        return 'wrong';
     }, [currentProblem, isActive, options]);
 
+    const submitAnswer = useCallback((forceComplete: boolean = false): AnswerCheckResult => {
+        return checkAnswer(inputValue, forceComplete);
+    }, [checkAnswer, inputValue]);
+
     const endSession = useCallback(() => {
+        clearPrepTimeouts();
         if (!isActive) return;
 
         const end = new Date();
         const elapsedSec = Math.round((Date.now() - timerStart.current) / 1000);
 
-        const n = stats.completed;
-        const c = stats.correctFirst;
-        const speed = n > 0 ? (metrics.current.sessionCompletionMsTotal / 1000 / n).toFixed(1) : '0.0';
-
-        const opText = options.operation === 'addsub' ? 'Addition / Subtraction' : 'Multiplication / Division';
-        let levelText = "Easy";
-        if (options.missingValue === 'operand') levelText = "Moderate";
-        else if (options.missingValue === 'random') levelText = "Difficult";
-
-        saveLogToCloud({
-            'Log Timestamp': new Date().toLocaleString(),
-            'Session ID': sessionId,
-            'User': '',
-            'Timer on': useTimer ? 'Y' : 'N',
-            'Operation': opText,
-            'Level': levelText,
-            'Session reset': n < totalProblems ? 'Y' : 'N',
-            'Session date': sessionStart?.toLocaleDateString('en-US') || '',
-            // Note: Full formatting should match index.html for backend compatibility
-            'Problems selected': Math.round(totalProblems / Math.max(1, options.practiceCycles)).toString(),
-            'Practice cycles': options.practiceCycles.toString(),
-            'Total problems': totalProblems.toString(),
-            'Problems completed': n.toString(),
-            'Percent completed (%)': totalProblems > 0 ? (100 * (n / totalProblems)).toFixed(0) : '0',
-            'Correct (first try)': c.toString(),
-            'Missed (first try)': stats.missedFirst.toString(),
-            'Accuracy (%)': n > 0 ? (100 * (c / n)).toFixed(0) : '0',
-            'Calculation speed (sec/prob)': useTimer ? speed : '',
-            // Formatting other columns omitted for brevity but should be hydrated before saveLogToCloud is called natively.
-        });
+        saveLogToCloud(buildSessionLogPayload({
+            options,
+            sessionId,
+            sessionStart,
+            stats,
+            totalProblems,
+            useTimer,
+            sessionCompletionMsTotal: metrics.current.sessionCompletionMsTotal,
+        }));
 
         setIsActive(false);
+        setIsInputEnabled(false);
+        setIsStadiumActive(true);
+        resetInputValue();
         setCurrentProblem(null);
         setQueue([]);
-    }, [isActive, stats, totalProblems, useTimer, options, sessionStart, sessionId]);
+        setPhase('idle');
+    }, [isActive, stats, totalProblems, useTimer, options, sessionStart, sessionId, clearPrepTimeouts, resetInputValue]);
 
     const advanceToNextProblem = useCallback(() => {
         _nextProblem(queue, metrics.current.cyclesRemaining);
     }, [queue, options]);
 
     return {
+        phase,
         options,
         updateOptions,
         useTimer,
         setUseTimer,
         isActive,
+        isInputEnabled,
+        isStadiumActive,
+        inputValue,
+        appendInputDigit,
+        setInputValue,
+        clearInputValue,
         currentProblem,
         stats,
         totalProblems,
@@ -277,6 +313,7 @@ export function useMathSession() {
         getPendingCount,
         startSession,
         checkAnswer,
+        submitAnswer,
         endSession,
         advanceToNextProblem
     };

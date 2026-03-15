@@ -1,32 +1,49 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
-import { FontAwesome } from '@expo/vector-icons';
 import { NumberPad } from './NumberPad';
+import { OperationSelector } from './OperationSelector';
 import { SettingsPanel } from './SettingsPanel';
-import { SessionOptions } from '../lib/types';
+import { IconSettingsAddSub, IconSettingsMulDiv } from './icons/MathIcons';
+import { SessionOptions, SessionPhase } from '../lib/types';
+import { SessionOptionsUpdate } from '../lib/sessionOptions';
+import { isSessionPhaseActive } from '../lib/sessionPhases';
+import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { appStyles as styles } from '../theme/App.styles';
 import { theme } from '../theme/colors';
 
 // Keypad dimensions
 const KEYPAD_CONTENT_HEIGHT = 232;
 const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 20;
+const SETTINGS_REVEAL_MARGIN = 5;
+const SETTINGS_FALLBACK_HEIGHT = 240;
+const START_BUTTON_HEIGHT = 35;
+const START_BUTTON_MARGIN_BOTTOM = 20;
+const GEAR_SIZE = 40;
+const GEAR_REVEAL_OFFSET = 145.5;
+const START_BUTTON_FLASH_DURATION_MS = 180;
 
 interface ControlDashboardProps {
+  phase: SessionPhase;
   isActive: boolean;
+  isInputEnabled: boolean;
+  isStadiumActive: boolean;
   options: SessionOptions;
   opTheme: { textOperand: string; textResult: string; logoMath: string; logoFlash: string; tagline: string; btnBg: string; };
   onStartSession: () => void;
   onEndSession: () => void;
   onDigitInput: (d: string) => void;
   onClearInput: () => void;
-  onUpdateOptions: (opts: Partial<SessionOptions>) => void;
+  onUpdateOptions: (update: SessionOptionsUpdate) => void;
   useTimer: boolean;
   setUseTimer: (val: boolean) => void;
 }
 
 export function ControlDashboard({
+  phase,
   isActive,
+  isInputEnabled,
+  isStadiumActive,
   options,
   opTheme,
   onStartSession,
@@ -38,46 +55,117 @@ export function ControlDashboard({
   setUseTimer
 }: ControlDashboardProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsMeasuredHeight, setSettingsMeasuredHeight] = useState(0);
+  const [isStartButtonFlashActive, setIsStartButtonFlashActive] = useState(false);
+  const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const untuckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startButtonFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetSessionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animated values for keypad slide-in
   const keypadHeight = useSharedValue(0);
   const keypadSlide = useSharedValue(-KEYPAD_CONTENT_HEIGHT);
-  // Gear tucked behind button: 0. Fully out: 142 (Left edge = 107.5 button edge + 18u gap + 16.5 half width of 33px gear)
-  const gearOffset = useSharedValue(142);
+  const settingsHeight = useSharedValue(0);
+  const settingsSlide = useSharedValue(-(SETTINGS_FALLBACK_HEIGHT + SETTINGS_REVEAL_MARGIN));
+  // Gear tucked behind button: 0. Fully out based on start button edge, gap, and half gear width.
+  const gearOffset = useSharedValue(GEAR_REVEAL_OFFSET);
+  const isSessionInProgress = isSessionPhaseActive(phase);
+  const startButtonPressedColor = options.operation === 'addsub' ? '#07345b' : '#1d3c0b';
 
   useEffect(() => {
-    if (isActive) {
+    if (rollTimeoutRef.current) {
+      clearTimeout(rollTimeoutRef.current);
+      rollTimeoutRef.current = null;
+    }
+    if (untuckTimeoutRef.current) {
+      clearTimeout(untuckTimeoutRef.current);
+      untuckTimeoutRef.current = null;
+    }
+
+    if (isSessionInProgress) {
       // Step 1: Tuck gear behind the Start Session button
-      gearOffset.value = withTiming(0, { duration: 250, easing: Easing.inOut(Easing.cubic) });
+      gearOffset.value = withTiming(0, { duration: sessionPrepTimeline.tuck, easing: Easing.inOut(Easing.cubic) });
       
-      // Step 2: About a beat later, reveal keypad
-      setTimeout(() => {
+      // Step 2: After tuck and beat (500 + 150)
+      rollTimeoutRef.current = setTimeout(() => {
         keypadHeight.value = withTiming(KEYPAD_REVEAL_HEIGHT, {
-          duration: 350,
-          easing: Easing.out(Easing.cubic),
+          duration: sessionPrepTimeline.roll,
+          easing: Easing.linear,
         });
         keypadSlide.value = withTiming(0, {
-          duration: 350,
-          easing: Easing.out(Easing.cubic),
+          duration: sessionPrepTimeline.roll,
+          easing: Easing.linear,
         });
-      }, 300); // 250ms + 50ms "beat"
+        rollTimeoutRef.current = null;
+      }, sessionPrepMarks.keypadRollStartAt);
     } else {
-      // Step 1: Hide keypad
+      // Step 1: Hide keypad (Roll reverse)
       keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
-        duration: 250,
-        easing: Easing.in(Easing.cubic),
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
       });
       keypadHeight.value = withTiming(0, {
-        duration: 250,
-        easing: Easing.in(Easing.cubic),
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
       });
 
-      // Step 2: After keypad hidden, untuck gear
-      setTimeout(() => {
-        gearOffset.value = withTiming(142, { duration: 250, easing: Easing.out(Easing.cubic) });
-      }, 300);
+      // Step 2: After keypad hidden and beat, untuck gear
+      untuckTimeoutRef.current = setTimeout(() => {
+        gearOffset.value = withTiming(GEAR_REVEAL_OFFSET, { duration: sessionPrepTimeline.tuck, easing: Easing.out(Easing.cubic) });
+        untuckTimeoutRef.current = null;
+      }, sessionPrepTimeline.roll + sessionPrepTimeline.beat);
     }
-  }, [isActive]);
+
+    return () => {
+      if (rollTimeoutRef.current) {
+        clearTimeout(rollTimeoutRef.current);
+        rollTimeoutRef.current = null;
+      }
+      if (untuckTimeoutRef.current) {
+        clearTimeout(untuckTimeoutRef.current);
+        untuckTimeoutRef.current = null;
+      }
+    };
+  }, [isSessionInProgress]);
+
+  useEffect(() => {
+    return () => {
+      if (startButtonFlashTimeoutRef.current) {
+        clearTimeout(startButtonFlashTimeoutRef.current);
+        startButtonFlashTimeoutRef.current = null;
+      }
+      if (resetSessionTimeoutRef.current) {
+        clearTimeout(resetSessionTimeoutRef.current);
+        resetSessionTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const triggerStartButtonFlash = () => {
+    setIsStartButtonFlashActive(true);
+    if (startButtonFlashTimeoutRef.current) {
+      clearTimeout(startButtonFlashTimeoutRef.current);
+    }
+    startButtonFlashTimeoutRef.current = setTimeout(() => {
+      setIsStartButtonFlashActive(false);
+      startButtonFlashTimeoutRef.current = null;
+    }, START_BUTTON_FLASH_DURATION_MS);
+  };
+
+  const handlePrimaryActionPress = () => {
+    if (isActive) {
+      if (resetSessionTimeoutRef.current) {
+        clearTimeout(resetSessionTimeoutRef.current);
+      }
+      resetSessionTimeoutRef.current = setTimeout(() => {
+        onEndSession();
+        resetSessionTimeoutRef.current = null;
+      }, START_BUTTON_FLASH_DURATION_MS);
+      return;
+    }
+
+    onStartSession();
+  };
 
   const keypadWrapperStyle = useAnimatedStyle(() => ({
     height: keypadHeight.value,
@@ -92,20 +180,44 @@ export function ControlDashboard({
     transform: [{ translateX: gearOffset.value }],
   }));
 
+  useEffect(() => {
+    const settingsTargetHeight = (settingsMeasuredHeight > 0 ? settingsMeasuredHeight : SETTINGS_FALLBACK_HEIGHT) + SETTINGS_REVEAL_MARGIN;
+
+    if (isSettingsOpen) {
+      settingsHeight.value = withTiming(settingsTargetHeight, {
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
+      });
+      settingsSlide.value = withTiming(0, {
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
+      });
+    } else {
+      settingsSlide.value = withTiming(-settingsTargetHeight, {
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
+      });
+      settingsHeight.value = withTiming(0, {
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
+      });
+    }
+  }, [isSettingsOpen, settingsMeasuredHeight, settingsHeight, settingsSlide]);
+
   const settingsWrapperStyle = useAnimatedStyle(() => ({
-    height: withTiming(isSettingsOpen ? 550 : 0, {
-       duration: 350,
-       easing: Easing.out(Easing.cubic),
-    }),
-    opacity: withTiming(isSettingsOpen ? 1 : 0),
+    height: settingsHeight.value,
     overflow: 'hidden',
+  }));
+
+  const settingsContentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: settingsSlide.value }],
   }));
 
   return (
     <View style={styles.keypadBlock}>
       {/* Animated Keypad View */}
       <Animated.View 
-        pointerEvents={isActive ? 'auto' : 'none'}
+        pointerEvents={isActive && isInputEnabled ? 'auto' : 'none'}
         style={[
           { alignItems: 'center', width: '100%', backgroundColor: theme.bg, zIndex: 10 }, 
           keypadWrapperStyle
@@ -115,51 +227,83 @@ export function ControlDashboard({
           <NumberPad
             onDigit={onDigitInput}
             onClear={onClearInput}
-            disabled={!isActive}
+            disabled={!isActive || !isInputEnabled}
           />
         </Animated.View>
       </Animated.View>
 
       {/* Primary Action Button Row */}
-      <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: '100%', height: START_BUTTON_HEIGHT + START_BUTTON_MARGIN_BOTTOM, alignItems: 'center', justifyContent: 'flex-start' }}>
         <Animated.View style={[
-          { position: 'absolute', zIndex: 0, marginBottom: 10 },
+          { position: 'absolute', zIndex: 0, top: (START_BUTTON_HEIGHT - GEAR_SIZE) / 2 },
           gearStyle
         ]}>
           <TouchableOpacity
             style={{ 
-              width: 33, 
-              height: 33, 
+              width: GEAR_SIZE, 
+              height: GEAR_SIZE, 
               justifyContent: 'center', 
               alignItems: 'center',
             }}
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             onPress={() => !isActive && setIsSettingsOpen(!isSettingsOpen)}
             disabled={isActive}
           >
-            <FontAwesome name="gear" size={33} color={opTheme.tagline} />
+            {options.operation === 'multdiv' ? (
+              <IconSettingsMulDiv size={40} />
+            ) : (
+              <IconSettingsAddSub size={40} />
+            )}
           </TouchableOpacity>
         </Animated.View>
 
-        <TouchableOpacity
-          style={[styles.startBtn, { backgroundColor: opTheme.textOperand, zIndex: 1 }]}
-          onPress={() => isActive ? onEndSession() : onStartSession()}
-          activeOpacity={0.9}
+        <Pressable
+          style={[
+            styles.startBtn,
+            {
+              backgroundColor: isStartButtonFlashActive ? startButtonPressedColor : opTheme.textOperand,
+              zIndex: 1,
+            },
+          ]}
+          onPressIn={triggerStartButtonFlash}
+          onPress={handlePrimaryActionPress}
         >
           <Text style={styles.startBtnText}>
             {isActive ? 'Reset Session' : 'Start Session'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
+
+      <OperationSelector
+        operation={options.operation}
+        isActive={isActive}
+        isStadiumActive={isStadiumActive}
+        onToggleOperation={() => onUpdateOptions({
+          type: 'setOperation',
+          operation: options.operation === 'addsub' ? 'multdiv' : 'addsub',
+        })}
+      />
 
       {/* Expandable Settings */}
       <Animated.View style={[{ width: '100%' }, settingsWrapperStyle]}>
-        <SettingsPanel
-          options={options}
-          updateOptions={onUpdateOptions}
-          useTimer={useTimer}
-          setUseTimer={setUseTimer}
-          disabled={isActive}
-        />
+        <Animated.View style={[{ width: '100%' }, settingsContentStyle]}>
+          <View
+            onLayout={(event) => {
+              const h = Math.ceil(event.nativeEvent.layout.height);
+              if (h > 0 && h !== settingsMeasuredHeight) {
+                setSettingsMeasuredHeight(h);
+              }
+            }}
+          >
+            <SettingsPanel
+              options={options}
+              updateOptions={onUpdateOptions}
+              useTimer={useTimer}
+              setUseTimer={setUseTimer}
+              disabled={isActive}
+            />
+          </View>
+        </Animated.View>
       </Animated.View>
     </View>
   );

@@ -2,14 +2,23 @@ import React, { useRef, useState } from 'react';
 import { View, TextInput } from 'react-native';
 import { appStyles as styles } from '../theme/App.styles';
 import { ProblemConstellation } from './ProblemConstellation';
-import { ProblemDisplay, SessionOptions } from '../lib/types';
+import {
+  AnswerCheckResult,
+  ProblemDisplay,
+  SessionOptions,
+  SessionPhase,
+} from '../lib/types';
+
+const WRONG_ANSWER_CLEAR_DELAY_MS = 400;
+const CORRECT_ANSWER_ADVANCE_DELAY_MS = 500;
 
 interface PracticeAreaProps {
   currentProblem: ProblemDisplay | null;
   options: SessionOptions;
+  phase: SessionPhase;
   isActive: boolean;
-  onToggleOperation: () => void;
-  onCheckAnswer: (input: string, forceComplete: boolean) => 'correct' | 'wrong' | 'incomplete';
+  isInputEnabled: boolean;
+  onCheckAnswer: (forceComplete: boolean) => AnswerCheckResult;
   onAdvanceProblem: () => void;
   onInputChanged: (val: string) => void;
   inputValue: string;
@@ -18,8 +27,9 @@ interface PracticeAreaProps {
 export function PracticeArea({
   currentProblem,
   options,
+  phase,
   isActive,
-  onToggleOperation,
+  isInputEnabled,
   onCheckAnswer,
   onAdvanceProblem,
   onInputChanged,
@@ -28,59 +38,95 @@ export function PracticeArea({
   const inputRef = useRef<TextInput>(null);
   const [shakeTrigger, setShakeTrigger] = useState(0);
   const [showCorrect, setShowCorrect] = useState(false);
+  const clearInputTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const advanceProblemTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-focus when active
   React.useEffect(() => {
-    if (isActive) {
+    if (isActive && isInputEnabled) {
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
+      if (clearInputTimeoutRef.current) {
+        clearTimeout(clearInputTimeoutRef.current);
+        clearInputTimeoutRef.current = null;
+      }
+      if (advanceProblemTimeoutRef.current) {
+        clearTimeout(advanceProblemTimeoutRef.current);
+        advanceProblemTimeoutRef.current = null;
+      }
+      setShowCorrect(false);
       inputRef.current?.blur();
-      onInputChanged('');
+      if (!isInputEnabled) {
+        onInputChanged('');
+      }
     }
-  }, [isActive]);
+  }, [isActive, isInputEnabled, onInputChanged]);
 
-  const handleSubmit = () => {
+  React.useEffect(() => {
+    return () => {
+      if (clearInputTimeoutRef.current) {
+        clearTimeout(clearInputTimeoutRef.current);
+        clearInputTimeoutRef.current = null;
+      }
+      if (advanceProblemTimeoutRef.current) {
+        clearTimeout(advanceProblemTimeoutRef.current);
+        advanceProblemTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const processAnswer = (forceComplete: boolean) => {
     if (!inputValue) return;
-    const res = onCheckAnswer(inputValue, true);
+    const res = onCheckAnswer(forceComplete);
 
     if (res === 'wrong') {
       setShakeTrigger(prev => prev + 1);
-      setTimeout(() => onInputChanged(''), 400);
+      if (clearInputTimeoutRef.current) {
+        clearTimeout(clearInputTimeoutRef.current);
+      }
+      clearInputTimeoutRef.current = setTimeout(() => {
+        onInputChanged('');
+        clearInputTimeoutRef.current = null;
+      }, WRONG_ANSWER_CLEAR_DELAY_MS);
     } else if (res === 'correct') {
       setShowCorrect(true);
-      setTimeout(() => {
+      if (advanceProblemTimeoutRef.current) {
+        clearTimeout(advanceProblemTimeoutRef.current);
+      }
+      advanceProblemTimeoutRef.current = setTimeout(() => {
         onInputChanged('');
         setShowCorrect(false);
         onAdvanceProblem();
-      }, 500);
+        advanceProblemTimeoutRef.current = null;
+      }, CORRECT_ANSWER_ADVANCE_DELAY_MS);
     }
   };
 
-  const handleInput = (text: string) => {
-    onInputChanged(text);
-    const res = onCheckAnswer(text, false);
-    if (res === 'correct') {
-      setShowCorrect(true);
-      setTimeout(() => {
-        onInputChanged('');
-        setShowCorrect(false);
-        onAdvanceProblem();
-      }, 500);
-    } else if (res === 'wrong') {
-      setShakeTrigger(prev => prev + 1);
-      setTimeout(() => onInputChanged(''), 400);
-    }
+  const handleSubmit = () => {
+    if (!isInputEnabled) return;
+    processAnswer(true);
   };
+
+  const handleInput = (text: string) => {
+    if (!isInputEnabled) return;
+    onInputChanged(text);
+  };
+
+  React.useEffect(() => {
+    if (!isActive || !isInputEnabled) return;
+    processAnswer(false);
+  }, [inputValue, isActive, isInputEnabled]);
 
   return (
     <View style={styles.constellationWrapper}>
       <ProblemConstellation
         problem={currentProblem}
         operation={options.operation}
+        startMode={options.startMode}
+        phase={phase}
         shakeTrigger={shakeTrigger}
         showCorrect={showCorrect}
         isActive={isActive}
-        onToggleOperation={onToggleOperation}
         renderInput={
           <TextInput
             ref={inputRef}
@@ -90,7 +136,7 @@ export function PracticeArea({
             value={inputValue}
             onChangeText={handleInput}
             onSubmitEditing={handleSubmit}
-            editable={isActive}
+            editable={isActive && isInputEnabled}
             autoFocus={false}
             showSoftInputOnFocus={false}
             caretHidden={true}

@@ -34,7 +34,6 @@ export const appStyles = StyleSheet.create({
     constellationWrapper: {
         width: '100%',
         alignItems: 'center',
-        marginTop: 10, // Exactly 10px below the header
     },
     inputArea: {
         width: '100%',
@@ -76,7 +75,7 @@ export const appStyles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 6,
         elevation: 6,
-        marginBottom: 10,
+        marginBottom: 15,
     },
     startBtnText: {
         color: '#fff',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   StyleSheet,
   View,
@@ -13,7 +13,7 @@ import { PracticeArea } from './src/components/PracticeArea';
 import { ControlDashboard } from './src/components/ControlDashboard';
 import { useMathSession } from './src/hooks/useMathSession';
 import { theme, getOperationTheme } from './src/theme/colors';
-import { useFonts, Nunito_700Bold } from '@expo-google-fonts/nunito';
+import { useFonts, Nunito_700Bold, Nunito_800ExtraBold_Italic } from '@expo-google-fonts/nunito';
 import { Archivo_400Regular } from '@expo-google-fonts/archivo';
 import { Fredoka_400Regular } from '@expo-google-fonts/fredoka';
 import { NotoSans_500Medium } from '@expo-google-fonts/noto-sans';
@@ -23,10 +23,12 @@ import { appStyles as styles } from './src/theme/App.styles';
 export default function App() {
   const session = useMathSession();
   const opTheme = getOperationTheme(session.options.operation);
-  const [inputValue, setInputValue] = useState('');
+  const pendingCount = session.getPendingCount();
+  const selectedCountColor = !session.isActive && pendingCount === 0 ? '#890124' : theme.textMuted;
 
   let [fontsLoaded] = useFonts({
     Nunito_700Bold,
+    Nunito_800ExtraBold_Italic,
     Archivo_400Regular,
     Fredoka_400Regular,
     NotoSans_500Medium,
@@ -53,32 +55,36 @@ export default function App() {
               <PracticeArea
                 currentProblem={session.currentProblem}
                 options={session.options}
+                phase={session.phase}
                 isActive={session.isActive}
-                onToggleOperation={() => session.updateOptions({ operation: session.options.operation === 'addsub' ? 'multdiv' : 'addsub' })}
-                onCheckAnswer={(input, force) => session.checkAnswer(input, force)}
+                isInputEnabled={session.isInputEnabled}
+                onCheckAnswer={session.submitAnswer}
                 onAdvanceProblem={session.advanceToNextProblem}
-                onInputChanged={setInputValue}
-                inputValue={inputValue}
+                onInputChanged={session.setInputValue}
+                inputValue={session.inputValue}
               />
 
               <View style={styles.inputArea}>
                 <View style={[styles.statsBlock, { marginTop: 4 }]}>
-                  <Text style={[styles.countText, { lineHeight: 22 }]}>
-                    {session.isActive ? 'Problems remaining: ' : 'Problems selected: '}
-                    <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22 }}>
-                      {session.isActive ? session.totalProblems - session.stats.completed : session.getPendingCount()}
+                  <Text style={[styles.countText, { lineHeight: 22, color: selectedCountColor }]}>
+                    {session.isActive && !!session.currentProblem ? 'Problems remaining: ' : 'Problems selected: '}
+                    <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22, color: selectedCountColor }}>
+                      {session.isActive && !!session.currentProblem ? session.totalProblems - session.stats.completed : pendingCount}
                     </Text>
                   </Text>
                 </View>
 
                 <ControlDashboard
+                  phase={session.phase}
                   isActive={session.isActive}
+                  isStadiumActive={session.isStadiumActive}
                   options={session.options}
                   opTheme={opTheme}
                   onStartSession={session.startSession}
                   onEndSession={session.endSession}
-                  onDigitInput={(d) => setInputValue(prev => prev + d)}
-                  onClearInput={() => setInputValue('')}
+                  onDigitInput={session.appendInputDigit}
+                  onClearInput={session.clearInputValue}
+                  isInputEnabled={session.isInputEnabled}
                   onUpdateOptions={session.updateOptions}
                   useTimer={session.useTimer}
                   setUseTimer={session.setUseTimer}

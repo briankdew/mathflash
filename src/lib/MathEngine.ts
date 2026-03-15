@@ -9,15 +9,18 @@ export class MathEngine {
 
         // BRANCH A: Custom Set is active (ignores 1-9 chips)
         if (options.customSet === '10s') {
-            for (let a = 1; a <= 9; a++) {
-                for (let b = 1; b <= 9; b++) {
-                    if (a + b === 10) {
-                        pool.push({ a, b, sum: 10, product: a * b });
-                    }
-                }
+            // Standard non-duplicated forms only: 1+9, 2+8, 3+7, 4+6, 5+5
+            for (let a = 1; a <= 5; a++) {
+                const b = 10 - a;
+                pool.push({ a, b, sum: 10, product: a * b });
             }
             return pool;
         } else if (options.customSet === 'doubles') {
+            for (let a = 1; a <= 9; a++) {
+                pool.push({ a, b: a, sum: a + a, product: a * a });
+            }
+            return pool;
+        } else if (options.customSet === 'squares') {
             for (let a = 1; a <= 9; a++) {
                 pool.push({ a, b: a, sum: a + a, product: a * a });
             }

@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Defs, Filter, FeFlood, FeBlend, FeColorMatrix, FeOffset, FeGaussianBlur, FeComposite, Rect } from 'react-native-svg';
 import { SessionOptions } from '../lib/types';
+import { SessionOptionsUpdate } from '../lib/sessionOptions';
 import { theme, palette } from '../theme/colors';
 
 const InnerShadowBox = ({ width, height, rx, fill }: { width: number; height: number; rx: number, fill: string }) => (
@@ -24,7 +25,7 @@ const InnerShadowBox = ({ width, height, rx, fill }: { width: number; height: nu
 
 interface SettingsPanelProps {
     options: SessionOptions;
-    updateOptions: (opts: Partial<SessionOptions>) => void;
+    updateOptions: (update: SessionOptionsUpdate) => void;
     useTimer: boolean;
     setUseTimer: (val: boolean) => void;
     disabled?: boolean;
@@ -37,65 +38,47 @@ export function SettingsPanel({
     setUseTimer,
     disabled,
 }: SettingsPanelProps) {
-
-    // Track the toggle state independently so it doesn't flip when single chips are touched
-    const [isAllMode, setIsAllMode] = React.useState(options.activeChips.length === 9);
+    const isAddSubOperation = options.operation === 'addsub';
+    const isAllMode = !options.customSet && options.activeChips.length === 9;
 
     const cycleOrder = () => {
         if (disabled) return;
-        updateOptions({ problemOrder: options.problemOrder === 'random' ? 'standard' : 'random' });
+        updateOptions({ type: 'cycleProblemOrder' });
     };
 
     const cycleOperandOrder = () => {
         if (disabled) return;
-        const orders: SessionOptions['operandOrder'][] = ['random', 'standard', 'reverse'];
-        const nextIdx = (orders.indexOf(options.operandOrder) + 1) % orders.length;
-        updateOptions({ operandOrder: orders[nextIdx] });
+        updateOptions({ type: 'cycleOperandOrder' });
     };
 
     const cycleMissing = () => {
         if (disabled) return;
-        const missingOps: SessionOptions['missingValue'][] = ['random', 'result', 'operand'];
-        const nextIdx = (missingOps.indexOf(options.missingValue) + 1) % missingOps.length;
-        updateOptions({ missingValue: missingOps[nextIdx] });
+        updateOptions({ type: 'cycleMissingValue' });
+    };
+
+    const cyclePracticeCycles = () => {
+        if (disabled) return;
+        updateOptions({ type: 'cyclePracticeCycles' });
+    };
+
+    const toggleSetsMode = () => {
+        if (disabled || options.practiceCycles <= 1) return;
+        updateOptions({ type: 'toggleSetsMode' });
     };
 
     const toggleChip = (val: number) => {
         if (disabled) return;
-
-        if (options.customSet) {
-            updateOptions({ customSet: null, activeChips: [val] });
-            return;
-        }
-
-        const current = new Set(options.activeChips);
-        if (current.has(val)) {
-            current.delete(val);
-        } else {
-            current.add(val);
-        }
-        updateOptions({ activeChips: Array.from(current).sort((a, b) => a - b) });
+        updateOptions({ type: 'toggleChip', value: val });
     };
 
     const toggleAllChips = () => {
         if (disabled) return;
-        const nextVal = !isAllMode;
-        setIsAllMode(nextVal);
-        updateOptions({
-            customSet: null,
-            activeChips: nextVal ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []
-        });
+        updateOptions({ type: 'toggleAllChips' });
     };
 
-    const setCustomSet = (set: '10s' | 'doubles') => {
+    const setCustomSet = (set: '10s' | 'doubles' | 'squares') => {
         if (disabled) return;
-        const isActivating = options.customSet !== set;
-        if (isActivating) {
-            setIsAllMode(false);
-            updateOptions({ customSet: set, activeChips: [] });
-        } else {
-            updateOptions({ customSet: null, activeChips: [] });
-        }
+        updateOptions({ type: 'toggleCustomSet', customSet: set });
     };
 
     return (
@@ -126,55 +109,9 @@ export function SettingsPanel({
                 </View>
             </View>
 
-            <View style={styles.selectorsRow}>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <View style={styles.controlGroupSquare}>
-                        <Text style={styles.label}>PO</Text>
-                        <TouchableOpacity style={styles.selectBtn} onPress={cycleOrder} disabled={disabled}>
-                            <Text style={styles.selectBtnText}>
-                                {options.problemOrder === 'random' ? 'Ran' : 'Std'}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.controlGroupSquare}>
-                        <Text style={styles.label}>OO</Text>
-                        <TouchableOpacity style={styles.selectBtn} onPress={cycleOperandOrder} disabled={disabled}>
-                            <Text style={styles.selectBtnText}>
-                                {options.operandOrder === 'random' ? 'Ran' : options.operandOrder === 'standard' ? 'Std' : 'Rev'}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.controlGroupSquare}>
-                        <Text style={styles.label}>MV</Text>
-                        <TouchableOpacity style={styles.selectBtn} onPress={cycleMissing} disabled={disabled}>
-                            <Text style={styles.selectBtnText}>{
-                                options.missingValue === 'result' ? 'Res' :
-                                    options.missingValue === 'operand' ? 'Opd' : 'Ran'
-                            }</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                    <View style={styles.controlGroupSquare}>
-                        <Text style={styles.label}>Timer</Text>
-                        <TouchableOpacity
-                            style={[styles.timerBox, useTimer && styles.chipActive, disabled && styles.chipDisabled]}
-                            onPress={() => setUseTimer(!useTimer)} disabled={disabled}
-                        >
-                            {useTimer && <InnerShadowBox width={44} height={44} rx={10} fill="#C0BEB1" />}
-                            <Text style={[styles.chipTextAllClr, useTimer && styles.chipTextActive]}>
-                                {useTimer ? "On" : "Off"}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={[styles.controlGroupSquare, { alignItems: 'center' }]}>
-                    <Text style={styles.label}>Custom</Text>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={styles.customRow}>
+                {isAddSubOperation ? (
+                    <>
                         <TouchableOpacity
                             style={[styles.digitBox, options.customSet === '10s' && styles.chipActive, disabled && styles.chipDisabled]}
                             onPress={() => setCustomSet('10s')} disabled={disabled}
@@ -191,7 +128,95 @@ export function SettingsPanel({
                                 n+n
                             </Text>
                         </TouchableOpacity>
-                    </View>
+                    </>
+                ) : (
+                    <TouchableOpacity
+                        style={[styles.digitBox, options.customSet === 'squares' && styles.chipActive, disabled && styles.chipDisabled]}
+                        onPress={() => setCustomSet('squares')} disabled={disabled}
+                    >
+                        {options.customSet === 'squares' && <InnerShadowBox width={64} height={44} rx={10} fill="#C0BEB1" />}
+                        <Text style={[styles.chipTextMath, options.customSet === 'squares' && styles.chipTextActiveMath]}>
+                            n²
+                        </Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            <View style={styles.settingsRow}>
+                <View style={styles.settingItem}>
+                    <Text style={styles.label}>CYCLES</Text>
+                    <TouchableOpacity style={[styles.selectBtn, disabled && styles.chipDisabled]} onPress={cyclePracticeCycles} disabled={disabled}>
+                        <Text style={styles.selectBtnText}>{options.practiceCycles}</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.settingItem}>
+                    <Text style={styles.label}>SETS</Text>
+                    <TouchableOpacity
+                        style={[styles.selectBtn, options.practiceCycles <= 1 && styles.chipDisabled]}
+                        onPress={toggleSetsMode}
+                        disabled={disabled || options.practiceCycles <= 1}
+                    >
+                        <Text style={styles.selectBtnText}>
+                            {options.practiceCycles <= 1
+                                ? '1'
+                                : options.setsMode === 'single'
+                                    ? '1'
+                                    : String(options.practiceCycles)}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.settingItem}>
+                    <Text style={styles.label}>PO</Text>
+                    <TouchableOpacity style={[styles.selectBtn, disabled && styles.chipDisabled]} onPress={cycleOrder} disabled={disabled}>
+                        <Text style={styles.selectBtnText}>{options.problemOrder === 'random' ? 'Ran' : 'Std'}</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.settingItem}>
+                    <Text style={styles.label}>OO</Text>
+                    <TouchableOpacity style={[styles.selectBtn, disabled && styles.chipDisabled]} onPress={cycleOperandOrder} disabled={disabled}>
+                        <Text style={styles.selectBtnText}>
+                            {options.operandOrder === 'random' ? 'Ran' : options.operandOrder === 'standard' ? 'Std' : 'Rev'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.settingItem}>
+                    <Text style={styles.label}>MV</Text>
+                    <TouchableOpacity style={[styles.selectBtn, disabled && styles.chipDisabled]} onPress={cycleMissing} disabled={disabled}>
+                        <Text style={styles.selectBtnText}>
+                            {options.missingValue === 'result' ? 'Res' : options.missingValue === 'operand' ? 'Opd' : 'Ran'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.settingItem}>
+                    <Text style={styles.label}>TIMER</Text>
+                    <TouchableOpacity
+                        style={[styles.timerBox, useTimer && styles.chipActive, disabled && styles.chipDisabled]}
+                        onPress={() => setUseTimer(!useTimer)} disabled={disabled}
+                    >
+                        {useTimer && <InnerShadowBox width={44} height={44} rx={10} fill="#C0BEB1" />}
+                        <Text style={[styles.chipTextAllClr, useTimer && styles.chipTextActive]}>
+                            {useTimer ? "On" : "Off"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.settingItem}>
+                    <Text style={styles.label}>START</Text>
+                    <TouchableOpacity
+                        style={[styles.timerBox, options.startMode === 'full' && styles.chipActive, disabled && styles.chipDisabled]}
+                        onPress={() => updateOptions({ type: 'toggleStartMode' })}
+                        disabled={disabled}
+                    >
+                        {options.startMode === 'full' && <InnerShadowBox width={44} height={44} rx={10} fill="#C0BEB1" />}
+                        <Text style={[styles.chipTextAllClr, options.startMode === 'full' && styles.chipTextActive]}>
+                            {options.startMode === 'full' ? "Full" : "Min"}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -201,19 +226,31 @@ export function SettingsPanel({
 
 const styles = StyleSheet.create({
     container: {
-        paddingVertical: 10,
+        marginTop: 10,
         paddingHorizontal: 20,
         backgroundColor: 'transparent',
     },
-    selectorsRow: {
+    settingsRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
+        justifyContent: 'center',
+        gap: 6,
         width: 352,
         alignSelf: 'center',
-        marginBottom: 15,
     },
     controlGroup: {
-        marginBottom: 15,
+        marginBottom: 8,
+    },
+    customRow: {
+        flexDirection: 'row',
+        gap: 8,
+        width: 352,
+        alignSelf: 'center',
+        marginBottom: 16, // Double spacing (8 -> 16) before row four
+    },
+    settingItem: {
+        alignItems: 'center',
+        marginTop: -2,
     },
     controlGroupSquare: {
         alignItems: 'center',
@@ -222,6 +259,7 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 12,
         color: theme.textMuted,
+        marginTop: -3,
         marginBottom: 5,
         textTransform: 'uppercase',
         fontWeight: 'bold',
