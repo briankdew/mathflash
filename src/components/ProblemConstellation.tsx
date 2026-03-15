@@ -53,6 +53,7 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
     const resultBackTextRotation = useSharedValue(-180);
     const [showBlankFinalBackText, setShowBlankFinalBackText] = React.useState(false);
     const textRevealOpacity = useSharedValue(1);
+    const operatorRevealOpacity = useSharedValue(0);
     const hasPlayedFirstRevealRef = React.useRef(false);
     const [showProblemValues, setShowProblemValues] = React.useState(false);
     const flipTimeoutRefs = React.useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -80,6 +81,7 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
             resultBackTextRotation.value = -180;
             setShowBlankFinalBackText(false);
             textRevealOpacity.value = 1;
+            operatorRevealOpacity.value = 0;
             hasPlayedFirstRevealRef.current = false;
             setShowProblemValues(false);
         }
@@ -147,6 +149,7 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
     React.useEffect(() => {
         if (phase === 'idle') {
             textRevealOpacity.value = 1;
+            operatorRevealOpacity.value = 0;
             hasPlayedFirstRevealRef.current = false;
             setShowProblemValues(false);
             return;
@@ -158,15 +161,18 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
             rightFlip.value = -360;
             resultFlip.value = -360;
             textRevealOpacity.value = 0;
+            operatorRevealOpacity.value = 0;
             setShowProblemValues(true);
             textRevealOpacity.value = withTiming(1, { duration: sessionPrepTimeline.firstProblemDissolve, easing: Easing.linear });
+            operatorRevealOpacity.value = withTiming(1, { duration: sessionPrepTimeline.firstProblemDissolve, easing: Easing.linear });
             return;
         }
 
         if (problem) {
             setShowProblemValues(true);
+            operatorRevealOpacity.value = 1;
         }
-    }, [phase, problem, textRevealOpacity]);
+    }, [phase, problem, textRevealOpacity, operatorRevealOpacity]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [
@@ -242,6 +248,14 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
         opacity: textRevealOpacity.value,
     }));
 
+    const operatorMutedStyle = useAnimatedStyle(() => ({
+        opacity: 1 - operatorRevealOpacity.value,
+    }));
+
+    const operatorStandardStyle = useAnimatedStyle(() => ({
+        opacity: operatorRevealOpacity.value,
+    }));
+
     const valL = problem
         ? (showProblemValues ? (problem.missing === 'left' ? (showCorrect ? problem.left : '') : problem.left) : '')
         : '--';
@@ -259,6 +273,14 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
         ? { ready: '#85A8CD', set: '#53789E', result: '#224A71' }
         : { ready: '#91AE85', set: '#49683B', result: '#325124' };
     const prepResultLabel = operation === 'addsub' ? 'add!' : 'multiply!';
+    const mainOperatorStandardColors = operation === 'addsub'
+        ? { circleFill: '#85a8cd', operatorFill: '#c7daef' }
+        : { circleFill: '#91ae85', operatorFill: '#cdddc6' };
+    const mainOperatorMutedColors = { circleFill: '#dad8cc', operatorFill: '#cdcbbe' };
+    const secondaryOperatorStandardColors = operation === 'addsub'
+        ? { circleFill: '#c7daef', operatorFill: '#6b90b6' }
+        : { circleFill: '#cdddc6', operatorFill: '#79966c' };
+    const secondaryOperatorMutedColors = { circleFill: '#e7e5d9', operatorFill: '#dad8cc' };
 
     const MainIcon = operation === 'addsub' ? IconPlus : IconTimes;
     const InvIcon = operation === 'addsub' ? IconMinus : IconDivide;
@@ -314,15 +336,30 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
 
                 {/* Operator Circles */}
                 <View style={[styles.circle, styles.circleMain]}>
-                    <MainIcon color={theme.operatorCircleBg} />
+                    <Animated.View style={[localStyles.operatorLayer, operatorMutedStyle]}>
+                        <MainIcon {...mainOperatorMutedColors} />
+                    </Animated.View>
+                    <Animated.View style={[localStyles.operatorLayer, operatorStandardStyle]}>
+                        <MainIcon {...mainOperatorStandardColors} />
+                    </Animated.View>
                 </View>
 
                 <View style={[styles.circle, styles.circleInvLeft]}>
-                    <InvIcon color={theme.inverseCircleBg} />
+                    <Animated.View style={[localStyles.operatorLayer, operatorMutedStyle]}>
+                        <InvIcon {...secondaryOperatorMutedColors} />
+                    </Animated.View>
+                    <Animated.View style={[localStyles.operatorLayer, operatorStandardStyle]}>
+                        <InvIcon {...secondaryOperatorStandardColors} />
+                    </Animated.View>
                 </View>
 
                 <View style={[styles.circle, styles.circleInvRight]}>
-                    <InvIcon color={theme.inverseCircleBg} />
+                    <Animated.View style={[localStyles.operatorLayer, operatorMutedStyle]}>
+                        <InvIcon {...secondaryOperatorMutedColors} />
+                    </Animated.View>
+                    <Animated.View style={[localStyles.operatorLayer, operatorStandardStyle]}>
+                        <InvIcon {...secondaryOperatorStandardColors} />
+                    </Animated.View>
                 </View>
             </View>
         </Animated.View>
@@ -332,6 +369,13 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
 const localStyles = StyleSheet.create({
     hiddenLayer: {
         opacity: 0,
+    },
+    operatorLayer: {
+        position: 'absolute',
+        width: 45,
+        height: 45,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     leftCardTopShadow: {
         shadowColor: '#000',

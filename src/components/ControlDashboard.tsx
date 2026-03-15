@@ -19,7 +19,8 @@ const SETTINGS_REVEAL_MARGIN = 5;
 const SETTINGS_FALLBACK_HEIGHT = 240;
 const START_BUTTON_HEIGHT = 35;
 const START_BUTTON_MARGIN_BOTTOM = 20;
-const GEAR_SIZE = 33;
+const GEAR_SIZE = 40;
+const GEAR_REVEAL_OFFSET = 145.5;
 const START_BUTTON_FLASH_DURATION_MS = 180;
 
 interface ControlDashboardProps {
@@ -66,8 +67,8 @@ export function ControlDashboard({
   const keypadSlide = useSharedValue(-KEYPAD_CONTENT_HEIGHT);
   const settingsHeight = useSharedValue(0);
   const settingsSlide = useSharedValue(-(SETTINGS_FALLBACK_HEIGHT + SETTINGS_REVEAL_MARGIN));
-  // Gear tucked behind button: 0. Fully out: 142 (Left edge = 107.5 button edge + 18u gap + 16.5 half width of 33px gear)
-  const gearOffset = useSharedValue(142);
+  // Gear tucked behind button: 0. Fully out based on start button edge, gap, and half gear width.
+  const gearOffset = useSharedValue(GEAR_REVEAL_OFFSET);
   const isSessionInProgress = isSessionPhaseActive(phase);
   const startButtonPressedColor = options.operation === 'addsub' ? '#07345b' : '#1d3c0b';
 
@@ -110,7 +111,7 @@ export function ControlDashboard({
 
       // Step 2: After keypad hidden and beat, untuck gear
       untuckTimeoutRef.current = setTimeout(() => {
-        gearOffset.value = withTiming(142, { duration: sessionPrepTimeline.tuck, easing: Easing.out(Easing.cubic) });
+        gearOffset.value = withTiming(GEAR_REVEAL_OFFSET, { duration: sessionPrepTimeline.tuck, easing: Easing.out(Easing.cubic) });
         untuckTimeoutRef.current = null;
       }, sessionPrepTimeline.roll + sessionPrepTimeline.beat);
     }
@@ -244,13 +245,14 @@ export function ControlDashboard({
               justifyContent: 'center', 
               alignItems: 'center',
             }}
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             onPress={() => !isActive && setIsSettingsOpen(!isSettingsOpen)}
             disabled={isActive}
           >
             {options.operation === 'multdiv' ? (
-              <IconSettingsMulDiv size={35} />
+              <IconSettingsMulDiv size={40} />
             ) : (
-              <IconSettingsAddSub size={35} />
+              <IconSettingsAddSub size={40} />
             )}
           </TouchableOpacity>
         </Animated.View>

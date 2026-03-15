@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Svg, { Defs, Filter, FeFlood, FeBlend, FeColorMatrix, FeOffset, FeGaussianBlur, FeComposite, Rect } from 'react-native-svg';
 import { OperationMode } from '../lib/types';
 import { getOperationTheme } from '../theme/colors';
-import { MiniIconPlus, MiniIconMinus, MiniIconTimes, MiniIconDivide } from './icons/MathIcons';
 
 interface OperationSelectorProps {
   operation: OperationMode;
@@ -15,8 +14,6 @@ interface OperationSelectorProps {
 export function OperationSelector({ operation, isActive, isStadiumActive, onToggleOperation }: OperationSelectorProps) {
   const opTheme = getOperationTheme(operation);
   const stadiumBorderColor = operation === 'addsub' ? '#A6C1DE' : '#AFC6A6';
-  const MainMiniIcon = operation === 'addsub' ? MiniIconPlus : MiniIconTimes;
-  const InvMiniIcon = operation === 'addsub' ? MiniIconMinus : MiniIconDivide;
 
   return (
     <View style={styles.container}>
@@ -39,13 +36,6 @@ export function OperationSelector({ operation, isActive, isStadiumActive, onTogg
       ) : (
         <View style={[styles.borderOnly, { borderColor: stadiumBorderColor }]} pointerEvents="none" />
       )}
-
-      <View style={styles.iconLeft} pointerEvents="none">
-        <MainMiniIcon />
-      </View>
-      <View style={styles.iconRight} pointerEvents="none">
-        <InvMiniIcon />
-      </View>
 
       {isActive ? (
         <View style={styles.labelRow}>
@@ -94,23 +84,5 @@ const styles = StyleSheet.create({
     fontSize: 30,
     lineHeight: 36,
     fontFamily: 'Fredoka_400Regular',
-  },
-  iconLeft: {
-    position: 'absolute',
-    left: 7,
-    top: (36 - 23) / 2,
-    width: 23,
-    height: 23,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  iconRight: {
-    position: 'absolute',
-    right: 7,
-    top: (36 - 23) / 2,
-    width: 23,
-    height: 23,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
