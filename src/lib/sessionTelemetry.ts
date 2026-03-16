@@ -1,4 +1,5 @@
 import {
+    SessionPerformanceReport,
     SessionInputMode,
     SessionOptions,
     SessionStats,
@@ -15,6 +16,7 @@ interface BuildSessionLogPayloadArgs {
     sessionCompletionMsTotal: number;
     inputMode: SessionInputMode;
     voiceMetrics: VoiceSessionMetrics;
+    sessionPerformanceReport: SessionPerformanceReport | null;
 }
 
 export function buildSessionLogPayload({
@@ -27,7 +29,10 @@ export function buildSessionLogPayload({
     sessionCompletionMsTotal,
     inputMode,
     voiceMetrics,
+    sessionPerformanceReport,
 }: BuildSessionLogPayloadArgs): Record<string, string> {
+    const performanceSummary = sessionPerformanceReport?.summary ?? null;
+    const performanceProblems = sessionPerformanceReport?.problems ?? [];
     const completed = stats.completed;
     const correctFirst = stats.correctFirst;
     const speed =
@@ -78,6 +83,42 @@ export function buildSessionLogPayload({
         'Voice no-match count': voiceMetrics.noMatchCount.toString(),
         'Voice ambiguous final count': voiceMetrics.ambiguousFinalCount.toString(),
         'Voice processing total (ms)': voiceMetrics.processingMsTotal.toFixed(0),
+        'Session performance schema version':
+            sessionPerformanceReport?.schemaVersion?.toString() || '',
+        'Response onset median (ms)':
+            performanceSummary?.medianOnsetLatencyMs?.toString() || '',
+        'Response onset fastest (ms)':
+            performanceSummary?.fastestOnsetLatencyMs?.toString() || '',
+        'Response onset slowest (ms)':
+            performanceSummary?.slowestOnsetLatencyMs?.toString() || '',
+        'Response completion median (ms)':
+            performanceSummary?.medianCompletionLatencyMs?.toString() || '',
+        'Response onset measured count':
+            performanceSummary?.measuredProblemCount?.toString() || '0',
+        'Response completion measured count':
+            performanceSummary?.measuredCompletionCount?.toString() || '0',
+        'Response onset correct-first median (ms)':
+            performanceSummary?.correctFirstTryMedianOnsetMs?.toString() || '',
+        'Response onset other-outcome median (ms)':
+            performanceSummary?.otherOutcomeMedianOnsetMs?.toString() || '',
+        'No input count':
+            performanceSummary?.noInputCount?.toString() || '0',
+        'Session performance outcome counts JSON': performanceSummary
+            ? JSON.stringify(performanceSummary.outcomeCounts)
+            : '',
+        'Session performance attempt distribution JSON': performanceSummary
+            ? JSON.stringify(performanceSummary.attemptCountDistribution)
+            : '',
+        'Session performance mode breakdown JSON': performanceSummary
+            ? JSON.stringify(performanceSummary.modeBreakdown)
+            : '',
+        'Session Performance Summary JSON': performanceSummary
+            ? JSON.stringify(performanceSummary)
+            : '',
+        'Session Performance Problems JSON': JSON.stringify(performanceProblems),
+        'Session Performance Report JSON': sessionPerformanceReport
+            ? JSON.stringify(sessionPerformanceReport)
+            : '',
         // Formatting other columns omitted for brevity but should be hydrated before saveLogToCloud is called natively.
     };
 }

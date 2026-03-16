@@ -20,6 +20,7 @@ import {
 } from '../lib/voiceNumberNormalization';
 
 const RESTART_DELAY_MS = 220;
+const FINALIZE_INTERIM_DELAY_MS = 250;
 
 const INITIAL_VOICE_METRICS: VoiceSessionMetrics = {
   retryCount: 0,
@@ -35,6 +36,7 @@ interface UseVoiceAnswerInputArgs {
   isSessionActive: boolean;
   currentProblem: ProblemDisplay | null;
   options: SessionOptions;
+  onSpeechStart: (problemInstanceId: string, speechStartPerfMs: number) => void;
   onValidAttemptCaptured: () => void;
 }
 
@@ -44,6 +46,12 @@ interface UseVoiceAnswerInputResult {
   ensureReadyForSession: () => Promise<boolean>;
   clearPendingAttempt: () => void;
   resetSessionMetrics: () => void;
+}
+
+interface LastValidInterim {
+  problemInstanceId: string;
+  value: string;
+  rawTranscript: string;
 }
 
 function permissionStatusFromResponse(
@@ -80,6 +88,7 @@ export function useVoiceAnswerInput({
   isSessionActive,
   currentProblem,
   options,
+  onSpeechStart,
   onValidAttemptCaptured,
 }: UseVoiceAnswerInputArgs): UseVoiceAnswerInputResult {
   const platformSupported =
@@ -106,6 +115,8 @@ export function useVoiceAnswerInput({
   const suppressRestartRef = useRef(false);
   const speechStartPerfRef = useRef<number | null>(null);
   const speechEndPerfRef = useRef<number | null>(null);
+  const finalizeInterimTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastValidInterimRef = useRef<LastValidInterim | null>(null);
 
   useEffect(() => {
     enabledRef.current = enabled;
@@ -115,6 +126,8 @@ export function useVoiceAnswerInput({
     shouldListenRef.current = shouldListen;
     if (shouldListen) {
       suppressRestartRef.current = false;
+    } else {
+      setStatusLabel(null);
     }
   }, [shouldListen]);
 
@@ -122,13 +135,15 @@ export function useVoiceAnswerInput({
     currentProblemRef.current = currentProblem;
     speechStartPerfRef.current = null;
     speechEndPerfRef.current = null;
+    if (finalizeInterimTimeoutRef.current) {
+      clearTimeout(finalizeInterimTimeoutRef.current);
+      finalizeInterimTimeoutRef.current = null;
+    }
+    lastValidInterimRef.current = null;
     setTranscriptPreview('');
     setPendingAttempt(null);
     setErrorMessage('');
-    if (!shouldListen) {
-      setStatusLabel(null);
-    }
-  }, [currentProblem, shouldListen]);
+  }, [currentProblem]);
 
   useEffect(() => {
     optionsRef.current = options;
@@ -141,14 +156,22 @@ export function useVoiceAnswerInput({
     }
   }, []);
 
+  const clearFinalizeInterimTimeout = useCallback(() => {
+    if (finalizeInterimTimeoutRef.current) {
+      clearTimeout(finalizeInterimTimeoutRef.current);
+      finalizeInterimTimeoutRef.current = null;
+    }
+  }, []);
+
   const stopRecognition = useCallback(() => {
     clearRestartTimeout();
+    clearFinalizeInterimTimeout();
     try {
       ExpoSpeechRecognitionModule.stop();
     } catch {
       // Stop can throw if recognition is not active. Ignore that case.
     }
-  }, [clearRestartTimeout]);
+  }, [clearFinalizeInterimTimeout, clearRestartTimeout]);
 
   const refreshAvailability = useCallback(async () => {
     if (!platformSupported) {
@@ -181,9 +204,52 @@ export function useVoiceAnswerInput({
     return () => {
       mountedRef.current = false;
       clearRestartTimeout();
+      clearFinalizeInterimTimeout();
       stopRecognition();
     };
-  }, [clearRestartTimeout, refreshAvailability, stopRecognition]);
+  }, [clearFinalizeInterimTimeout, clearRestartTimeout, refreshAvailability, stopRecognition]);
+
+  const submitVoiceAttempt = useCallback((
+    value: string,
+    rawTranscript: string,
+    finalResultPerfMs: number | null
+  ) => {
+    const problemInstanceId = currentProblemRef.current?.problemInstanceId;
+    if (!problemInstanceId) {
+      return;
+    }
+
+    const speechEndPerfMs =
+      speechEndPerfRef.current ?? finalResultPerfMs ?? performance.now();
+    const voiceProcessingMs =
+      finalResultPerfMs === null
+        ? 0
+        : Math.max(0, finalResultPerfMs - speechEndPerfMs);
+
+    clearFinalizeInterimTimeout();
+    suppressRestartRef.current = true;
+    shouldListenRef.current = false;
+    onValidAttemptCaptured();
+    setStatusLabel(null);
+    setPendingAttempt({
+      problemInstanceId,
+      value,
+      source: 'voice',
+      completedAtPerfMs: speechEndPerfMs,
+      speechStartPerfMs: speechStartPerfRef.current,
+      speechEndPerfMs,
+      finalResultPerfMs,
+      voiceProcessingMs,
+      rawTranscript,
+    });
+
+    if (voiceProcessingMs > 0) {
+      setVoiceMetrics(prev => ({
+        ...prev,
+        processingMsTotal: prev.processingMsTotal + voiceProcessingMs,
+      }));
+    }
+  }, [clearFinalizeInterimTimeout, onValidAttemptCaptured]);
 
   const ensureReadyForSession = useCallback(async () => {
     if (!platformSupported) {
@@ -249,6 +315,8 @@ export function useVoiceAnswerInput({
       setStatusLabel('Retrying…');
     }
 
+    const restartDelayMs = isRetry ? RESTART_DELAY_MS : 0;
+
     restartTimeoutRef.current = setTimeout(() => {
       restartTimeoutRef.current = null;
       if (!mountedRef.current || !enabledRef.current || !shouldListenRef.current) {
@@ -287,7 +355,7 @@ export function useVoiceAnswerInput({
           setErrorMessage('Unable to start voice input');
         }
       });
-    }, RESTART_DELAY_MS);
+    }, restartDelayMs);
   }, [ensureReadyForSession]);
 
   const handleResult = useCallback(
@@ -304,6 +372,11 @@ export function useVoiceAnswerInput({
       const normalized = normalizeVoiceNumber(rawTranscript, range);
 
       if (normalized.kind === 'valid') {
+        lastValidInterimRef.current = {
+          problemInstanceId: currentProblemRef.current.problemInstanceId ?? '',
+          value: normalized.normalizedText,
+          rawTranscript,
+        };
         setTranscriptPreview(normalized.normalizedText);
         setErrorMessage('');
 
@@ -312,31 +385,14 @@ export function useVoiceAnswerInput({
         }
 
         const finalResultPerfMs = performance.now();
-        const speechEndPerfMs = speechEndPerfRef.current ?? finalResultPerfMs;
-        const voiceProcessingMs = Math.max(0, finalResultPerfMs - speechEndPerfMs);
-
-        suppressRestartRef.current = true;
-        shouldListenRef.current = false;
-        onValidAttemptCaptured();
-        setStatusLabel(null);
-        setPendingAttempt({
-          value: normalized.normalizedText,
-          source: 'voice',
-          completedAtPerfMs: speechEndPerfMs,
-          speechStartPerfMs: speechStartPerfRef.current,
-          speechEndPerfMs,
-          finalResultPerfMs,
-          voiceProcessingMs,
-          rawTranscript,
-        });
-        setVoiceMetrics(prev => ({
-          ...prev,
-          processingMsTotal: prev.processingMsTotal + voiceProcessingMs,
-        }));
+        lastValidInterimRef.current = null;
+        submitVoiceAttempt(normalized.normalizedText, rawTranscript, finalResultPerfMs);
         return;
       }
 
       if (event.isFinal) {
+        clearFinalizeInterimTimeout();
+        lastValidInterimRef.current = null;
         setTranscriptPreview('');
         setErrorMessage('Say a number only');
         setStatusLabel('Retrying…');
@@ -346,7 +402,7 @@ export function useVoiceAnswerInput({
         }));
       }
     },
-    [onValidAttemptCaptured]
+    [clearFinalizeInterimTimeout, submitVoiceAttempt]
   );
 
   const handleError = useCallback((event: ExpoSpeechRecognitionErrorEvent) => {
@@ -397,10 +453,42 @@ export function useVoiceAnswerInput({
         }
       }),
       ExpoSpeechRecognitionModule.addListener('speechstart', () => {
-        speechStartPerfRef.current = performance.now();
+        const problemInstanceId = currentProblemRef.current?.problemInstanceId;
+        if (!problemInstanceId) {
+          return;
+        }
+        clearFinalizeInterimTimeout();
+        lastValidInterimRef.current = null;
+        const speechStartPerfMs = performance.now();
+        speechStartPerfRef.current = speechStartPerfMs;
+        onSpeechStart(problemInstanceId, speechStartPerfMs);
       }),
       ExpoSpeechRecognitionModule.addListener('speechend', () => {
         speechEndPerfRef.current = performance.now();
+        clearFinalizeInterimTimeout();
+        finalizeInterimTimeoutRef.current = setTimeout(() => {
+          finalizeInterimTimeoutRef.current = null;
+
+          const currentProblemInstanceId = currentProblemRef.current?.problemInstanceId;
+          const lastValidInterim = lastValidInterimRef.current;
+
+          if (
+            !mountedRef.current ||
+            !enabledRef.current ||
+            !currentProblemInstanceId ||
+            !lastValidInterim ||
+            lastValidInterim.problemInstanceId !== currentProblemInstanceId
+          ) {
+            return;
+          }
+
+          lastValidInterimRef.current = null;
+          submitVoiceAttempt(
+            lastValidInterim.value,
+            lastValidInterim.rawTranscript,
+            null
+          );
+        }, FINALIZE_INTERIM_DELAY_MS);
       }),
       ExpoSpeechRecognitionModule.addListener('result', handleResult),
       ExpoSpeechRecognitionModule.addListener('error', handleError),
@@ -415,7 +503,15 @@ export function useVoiceAnswerInput({
     return () => {
       subscriptions.forEach(subscription => subscription.remove());
     };
-  }, [handleError, handleResult, platformSupported, scheduleRestart]);
+  }, [
+    clearFinalizeInterimTimeout,
+    handleError,
+    handleResult,
+    onSpeechStart,
+    platformSupported,
+    scheduleRestart,
+    submitVoiceAttempt,
+  ]);
 
   useEffect(() => {
     if (!enabled || !shouldListen || !isSessionActive || !currentProblem) {
@@ -452,6 +548,7 @@ export function useVoiceAnswerInput({
   }, []);
 
   const resetSessionMetrics = useCallback(() => {
+    clearFinalizeInterimTimeout();
     setVoiceMetrics(INITIAL_VOICE_METRICS);
     setTranscriptPreview('');
     setPendingAttempt(null);
@@ -459,8 +556,9 @@ export function useVoiceAnswerInput({
     setStatusLabel(null);
     speechStartPerfRef.current = null;
     speechEndPerfRef.current = null;
+    lastValidInterimRef.current = null;
     suppressRestartRef.current = false;
-  }, []);
+  }, [clearFinalizeInterimTimeout]);
 
   const voiceState = useMemo<VoiceInputState>(
     () => ({

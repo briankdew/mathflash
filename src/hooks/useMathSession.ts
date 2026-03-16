@@ -15,6 +15,7 @@ import {
     recordWrongAnswer,
 } from '../lib/sessionStats';
 import { buildSessionLogPayload } from '../lib/sessionTelemetry';
+import { buildSessionPerformanceReport } from '../lib/sessionPerformance';
 import {
     applySessionOptionsUpdate,
     defaultOperationSettings,
@@ -29,6 +30,10 @@ import {
     OperationMode,
     ProblemSpec,
     ProblemDisplay,
+    ResponseOnsetSource,
+    SessionPerformanceReport,
+    SessionProblemOutcome,
+    SessionProblemPerformance,
     SessionInputMode,
     SessionStats,
     MissedProblem,
@@ -41,6 +46,10 @@ import { useVoiceAnswerInput } from './useVoiceAnswerInput';
 // Fallback UUID generation
 function generateSessionId() {
     return 'mf-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+}
+
+function isDigitInputValue(value: string): boolean {
+    return /^\d+$/.test(value);
 }
 
 export function useMathSession() {
@@ -76,6 +85,9 @@ export function useMathSession() {
     const [stats, setStats] = useState<SessionStats>({ completed: 0, correctFirst: 0, missedFirst: 0 });
     const [missedProblems, setMissedProblems] = useState<MissedProblem[]>([]);
     const [totalProblems, setTotalProblems] = useState(0);
+    const [sessionPerformanceRows, setSessionPerformanceRows] = useState<SessionProblemPerformance[]>([]);
+    const [sessionPerformanceReport, setSessionPerformanceReport] = useState<SessionPerformanceReport | null>(null);
+    const [isPerformanceReportVisible, setIsPerformanceReportVisible] = useState(false);
 
     // Internal Tracking (Refs prevent redundant re-renders during rapid inputs)
     const metrics = useRef({
@@ -88,8 +100,8 @@ export function useMathSession() {
     const timerStart = useRef(0);
     const {
         inputValue,
-        appendInputDigit,
-        setInputValue,
+        appendInputDigit: appendInputDigitInternal,
+        setInputValue: setInputValueInternal,
         clearInputValue,
         resetInputValue,
     } = useSessionInput(isInputEnabled);
@@ -104,6 +116,200 @@ export function useMathSession() {
         timerStartDelay: null,
         inputUnlock: null,
     });
+    const performanceRowsRef = useRef<SessionProblemPerformance[]>([]);
+    const sessionIdRef = useRef('');
+    const problemCounterRef = useRef(0);
+    const queueRef = useRef<ProblemSpec[]>([]);
+    const optionsRef = useRef(options);
+    const beginProblemPerformanceRef = useRef<(problem: ProblemDisplay) => void>(() => {});
+    const endSessionRef = useRef<() => void>(() => {});
+
+    const updatePerformanceRows = useCallback((
+        updater: (rows: SessionProblemPerformance[]) => SessionProblemPerformance[]
+    ) => {
+        setSessionPerformanceRows(prev => {
+            const next = updater(prev);
+            performanceRowsRef.current = next;
+            return next;
+        });
+    }, []);
+
+    const closePerformanceReport = useCallback(() => {
+        setIsPerformanceReportVisible(false);
+    }, []);
+
+    const openPerformanceReport = useCallback(() => {
+        if (sessionPerformanceReport) {
+            setIsPerformanceReportVisible(true);
+        }
+    }, [sessionPerformanceReport]);
+
+    const beginProblemPerformance = useCallback((problem: ProblemDisplay) => {
+        if (!problem.problemInstanceId || problem.presentedAtPerf === undefined || problem.problemIndex === undefined) {
+            return;
+        }
+
+        const nextRow: SessionProblemPerformance = {
+            problemInstanceId: problem.problemInstanceId,
+            problemIndex: problem.problemIndex,
+            inputMode,
+            operation: options.operation,
+            left: problem.left,
+            right: problem.right,
+            result: problem.result,
+            missing: problem.missing,
+            correct: problem.correct,
+            presentedAtPerfMs: problem.presentedAtPerf,
+            firstInputOnsetPerfMs: null,
+            responseOnsetLatencyMs: null,
+            onsetSource: 'none',
+            firstAttemptCompletedAtPerfMs: null,
+            completionLatencyMs: null,
+            outcome: 'no_input',
+            attemptCount: 0,
+            isResolved: false,
+            submittedValues: [],
+            voiceDiagnostics: {
+                speechStartPerfMs: null,
+                speechEndPerfMs: null,
+                finalResultPerfMs: null,
+                voiceProcessingMs: null,
+                transcript: null,
+            },
+            keypadDiagnostics: {
+                firstDigitPerfMs: null,
+            },
+        };
+
+        updatePerformanceRows(prev => [...prev, nextRow]);
+    }, [inputMode, options.operation, updatePerformanceRows]);
+
+    const recordInputOnset = useCallback((
+        problemInstanceId: string | undefined,
+        onsetSource: ResponseOnsetSource,
+        perfMs: number
+    ) => {
+        if (!problemInstanceId) {
+            return;
+        }
+
+        updatePerformanceRows(prev => prev.map(row => {
+            if (row.problemInstanceId !== problemInstanceId || row.firstInputOnsetPerfMs !== null) {
+                return row;
+            }
+
+            return {
+                ...row,
+                firstInputOnsetPerfMs: perfMs,
+                responseOnsetLatencyMs: Math.max(0, perfMs - row.presentedAtPerfMs),
+                onsetSource,
+                voiceDiagnostics: onsetSource === 'speechstart'
+                    ? { ...row.voiceDiagnostics, speechStartPerfMs: perfMs }
+                    : row.voiceDiagnostics,
+                keypadDiagnostics: onsetSource === 'first_digit'
+                    ? { ...row.keypadDiagnostics, firstDigitPerfMs: perfMs }
+                    : row.keypadDiagnostics,
+            };
+        }));
+    }, [updatePerformanceRows]);
+
+    const recordAttemptPerformance = useCallback((
+        problemInstanceId: string | undefined,
+        attempt: AnswerAttempt,
+        result: Exclude<AnswerCheckResult, 'incomplete'>
+    ) => {
+        if (!problemInstanceId) {
+            return;
+        }
+
+        const completedAtPerfMs = attempt.completedAtPerfMs ?? performance.now();
+
+        updatePerformanceRows(prev => prev.map(row => {
+            if (row.problemInstanceId !== problemInstanceId) {
+                return row;
+            }
+
+            const nextAttemptCount = row.attemptCount + 1;
+            const isCorrectFirstTry = result === 'correct' && row.attemptCount === 0;
+            const outcome: SessionProblemOutcome =
+                result === 'correct'
+                    ? (isCorrectFirstTry ? 'correct_first_try' : 'wrong_then_correct')
+                    : 'wrong_only';
+
+            return {
+                ...row,
+                firstAttemptCompletedAtPerfMs:
+                    row.firstAttemptCompletedAtPerfMs ?? completedAtPerfMs,
+                completionLatencyMs:
+                    row.completionLatencyMs ?? Math.max(0, completedAtPerfMs - row.presentedAtPerfMs),
+                attemptCount: nextAttemptCount,
+                outcome,
+                isResolved: result === 'correct',
+                submittedValues: [...row.submittedValues, attempt.value],
+                voiceDiagnostics: attempt.source === 'voice'
+                    ? {
+                        speechStartPerfMs:
+                            row.voiceDiagnostics.speechStartPerfMs ?? attempt.speechStartPerfMs ?? null,
+                        speechEndPerfMs: attempt.speechEndPerfMs ?? row.voiceDiagnostics.speechEndPerfMs,
+                        finalResultPerfMs: attempt.finalResultPerfMs ?? row.voiceDiagnostics.finalResultPerfMs,
+                        voiceProcessingMs: attempt.voiceProcessingMs ?? row.voiceDiagnostics.voiceProcessingMs,
+                        transcript: attempt.rawTranscript ?? row.voiceDiagnostics.transcript,
+                    }
+                    : row.voiceDiagnostics,
+                keypadDiagnostics: attempt.source === 'keypad'
+                    ? {
+                        firstDigitPerfMs:
+                            row.keypadDiagnostics.firstDigitPerfMs ?? attempt.firstDigitPerfMs ?? null,
+                    }
+                    : row.keypadDiagnostics,
+            };
+        }));
+    }, [updatePerformanceRows]);
+
+    const getCurrentProblemFirstDigitPerfMs = useCallback((problemInstanceId: string | undefined) => {
+        if (!problemInstanceId) {
+            return null;
+        }
+
+        const activeRow = performanceRowsRef.current.find(
+            row => row.problemInstanceId === problemInstanceId
+        );
+
+        return activeRow?.keypadDiagnostics.firstDigitPerfMs ?? null;
+    }, []);
+
+    const finalizePerformanceRows = useCallback((wasReset: boolean) => {
+        let finalizedRows: SessionProblemPerformance[] = performanceRowsRef.current;
+
+        updatePerformanceRows(prev => {
+            finalizedRows = prev.map(row => {
+                if (row.isResolved) {
+                    return row;
+                }
+
+                if (row.attemptCount > 0) {
+                    return {
+                        ...row,
+                        outcome: 'wrong_only',
+                        isResolved: true,
+                    };
+                }
+
+                return {
+                    ...row,
+                    outcome:
+                        wasReset && row.firstInputOnsetPerfMs !== null
+                            ? 'reset_incomplete'
+                            : 'no_input',
+                    isResolved: true,
+                };
+            });
+
+            return finalizedRows;
+        });
+
+        return finalizedRows;
+    }, [updatePerformanceRows]);
     const setVoiceListeningArmed = useCallback((value: boolean) => {
         setVoiceListeningArmedState(value);
     }, []);
@@ -133,6 +339,9 @@ export function useMathSession() {
         isSessionActive: isActive,
         currentProblem,
         options,
+        onSpeechStart: (problemInstanceId, speechStartPerfMs) => {
+            recordInputOnset(problemInstanceId, 'speechstart', speechStartPerfMs);
+        },
         onValidAttemptCaptured: () => {
             setVoiceListeningArmed(false);
         },
@@ -164,12 +373,24 @@ export function useMathSession() {
     }, [clearPrepTimeouts]);
 
     useEffect(() => {
+        queueRef.current = queue;
+    }, [queue]);
+
+    useEffect(() => {
+        optionsRef.current = options;
+    }, [options]);
+
+    useEffect(() => {
+        beginProblemPerformanceRef.current = beginProblemPerformance;
+    }, [beginProblemPerformance]);
+
+    useEffect(() => {
         if (inputMode !== 'voice') {
             return;
         }
 
-        setInputValue(voiceState.transcriptPreview);
-    }, [inputMode, setInputValue, voiceState.transcriptPreview]);
+        setInputValueInternal(voiceState.transcriptPreview);
+    }, [inputMode, setInputValueInternal, voiceState.transcriptPreview]);
 
     useEffect(() => {
         if (
@@ -191,6 +412,46 @@ export function useMathSession() {
         isInputEnabled,
         phase,
         setVoiceListeningArmed,
+    ]);
+
+    const appendInputDigit = useCallback((digit: string) => {
+        if (!isInputEnabled) return;
+
+        const nextValue = inputValue + digit;
+        if (
+            inputMode === 'keypad' &&
+            inputValue === '' &&
+            isDigitInputValue(nextValue)
+        ) {
+            recordInputOnset(currentProblem?.problemInstanceId, 'first_digit', performance.now());
+        }
+
+        appendInputDigitInternal(digit);
+    }, [
+        appendInputDigitInternal,
+        currentProblem?.problemInstanceId,
+        inputMode,
+        inputValue,
+        isInputEnabled,
+        recordInputOnset,
+    ]);
+
+    const setInputValue = useCallback((value: string) => {
+        if (
+            inputMode === 'keypad' &&
+            inputValue === '' &&
+            isDigitInputValue(value)
+        ) {
+            recordInputOnset(currentProblem?.problemInstanceId, 'first_digit', performance.now());
+        }
+
+        setInputValueInternal(value);
+    }, [
+        currentProblem?.problemInstanceId,
+        inputMode,
+        inputValue,
+        recordInputOnset,
+        setInputValueInternal,
     ]);
 
     // Derived Values
@@ -228,13 +489,20 @@ export function useMathSession() {
             return;
         }
 
-        const { initialQueue, cyclesRemaining, totalProblems } = createSessionQueue(basePool, options);
+        const { initialQueue, cyclesRemaining, totalProblems } = createSessionQueue(basePool, optionsRef.current);
 
+        queueRef.current = initialQueue;
         setQueue(initialQueue);
         setTotalProblems(totalProblems);
         metrics.current.cyclesRemaining = cyclesRemaining;
+        problemCounterRef.current = 0;
+        performanceRowsRef.current = [];
+        setSessionPerformanceRows([]);
+        setSessionPerformanceReport(null);
+        setIsPerformanceReportVisible(false);
 
         const prepSchedule = getSessionPrepSchedule(options.startMode);
+        const nextSessionId = generateSessionId();
 
         setPhase('preparing');
         setIsActive(true);
@@ -244,7 +512,8 @@ export function useMathSession() {
         resetInputValue();
         resetSessionMetrics();
         setCurrentProblem(null);
-        setSessionId(generateSessionId());
+        sessionIdRef.current = nextSessionId;
+        setSessionId(nextSessionId);
         setSessionStart(new Date());
         metrics.current.sessionCompletionMsTotal = 0;
 
@@ -259,16 +528,22 @@ export function useMathSession() {
 
         // Total visual prep now follows shared staged-flip timeline, then first problem + timer start.
         prepTimeouts.current.firstProblem = setTimeout(() => {
-            _nextProblem(initialQueue, cyclesRemaining, 'revealingProblem');
-            prepTimeouts.current.timerStartDelay = setTimeout(() => {
+            if (inputMode === 'voice') {
+                _nextProblem(initialQueue, cyclesRemaining, 'awaitingAnswer');
                 timerStart.current = Date.now();
-                prepTimeouts.current.timerStartDelay = null;
-            }, prepSchedule.timerStartDelayMs);
-            prepTimeouts.current.inputUnlock = setTimeout(() => {
                 setIsInputEnabled(true);
-                setPhase('awaitingAnswer');
-                prepTimeouts.current.inputUnlock = null;
-            }, prepSchedule.inputUnlockDelayMs);
+            } else {
+                _nextProblem(initialQueue, cyclesRemaining, 'revealingProblem');
+                prepTimeouts.current.timerStartDelay = setTimeout(() => {
+                    timerStart.current = Date.now();
+                    prepTimeouts.current.timerStartDelay = null;
+                }, prepSchedule.timerStartDelayMs);
+                prepTimeouts.current.inputUnlock = setTimeout(() => {
+                    setIsInputEnabled(true);
+                    setPhase('awaitingAnswer');
+                    prepTimeouts.current.inputUnlock = null;
+                }, prepSchedule.inputUnlockDelayMs);
+            }
             prepTimeouts.current.firstProblem = null;
         }, prepSchedule.firstProblemAtMs);
     }, [
@@ -286,14 +561,15 @@ export function useMathSession() {
         remainingCycles: number,
         nextPhase: SessionPhase = 'awaitingAnswer'
     ) => {
-        const resolution = resolveNextProblem(currentQueue, remainingCycles, options);
+        const resolution = resolveNextProblem(currentQueue, remainingCycles, optionsRef.current);
 
         if (resolution.type === 'end') {
-            endSession();
+            endSessionRef.current();
             return;
         }
 
         metrics.current.cyclesRemaining = resolution.cyclesRemaining;
+        queueRef.current = resolution.queue;
         setQueue(resolution.queue);
         _setCurrent(resolution.problem, nextPhase);
     };
@@ -301,21 +577,43 @@ export function useMathSession() {
     const _setCurrent = (p: ProblemSpec, nextPhase: SessionPhase = 'awaitingAnswer') => {
         metrics.current.isFirstTry = true;
         metrics.current.wrongAnswerCount = 0;
-        setCurrentProblem(createProblemDisplay(p, options));
+        const problemDisplay = createProblemDisplay(p, optionsRef.current);
+        const problemIndex = problemCounterRef.current + 1;
+        problemCounterRef.current = problemIndex;
+        problemDisplay.problemIndex = problemIndex;
+        problemDisplay.problemInstanceId = `${sessionIdRef.current || 'mf'}-p${problemIndex}`;
+        beginProblemPerformanceRef.current(problemDisplay);
+        setCurrentProblem(problemDisplay);
         setPhase(nextPhase);
     };
 
     const checkAnswer = useCallback((attempt: AnswerAttempt, forceComplete: boolean = false): AnswerCheckResult => {
+        const problemInstanceId = attempt.problemInstanceId ?? currentProblem?.problemInstanceId;
+        const normalizedAttempt: AnswerAttempt = {
+            ...attempt,
+            problemInstanceId,
+            completedAtPerfMs: attempt.completedAtPerfMs ?? performance.now(),
+            firstDigitPerfMs:
+                attempt.source === 'keypad'
+                    ? attempt.firstDigitPerfMs ?? getCurrentProblemFirstDigitPerfMs(problemInstanceId)
+                    : attempt.firstDigitPerfMs ?? null,
+        };
         const evaluation = evaluateAnswerInput({
             currentProblem,
             isActive,
-            attempt,
+            attempt: normalizedAttempt,
             forceComplete,
         });
 
         if (evaluation.result === 'incomplete') {
             return evaluation.result;
         }
+
+        recordAttemptPerformance(
+            problemInstanceId,
+            normalizedAttempt,
+            evaluation.result
+        );
 
         if (evaluation.result === 'correct') {
             metrics.current.sessionCompletionMsTotal += evaluation.attemptMs ?? 0;
@@ -342,7 +640,7 @@ export function useMathSession() {
         }
 
         return 'wrong';
-    }, [currentProblem, isActive, options]);
+    }, [currentProblem, getCurrentProblemFirstDigitPerfMs, isActive, options, recordAttemptPerformance]);
 
     const submitAnswerAttempt = useCallback((attempt: AnswerAttempt, forceComplete: boolean = false): AnswerCheckResult => {
         return checkAnswer(attempt, forceComplete);
@@ -350,14 +648,18 @@ export function useMathSession() {
 
     const submitAnswer = useCallback((forceComplete: boolean = false): AnswerCheckResult => {
         return submitAnswerAttempt({
+            problemInstanceId: currentProblem?.problemInstanceId,
             value: inputValue,
             source: 'keypad',
         }, forceComplete);
-    }, [inputValue, submitAnswerAttempt]);
+    }, [currentProblem?.problemInstanceId, inputValue, submitAnswerAttempt]);
 
     const endSession = useCallback(() => {
         clearPrepTimeouts();
         if (!isActive) return;
+        const wasReset = stats.completed < totalProblems;
+        const finalizedRows = finalizePerformanceRows(wasReset);
+        const performanceReport = buildSessionPerformanceReport(inputMode, finalizedRows);
 
         saveLogToCloud(buildSessionLogPayload({
             options,
@@ -369,18 +671,24 @@ export function useMathSession() {
             sessionCompletionMsTotal: metrics.current.sessionCompletionMsTotal,
             inputMode,
             voiceMetrics,
+            sessionPerformanceReport: performanceReport,
         }));
 
+        setSessionPerformanceReport(performanceReport);
+        setIsPerformanceReportVisible(performanceReport.problems.length > 0);
         setIsActive(false);
         setIsInputEnabled(false);
         setIsStadiumActive(true);
         setVoiceListeningArmed(false);
         resetInputValue();
         setCurrentProblem(null);
+        queueRef.current = [];
         setQueue([]);
         setPhase('idle');
     }, [
+        buildSessionPerformanceReport,
         clearPrepTimeouts,
+        finalizePerformanceRows,
         inputMode,
         isActive,
         options,
@@ -394,9 +702,13 @@ export function useMathSession() {
         voiceMetrics,
     ]);
 
+    useEffect(() => {
+        endSessionRef.current = endSession;
+    }, [endSession]);
+
     const advanceToNextProblem = useCallback(() => {
-        _nextProblem(queue, metrics.current.cyclesRemaining);
-    }, [queue, options]);
+        _nextProblem(queueRef.current, metrics.current.cyclesRemaining);
+    }, []);
 
     return {
         phase,
@@ -410,6 +722,8 @@ export function useMathSession() {
         inputMode,
         setInputMode,
         voiceState,
+        sessionPerformanceReport,
+        isPerformanceReportVisible,
         inputValue,
         appendInputDigit,
         setInputValue,
@@ -428,5 +742,7 @@ export function useMathSession() {
         pauseVoiceInput: () => setVoiceListeningArmed(false),
         resumeVoiceInput: () => setVoiceListeningArmed(true),
         clearPendingVoiceAttempt: clearPendingAttempt,
+        openPerformanceReport,
+        closePerformanceReport,
     };
 }

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, TextInput } from 'react-native';
 import { appStyles as styles } from '../theme/App.styles';
 import { ProblemConstellation } from './ProblemConstellation';
@@ -53,29 +53,58 @@ export function PracticeArea({
   const [showCorrect, setShowCorrect] = useState(false);
   const clearInputTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advanceProblemTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onInputChangedRef = useRef(onInputChanged);
+  const onAdvanceProblemRef = useRef(onAdvanceProblem);
+  const onResumeVoiceInputRef = useRef(onResumeVoiceInput);
+  const sessionStateRef = useRef({
+    inputMode,
+    isActive,
+    isInputEnabled,
+  });
+
+  useEffect(() => {
+    onInputChangedRef.current = onInputChanged;
+  }, [onInputChanged]);
+
+  useEffect(() => {
+    onAdvanceProblemRef.current = onAdvanceProblem;
+  }, [onAdvanceProblem]);
+
+  useEffect(() => {
+    onResumeVoiceInputRef.current = onResumeVoiceInput;
+  }, [onResumeVoiceInput]);
+
+  useEffect(() => {
+    sessionStateRef.current = {
+      inputMode,
+      isActive,
+      isInputEnabled,
+    };
+  }, [inputMode, isActive, isInputEnabled]);
 
   // Auto-focus when active
-  React.useEffect(() => {
+  useEffect(() => {
     if (inputMode === 'keypad' && isActive && isInputEnabled) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    } else {
-      if (clearInputTimeoutRef.current) {
-        clearTimeout(clearInputTimeoutRef.current);
-        clearInputTimeoutRef.current = null;
-      }
-      if (advanceProblemTimeoutRef.current) {
-        clearTimeout(advanceProblemTimeoutRef.current);
-        advanceProblemTimeoutRef.current = null;
-      }
-      setShowCorrect(false);
-      inputRef.current?.blur();
-      if (!isInputEnabled) {
-        onInputChanged('');
-      }
+      const focusTimeout = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(focusTimeout);
     }
-  }, [isActive, isInputEnabled, onInputChanged]);
 
-  React.useEffect(() => {
+    if (clearInputTimeoutRef.current) {
+      clearTimeout(clearInputTimeoutRef.current);
+      clearInputTimeoutRef.current = null;
+    }
+    if (advanceProblemTimeoutRef.current) {
+      clearTimeout(advanceProblemTimeoutRef.current);
+      advanceProblemTimeoutRef.current = null;
+    }
+    setShowCorrect(false);
+    inputRef.current?.blur();
+    if (!isInputEnabled) {
+      onInputChangedRef.current('');
+    }
+  }, [inputMode, isActive, isInputEnabled]);
+
+  useEffect(() => {
     return () => {
       if (clearInputTimeoutRef.current) {
         clearTimeout(clearInputTimeoutRef.current);
@@ -99,9 +128,10 @@ export function PracticeArea({
         clearTimeout(clearInputTimeoutRef.current);
       }
       clearInputTimeoutRef.current = setTimeout(() => {
-        onInputChanged('');
-        if (inputMode === 'voice' && isActive && isInputEnabled) {
-          onResumeVoiceInput();
+        onInputChangedRef.current('');
+        const latestState = sessionStateRef.current;
+        if (latestState.inputMode === 'voice' && latestState.isActive && latestState.isInputEnabled) {
+          onResumeVoiceInputRef.current();
         }
         clearInputTimeoutRef.current = null;
       }, WRONG_ANSWER_CLEAR_DELAY_MS);
@@ -112,9 +142,9 @@ export function PracticeArea({
         clearTimeout(advanceProblemTimeoutRef.current);
       }
       advanceProblemTimeoutRef.current = setTimeout(() => {
-        onInputChanged('');
+        onInputChangedRef.current('');
         setShowCorrect(false);
-        onAdvanceProblem();
+        onAdvanceProblemRef.current();
         advanceProblemTimeoutRef.current = null;
       }, CORRECT_ANSWER_ADVANCE_DELAY_MS);
     }
@@ -123,6 +153,7 @@ export function PracticeArea({
   const handleSubmit = () => {
     if (!isInputEnabled || inputMode !== 'keypad') return;
     processAnswer({
+      problemInstanceId: currentProblem?.problemInstanceId,
       value: inputValue,
       source: 'keypad',
     }, true);
@@ -133,20 +164,25 @@ export function PracticeArea({
     onInputChanged(text);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isActive || !isInputEnabled || inputMode !== 'keypad') return;
     processAnswer({
+      problemInstanceId: currentProblem?.problemInstanceId,
       value: inputValue,
       source: 'keypad',
     }, false);
-  }, [inputMode, inputValue, isActive, isInputEnabled]);
+  }, [currentProblem?.problemInstanceId, inputMode, inputValue, isActive, isInputEnabled]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (
       inputMode !== 'voice' ||
       !isActive ||
       !isInputEnabled ||
-      !voiceState.pendingAttempt
+      !voiceState.pendingAttempt ||
+      (
+        voiceState.pendingAttempt.problemInstanceId !== undefined &&
+        voiceState.pendingAttempt.problemInstanceId !== currentProblem?.problemInstanceId
+      )
     ) {
       return;
     }
@@ -157,6 +193,7 @@ export function PracticeArea({
     inputMode,
     isActive,
     isInputEnabled,
+    currentProblem?.problemInstanceId,
     onClearPendingVoiceAttempt,
     voiceState.pendingAttempt,
   ]);

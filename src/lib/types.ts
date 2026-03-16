@@ -8,6 +8,13 @@ export type StartMode = 'full' | 'min';
 export type AnswerCheckResult = 'correct' | 'wrong' | 'incomplete';
 export type SessionInputMode = 'keypad' | 'voice';
 export type AnswerAttemptSource = SessionInputMode;
+export type ResponseOnsetSource = 'speechstart' | 'first_digit' | 'none';
+export type SessionProblemOutcome =
+  | 'correct_first_try'
+  | 'wrong_then_correct'
+  | 'wrong_only'
+  | 'no_input'
+  | 'reset_incomplete';
 export type VoicePermissionStatus =
   | 'unavailable'
   | 'undetermined'
@@ -38,6 +45,8 @@ export interface ProblemSpec {
 }
 
 export interface ProblemDisplay {
+  problemInstanceId?: string;
+  problemIndex?: number;
   left: number;
   right: number;
   result: number;
@@ -51,9 +60,11 @@ export interface ProblemDisplay {
 }
 
 export interface AnswerAttempt {
+  problemInstanceId?: string;
   value: string;
   source: AnswerAttemptSource;
   completedAtPerfMs?: number;
+  firstDigitPerfMs?: number | null;
   speechStartPerfMs?: number | null;
   speechEndPerfMs?: number | null;
   finalResultPerfMs?: number | null;
@@ -109,4 +120,72 @@ export interface VoiceInputState {
   ambiguousFinalCount: number;
   processingMsTotal: number;
   pendingAttempt: AnswerAttempt | null;
+}
+
+export interface SessionProblemPerformance {
+  problemInstanceId: string;
+  problemIndex: number;
+  inputMode: SessionInputMode;
+  operation: OperationMode;
+  left: number;
+  right: number;
+  result: number;
+  missing: 'left' | 'right' | 'result';
+  correct: number;
+  presentedAtPerfMs: number;
+  firstInputOnsetPerfMs: number | null;
+  responseOnsetLatencyMs: number | null;
+  onsetSource: ResponseOnsetSource;
+  firstAttemptCompletedAtPerfMs: number | null;
+  completionLatencyMs: number | null;
+  outcome: SessionProblemOutcome;
+  attemptCount: number;
+  isResolved: boolean;
+  submittedValues: string[];
+  voiceDiagnostics: {
+    speechStartPerfMs: number | null;
+    speechEndPerfMs: number | null;
+    finalResultPerfMs: number | null;
+    voiceProcessingMs: number | null;
+    transcript: string | null;
+  };
+  keypadDiagnostics: {
+    firstDigitPerfMs: number | null;
+  };
+}
+
+export interface SessionPerformanceModeSummary {
+  problemCount: number;
+  measuredProblemCount: number;
+  medianOnsetLatencyMs: number | null;
+  fastestOnsetLatencyMs: number | null;
+  slowestOnsetLatencyMs: number | null;
+  medianCompletionLatencyMs: number | null;
+  noInputCount: number;
+  firstTryAccuracyPct: number | null;
+}
+
+export interface SessionPerformanceSummary {
+  problemCount: number;
+  measuredProblemCount: number;
+  measuredCompletionCount: number;
+  noInputCount: number;
+  medianOnsetLatencyMs: number | null;
+  fastestOnsetLatencyMs: number | null;
+  slowestOnsetLatencyMs: number | null;
+  medianCompletionLatencyMs: number | null;
+  firstTryAccuracyPct: number | null;
+  correctFirstTryMedianOnsetMs: number | null;
+  otherOutcomeMedianOnsetMs: number | null;
+  attemptCountDistribution: Record<string, number>;
+  outcomeCounts: Record<SessionProblemOutcome, number>;
+  modeBreakdown: Partial<Record<SessionInputMode, SessionPerformanceModeSummary>>;
+}
+
+export interface SessionPerformanceReport {
+  schemaVersion: number;
+  generatedAtIso: string;
+  inputMode: SessionInputMode;
+  summary: SessionPerformanceSummary;
+  problems: SessionProblemPerformance[];
 }

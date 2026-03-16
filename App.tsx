@@ -3,6 +3,7 @@ import {
   StyleSheet,
   View,
   Text,
+  Pressable,
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
@@ -11,6 +12,7 @@ import {
 import { Header } from './src/components/Header';
 import { PracticeArea } from './src/components/PracticeArea';
 import { ControlDashboard } from './src/components/ControlDashboard';
+import { SessionPerformanceSheet } from './src/components/SessionPerformanceSheet';
 import { useMathSession } from './src/hooks/useMathSession';
 import { theme, getOperationTheme } from './src/theme/colors';
 import { useFonts, Nunito_700Bold, Nunito_800ExtraBold_Italic } from '@expo-google-fonts/nunito';
@@ -39,6 +41,11 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <SessionPerformanceSheet
+        visible={session.isPerformanceReportVisible}
+        report={session.sessionPerformanceReport}
+        onClose={session.closePerformanceReport}
+      />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -78,6 +85,15 @@ export default function App() {
                     </Text>
                   </Text>
                 </View>
+
+                {!session.isActive && session.sessionPerformanceReport ? (
+                  <Pressable
+                    style={styles.reportLinkBtn}
+                    onPress={session.openPerformanceReport}
+                  >
+                    <Text style={styles.reportLinkText}>View last performance report</Text>
+                  </Pressable>
+                ) : null}
 
                 <ControlDashboard
                   phase={session.phase}

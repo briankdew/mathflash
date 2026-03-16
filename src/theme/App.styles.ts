@@ -88,6 +88,18 @@ export const appStyles = StyleSheet.create({
         fontFamily: 'Archivo_400Regular',
         color: theme.textMuted,
     },
+    reportLinkBtn: {
+        marginTop: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 7,
+        borderRadius: 999,
+        backgroundColor: 'rgba(255,255,255,0.72)',
+    },
+    reportLinkText: {
+        fontSize: 13,
+        fontFamily: 'Archivo_400Regular',
+        color: theme.textMuted,
+    },
     voiceStatusText: {
         minHeight: 16,
         marginTop: 4,
