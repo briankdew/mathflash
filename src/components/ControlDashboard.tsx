@@ -4,17 +4,19 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from '
 import { NumberPad } from './NumberPad';
 import { OperationSelector } from './OperationSelector';
 import { SettingsPanel } from './SettingsPanel';
-import { IconAudioMicrophone, IconSettingsAddSub, IconSettingsMulDiv } from './icons/MathIcons';
+import { IconInputModeToggle, IconSettingsAddSub, IconSettingsMulDiv, IconVoiceInputMicrophone } from './icons/MathIcons';
 import { SessionInputMode, SessionOptions, SessionPhase, VoiceInputState } from '../lib/types';
 import { SessionOptionsUpdate } from '../lib/sessionOptions';
 import { isSessionPhaseActive } from '../lib/sessionPhases';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { appStyles as styles } from '../theme/App.styles';
-import { palette, theme } from '../theme/colors';
+import { theme } from '../theme/colors';
 
 // Keypad dimensions
 const KEYPAD_CONTENT_HEIGHT = 232;
 const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 20;
+const VOICE_ICON_CONTENT_HEIGHT = 240;
+const VOICE_ICON_REVEAL_HEIGHT = VOICE_ICON_CONTENT_HEIGHT + 20;
 const SETTINGS_REVEAL_MARGIN = 5;
 const SETTINGS_FALLBACK_HEIGHT = 240;
 const START_BUTTON_HEIGHT = 35;
@@ -23,7 +25,7 @@ const START_BUTTON_WIDTH = 215;
 const GEAR_SIZE = 40;
 const GEAR_REVEAL_OFFSET = 145.5;
 const START_BUTTON_FLASH_DURATION_MS = 180;
-const MIC_BUTTON_SIZE = 34;
+const MIC_BUTTON_SIZE = 40;
 const MIC_BUTTON_GAP = 12;
 
 interface ControlDashboardProps {
@@ -74,9 +76,12 @@ export function ControlDashboard({
   // Animated values for keypad slide-in
   const keypadHeight = useSharedValue(0);
   const keypadSlide = useSharedValue(-KEYPAD_CONTENT_HEIGHT);
+  const voiceIconHeight = useSharedValue(0);
+  const voiceIconSlide = useSharedValue(-VOICE_ICON_CONTENT_HEIGHT);
   const settingsHeight = useSharedValue(0);
   const settingsSlide = useSharedValue(-(SETTINGS_FALLBACK_HEIGHT + SETTINGS_REVEAL_MARGIN));
   const gearOffset = useSharedValue(GEAR_REVEAL_OFFSET);
+  const inputToggleOffset = useSharedValue(0);
   const isSessionInProgress = isSessionPhaseActive(phase);
   const startButtonPressedColor = options.operation === 'addsub' ? '#07345b' : '#1d3c0b';
   const isVoiceToggleDisabled =
@@ -103,6 +108,10 @@ export function ControlDashboard({
         duration: sessionPrepTimeline.tuck,
         easing: Easing.inOut(Easing.cubic),
       });
+      inputToggleOffset.value = withTiming(GEAR_REVEAL_OFFSET, {
+        duration: sessionPrepTimeline.tuck,
+        easing: Easing.inOut(Easing.cubic),
+      });
 
       if (inputMode === 'keypad') {
         // Step 2: After tuck and beat (500 + 150)
@@ -115,17 +124,36 @@ export function ControlDashboard({
             duration: sessionPrepTimeline.roll,
             easing: Easing.linear,
           });
+          voiceIconSlide.value = withTiming(-VOICE_ICON_CONTENT_HEIGHT, {
+            duration: sessionPrepTimeline.roll,
+            easing: Easing.linear,
+          });
+          voiceIconHeight.value = withTiming(0, {
+            duration: sessionPrepTimeline.roll,
+            easing: Easing.linear,
+          });
           rollTimeoutRef.current = null;
         }, sessionPrepMarks.keypadRollStartAt);
       } else {
-        keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
-          duration: sessionPrepTimeline.roll,
-          easing: Easing.linear,
-        });
-        keypadHeight.value = withTiming(0, {
-          duration: sessionPrepTimeline.roll,
-          easing: Easing.linear,
-        });
+        rollTimeoutRef.current = setTimeout(() => {
+          voiceIconHeight.value = withTiming(VOICE_ICON_REVEAL_HEIGHT, {
+            duration: sessionPrepTimeline.roll,
+            easing: Easing.linear,
+          });
+          voiceIconSlide.value = withTiming(0, {
+            duration: sessionPrepTimeline.roll,
+            easing: Easing.linear,
+          });
+          keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
+            duration: sessionPrepTimeline.roll,
+            easing: Easing.linear,
+          });
+          keypadHeight.value = withTiming(0, {
+            duration: sessionPrepTimeline.roll,
+            easing: Easing.linear,
+          });
+          rollTimeoutRef.current = null;
+        }, sessionPrepMarks.keypadRollStartAt);
       }
     } else {
       // Step 1: Hide keypad (Roll reverse)
@@ -137,10 +165,22 @@ export function ControlDashboard({
         duration: sessionPrepTimeline.roll,
         easing: Easing.linear,
       });
+      voiceIconSlide.value = withTiming(-VOICE_ICON_CONTENT_HEIGHT, {
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
+      });
+      voiceIconHeight.value = withTiming(0, {
+        duration: sessionPrepTimeline.roll,
+        easing: Easing.linear,
+      });
 
       // Step 2: After keypad hidden and beat, untuck gear
       untuckTimeoutRef.current = setTimeout(() => {
         gearOffset.value = withTiming(GEAR_REVEAL_OFFSET, {
+          duration: sessionPrepTimeline.tuck,
+          easing: Easing.out(Easing.cubic),
+        });
+        inputToggleOffset.value = withTiming(0, {
           duration: sessionPrepTimeline.tuck,
           easing: Easing.out(Easing.cubic),
         });
@@ -208,8 +248,21 @@ export function ControlDashboard({
     transform: [{ translateY: keypadSlide.value }],
   }));
 
+  const voiceIconWrapperStyle = useAnimatedStyle(() => ({
+    height: voiceIconHeight.value,
+    overflow: 'hidden' as const,
+  }));
+
+  const voiceIconContentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: voiceIconSlide.value }],
+  }));
+
   const gearStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: gearOffset.value }],
+  }));
+
+  const inputToggleStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: inputToggleOffset.value }],
   }));
 
   useEffect(() => {
@@ -264,6 +317,18 @@ export function ControlDashboard({
         </Animated.View>
       </Animated.View>
 
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          { alignItems: 'center', width: '100%', backgroundColor: theme.bg, zIndex: 10 },
+          voiceIconWrapperStyle,
+        ]}
+      >
+        <Animated.View style={[{ width: '100%', alignItems: 'center' }, voiceIconContentStyle]}>
+          <IconVoiceInputMicrophone width={330} />
+        </Animated.View>
+      </Animated.View>
+
       {/* Primary Action Button Row */}
       <View
         style={{
@@ -305,7 +370,7 @@ export function ControlDashboard({
           </TouchableOpacity>
         </Animated.View>
 
-        <Pressable
+        <Animated.View
           style={[
             {
               position: 'absolute',
@@ -314,23 +379,33 @@ export function ControlDashboard({
               top: (START_BUTTON_HEIGHT - MIC_BUTTON_SIZE) / 2,
               width: MIC_BUTTON_SIZE,
               height: MIC_BUTTON_SIZE,
-              borderRadius: MIC_BUTTON_SIZE / 2,
               justifyContent: 'center',
               alignItems: 'center',
-              backgroundColor: inputMode === 'voice' ? opTheme.textOperand : palette.beige[1],
               opacity: isVoiceToggleDisabled ? 0.38 : 1,
-              zIndex: 2,
+              zIndex: 0,
             },
+            inputToggleStyle,
           ]}
-          onPress={onToggleInputMode}
-          disabled={isVoiceToggleDisabled}
         >
-          <IconAudioMicrophone
-            width={18}
-            shellFill={inputMode === 'voice' ? palette.red[7] : palette.beige[5]}
-            detailFill={inputMode === 'voice' ? palette.bg : palette.beige[2]}
-          />
-        </Pressable>
+          <Pressable
+            style={{
+              width: MIC_BUTTON_SIZE,
+              height: MIC_BUTTON_SIZE,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={inputMode === 'keypad' ? 'Switch to voice input' : 'Switch to keypad input'}
+            onPress={onToggleInputMode}
+            disabled={isVoiceToggleDisabled}
+          >
+            <IconInputModeToggle
+              size={MIC_BUTTON_SIZE}
+              operation={options.operation}
+              inputMode={inputMode}
+            />
+          </Pressable>
+        </Animated.View>
 
         <Pressable
           style={[

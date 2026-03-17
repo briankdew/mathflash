@@ -81,6 +81,13 @@ export function SettingsPanel({
         updateOptions({ type: 'toggleCustomSet', customSet: set });
     };
 
+    const setsDisplayValue =
+        options.practiceCycles <= 1
+            ? '1'
+            : options.setsMode === 'single'
+                ? '1'
+                : String(options.practiceCycles);
+
     return (
         <View style={styles.container}>
             <View style={styles.controlGroup}>
@@ -140,33 +147,27 @@ export function SettingsPanel({
                         </Text>
                     </TouchableOpacity>
                 )}
+
+                <TouchableOpacity
+                    style={[styles.compactSettingBtn, disabled && styles.chipDisabled]}
+                    onPress={cyclePracticeCycles}
+                    disabled={disabled}
+                >
+                    <Text style={styles.compactSettingLabel}>CYC</Text>
+                    <Text style={styles.compactSettingValue}>{options.practiceCycles}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.compactSettingBtn, (disabled || options.practiceCycles <= 1) && styles.chipDisabled]}
+                    onPress={toggleSetsMode}
+                    disabled={disabled || options.practiceCycles <= 1}
+                >
+                    <Text style={styles.compactSettingLabel}>SETS</Text>
+                    <Text style={styles.compactSettingValue}>{setsDisplayValue}</Text>
+                </TouchableOpacity>
             </View>
 
             <View style={styles.settingsRow}>
-                <View style={styles.settingItem}>
-                    <Text style={styles.label}>CYCLES</Text>
-                    <TouchableOpacity style={[styles.selectBtn, disabled && styles.chipDisabled]} onPress={cyclePracticeCycles} disabled={disabled}>
-                        <Text style={styles.selectBtnText}>{options.practiceCycles}</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.settingItem}>
-                    <Text style={styles.label}>SETS</Text>
-                    <TouchableOpacity
-                        style={[styles.selectBtn, options.practiceCycles <= 1 && styles.chipDisabled]}
-                        onPress={toggleSetsMode}
-                        disabled={disabled || options.practiceCycles <= 1}
-                    >
-                        <Text style={styles.selectBtnText}>
-                            {options.practiceCycles <= 1
-                                ? '1'
-                                : options.setsMode === 'single'
-                                    ? '1'
-                                    : String(options.practiceCycles)}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
                 <View style={styles.settingItem}>
                     <Text style={styles.label}>PO</Text>
                     <TouchableOpacity style={[styles.selectBtn, disabled && styles.chipDisabled]} onPress={cycleOrder} disabled={disabled}>
@@ -218,6 +219,20 @@ export function SettingsPanel({
                         </Text>
                     </TouchableOpacity>
                 </View>
+
+                <View style={styles.settingItem}>
+                    <Text style={styles.label}>REPORT</Text>
+                    <TouchableOpacity
+                        style={[styles.timerBox, options.autoShowPerformanceReport && styles.chipActive, disabled && styles.chipDisabled]}
+                        onPress={() => updateOptions({ type: 'toggleAutoShowPerformanceReport' })}
+                        disabled={disabled}
+                    >
+                        {options.autoShowPerformanceReport && <InnerShadowBox width={44} height={44} rx={10} fill="#C0BEB1" />}
+                        <Text style={[styles.chipTextAllClr, options.autoShowPerformanceReport && styles.chipTextActive]}>
+                            {options.autoShowPerformanceReport ? "On" : "Off"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
         </View>
@@ -233,7 +248,7 @@ const styles = StyleSheet.create({
     settingsRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         gap: 6,
         width: 352,
         alignSelf: 'center',
@@ -243,6 +258,8 @@ const styles = StyleSheet.create({
     },
     customRow: {
         flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
         gap: 8,
         width: 352,
         alignSelf: 'center',
@@ -275,6 +292,29 @@ const styles = StyleSheet.create({
     selectBtnText: {
         fontSize: 16, // Matching 'Clear/Select All' button size for fit
         color: '#615e4e', // Matching selected chip text color
+        fontFamily: 'NotoSans_500Medium',
+    },
+    compactSettingBtn: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#C0BEB1',
+        borderRadius: 10,
+    },
+    compactSettingLabel: {
+        position: 'absolute',
+        top: 5,
+        fontSize: 8,
+        lineHeight: 9,
+        letterSpacing: 0.2,
+        color: '#615e4e',
+        fontFamily: 'Archivo_400Regular',
+    },
+    compactSettingValue: {
+        marginTop: 9,
+        fontSize: 16,
+        color: '#615e4e',
         fontFamily: 'NotoSans_500Medium',
     },
     digitGrid: {

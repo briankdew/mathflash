@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path, Defs, Filter, FeDropShadow, G, FeFlood, FeGaussianBlur, FeOffset, FeComposite } from 'react-native-svg';
+import Svg, { Path, Defs, Filter, G, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect } from 'react-native-svg';
 
 type OperatorIconProps = {
     circleFill?: string;
@@ -54,6 +54,185 @@ export const IconAudioMicrophone = ({
         />
     </Svg>
 );
+
+export const IconVoiceInputMicrophone = ({ width = 330 }: { width?: number }) => (
+    <Svg width={width} height={width * (240 / 330)} viewBox="0 0 330 240">
+        <Defs>
+            <Filter id="filterVoiceInputMicShell" x="-0.042588" y="-0.025923" width="1.0852" height="1.0626">
+                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".50196" in="SourceGraphic" result="flood" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.5" />
+                <FeOffset dx="0" dy="0.5" in="blur" result="offset" />
+                <FeComposite in="flood" in2="offset" operator="out" result="comp1" />
+                <FeComposite in="comp1" in2="SourceGraphic" operator="atop" result="comp2" />
+            </Filter>
+            <Filter id="filterVoiceInputMicDetail" x="-0.03138" y="-0.021304" width="1.0628" height="1.0515">
+                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".50196" in="SourceGraphic" result="flood" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.5" />
+                <FeOffset dx="0" dy="0.5" in="blur" result="offset" />
+                <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
+                <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
+            </Filter>
+        </Defs>
+        <G transform="matrix(3.7794 0 0 3.7794 -165.26 -469.97)">
+            <G filter="url(#filterVoiceInputMicShell)">
+                <Path
+                    d="m87.383 124.35c-7.7808 0-14.088 6.3076-14.088 14.088v18.114c5e-6 7.7809 6.3076 14.088 14.088 14.088 7.7808 0 14.088-6.3076 14.088-14.088v-18.114c0-7.7809-6.3076-14.088-14.088-14.088z"
+                    fill="#f4f2e7"
+                    strokeWidth="3.8034"
+                />
+            </G>
+            <G filter="url(#filterVoiceInputMicDetail)">
+                <Path
+                    d="m70.812 154.06c-1.3894-0.019-2.5299 1.0948-2.5472 2.4843-0.09231 7.2902 4.2513 14.16 10.828 17.26 1.4452 0.71244 2.9652 1.2212 4.5183 1.533v5.3648h-7.0715c-1.3894 0-2.5157 1.1263-2.5157 2.5157 0 1.3894 1.1263 2.5157 2.5157 2.5157h21.727c3.3058-0.0479 3.3058-4.9833 0-5.0314h-7.1087v-5.369c3.1282-0.62617 6.1066-2.0284 8.5749-4.1646 4.2821-3.5901 6.8109-9.0111 6.771-14.611-0.01-1.3894-1.144-2.5078-2.5334-2.498-1.3894 0.0114-2.5078 1.144-2.498 2.5334 0.0289 4.0395-1.882 8.1428-4.9861 10.737-0.0118 0.0114-0.0236 0.019-0.0354 0.0304-4.0269 3.4911-10.37 4.2916-15.149 1.9281-0.01483-8e-3 -0.03005-0.0152-0.04522-0.0228-4.7157-2.2136-8.0257-7.4533-7.9599-12.657 0.0175-1.3894-1.0949-2.5298-2.4843-2.5471z"
+                    fill="#a7a597"
+                    strokeWidth="3.8033"
+                />
+                <Path
+                    d="m87.383 129.41a9.0571 9.0571 0 0 0-9.0567 9.0567v18.114a9.0571 9.0571 0 0 0 9.0567 9.0567 9.0571 9.0571 0 0 0 9.0571-9.0567v-18.114a9.0571 9.0571 0 0 0-9.0571-9.0567z"
+                    fill="#c0beb1"
+                    strokeWidth="3.8034"
+                />
+            </G>
+        </G>
+    </Svg>
+);
+
+type MiniToggleIconProps = {
+    size?: number;
+};
+
+export const IconMiniKeypadAddSub = ({ size = 40 }: MiniToggleIconProps) => (
+    <Svg width={size} height={size} viewBox="0 0 40 40">
+        <Defs>
+            <Filter id="filterMiniKeypadAddSub" x="-0.029639" y="-0.030277" width="1.0593" height="1.1221">
+                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25098" in="SourceGraphic" result="flood" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.41" />
+                <FeOffset dx="0" dy="2" in="blur" result="offset" />
+                <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
+                <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
+            </Filter>
+        </Defs>
+        <G transform="translate(1.7193 .53)" filter="url(#filterMiniKeypadAddSub)">
+            <G transform="translate(.9607 2.5)" fill="#53789e">
+                <Rect x="23.52" y="26.22" width="10.4" height="7" rx="2" ry="2" fill="#85a8cd" />
+                <Rect x=".72" y="26.22" width="21.8" height="7" rx="2" ry="2" />
+                <Rect x=".72" y=".72" width="10.4" height="7" rx="2" ry="2" />
+                <Rect x="12.12" y=".72" width="10.4" height="7" rx="2" ry="2" />
+                <Rect x="23.52" y=".72" width="10.4" height="7" rx="2" ry="2" />
+                <Rect x=".72" y="9.22" width="10.4" height="7" rx="2" ry="2" />
+                <Rect x="12.12" y="9.22" width="10.4" height="7" rx="2" ry="2" />
+                <Rect x="23.52" y="9.22" width="10.4" height="7" rx="2" ry="2" />
+                <Rect x=".72" y="17.72" width="10.4" height="7" rx="2" ry="2" />
+                <Rect x="12.12" y="17.72" width="10.4" height="7" rx="2" ry="2" />
+                <Rect x="23.52" y="17.72" width="10.4" height="7" rx="2" ry="2" />
+            </G>
+        </G>
+    </Svg>
+);
+
+export const IconMiniKeypadMulDiv = ({ size = 40 }: MiniToggleIconProps) => (
+    <Svg width={size} height={size} viewBox="0 0 40 40">
+        <Defs>
+            <Filter id="filterMiniKeypadMulDiv" x="-0.029639" y="-0.030277" width="1.0593" height="1.1221">
+                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25098" in="SourceGraphic" result="flood" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.41" />
+                <FeOffset dx="0" dy="2" in="blur" result="offset" />
+                <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
+                <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
+            </Filter>
+        </Defs>
+        <G transform="translate(.8033 -.736)" filter="url(#filterMiniKeypadMulDiv)">
+            <G transform="translate(2.416 3.516)">
+                <Rect x="22.981" y="26.47" width="10.4" height="7" rx="2" ry="2" fill="#91ae85" />
+                <G fill="#607f53">
+                    <Rect x=".1807" y="26.47" width="21.8" height="7" rx="2" ry="2" />
+                    <Rect x=".1807" y=".97" width="10.4" height="7" rx="2" ry="2" />
+                    <Rect x="11.581" y=".97" width="10.4" height="7" rx="2" ry="2" />
+                    <Rect x="22.981" y=".97" width="10.4" height="7" rx="2" ry="2" />
+                    <Rect x=".1807" y="9.47" width="10.4" height="7" rx="2" ry="2" />
+                    <Rect x="11.581" y="9.47" width="10.4" height="7" rx="2" ry="2" />
+                    <Rect x="22.981" y="9.47" width="10.4" height="7" rx="2" ry="2" />
+                    <Rect x=".1807" y="17.97" width="10.4" height="7" rx="2" ry="2" />
+                    <Rect x="11.581" y="17.97" width="10.4" height="7" rx="2" ry="2" />
+                    <Rect x="22.981" y="17.97" width="10.4" height="7" rx="2" ry="2" />
+                </G>
+            </G>
+        </G>
+    </Svg>
+);
+
+export const IconMiniMicrophoneAddSub = ({ size = 40 }: MiniToggleIconProps) => (
+    <Svg width={size} height={size} viewBox="0 0 10.584 10.584">
+        <Defs>
+            <Filter id="filterMiniMicrophoneAddSub" x="-0.061701" y="-0.041864" width="1.1234" height="1.1419">
+                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25" in="SourceGraphic" result="flood" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.15" />
+                <FeOffset dx="0" dy="0.5" in="blur" result="offset" />
+                <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
+                <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
+            </Filter>
+        </Defs>
+        <G filter="url(#filterMiniMicrophoneAddSub)">
+            <G transform="translate(-64.565 -124.69)" strokeWidth=".58028">
+                <Path
+                    d="m67.329 129.44c-0.21199-3e-3 -0.386 0.16705-0.38863 0.37904-0.01408 1.1123 0.64864 2.1604 1.652 2.6334 0.2205 0.1087 0.45242 0.18632 0.68938 0.2339v0.82494h-1.0789c-0.21198 0-0.38383 0.17184-0.38384 0.38382-3e-6 0.21199 0.17185 0.38384 0.38384 0.38384h3.315c0.50448-7e-3 0.50448-0.76042 0-0.76766h-1.0846v-0.82557c0.47728-0.0955 0.9317-0.30949 1.3083-0.63541 0.65334-0.54775 1.0392-1.3749 1.0331-2.2292-0.0015-0.21199-0.17455-0.38263-0.38653-0.38113-0.21199 1e-3 -0.38263 0.17454-0.38114 0.38653 0.0044 0.61632-0.28715 1.2424-0.76075 1.6382-0.0018 2e-3 -0.0036 3e-3 -0.0054 5e-3 -0.6144 0.53265-1.5822 0.6548-2.3114 0.29418l-0.0069-3e-3c-0.71949-0.33773-1.2245-1.1372-1.2145-1.9312 0.0027-0.21199-0.16705-0.38599-0.37904-0.38862z"
+                    fill="#53789e"
+                />
+                <Path
+                    d="m69.857 125.68a1.3818 1.3818 0 0 0-1.3818 1.3818v2.7636a1.3818 1.3818 0 0 0 1.3818 1.3818 1.3818 1.3818 0 0 0 1.3818-1.3818v-2.7636a1.3818 1.3818 0 0 0-1.3818-1.3818z"
+                    fill="#85a8cd"
+                />
+            </G>
+        </G>
+    </Svg>
+);
+
+export const IconMiniMicrophoneMulDiv = ({ size = 40 }: MiniToggleIconProps) => (
+    <Svg width={size} height={size} viewBox="0 0 10.584 10.584">
+        <Defs>
+            <Filter id="filterMiniMicrophoneMulDiv" x="-0.061701" y="-0.041866" width="1.1234" height="1.1419">
+                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25" in="SourceGraphic" result="flood" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.15" />
+                <FeOffset dx="0" dy="0.5" in="blur" result="offset" />
+                <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
+                <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
+            </Filter>
+        </Defs>
+        <G filter="url(#filterMiniMicrophoneMulDiv)">
+            <G transform="translate(-64.565 -124.69)" strokeWidth=".58028">
+                <Path
+                    d="m67.329 129.44a0.38383 0.38383 0 0 0-0.38863 0.37904c-0.01408 1.1123 0.64864 2.1604 1.652 2.6334 0.2205 0.1087 0.45242 0.18632 0.68938 0.2339v0.82494h-1.0789a0.38383 0.38383 0 0 0-0.38384 0.38382 0.38383 0.38383 0 0 0 0.38384 0.38384h3.315a0.38387 0.38387 0 0 0 0-0.76766h-1.0846v-0.82557c0.47728-0.0955 0.9317-0.30949 1.3083-0.63541 0.65334-0.54775 1.0392-1.3749 1.0331-2.2292a0.38383 0.38383 0 0 0-0.38653-0.38113 0.38383 0.38383 0 0 0-0.38114 0.38653c0.0044 0.61632-0.28715 1.2424-0.76075 1.6382a0.38387 0.38387 0 0 0-0.0054 5e-3c-0.6144 0.53265-1.5822 0.6548-2.3114 0.29418a0.38387 0.38387 0 0 0-0.0069-3e-3c-0.71949-0.33773-1.2245-1.1372-1.2145-1.9312a0.38383 0.38383 0 0 0-0.37904-0.38862z"
+                    fill="#607f53"
+                />
+                <Path
+                    d="m69.857 125.68a1.3818 1.3818 0 0 0-1.3818 1.3818v2.7636a1.3818 1.3818 0 0 0 1.3818 1.3818 1.3818 1.3818 0 0 0 1.3818-1.3818v-2.7636a1.3818 1.3818 0 0 0-1.3818-1.3818z"
+                    fill="#91ae85"
+                />
+            </G>
+        </G>
+    </Svg>
+);
+
+export const IconInputModeToggle = ({
+    size = 40,
+    operation,
+    inputMode,
+}: {
+    size?: number;
+    operation: 'addsub' | 'multdiv';
+    inputMode: 'keypad' | 'voice';
+}) => {
+    if (inputMode === 'voice') {
+        return operation === 'addsub'
+            ? <IconMiniMicrophoneAddSub size={size} />
+            : <IconMiniMicrophoneMulDiv size={size} />;
+    }
+
+    return operation === 'addsub'
+        ? <IconMiniKeypadAddSub size={size} />
+        : <IconMiniKeypadMulDiv size={size} />;
+};
+
 export const IconSettingsAddSub = ({ size = 35 }: { size?: number }) => (
     <Svg width={size * (58 / 40)} height={size} viewBox="0 0 15.346 10.584">
         <Defs>

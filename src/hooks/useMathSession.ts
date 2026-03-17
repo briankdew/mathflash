@@ -61,6 +61,7 @@ export function useMathSession() {
     const [globalSettings, setGlobalSettings] = useState<GlobalSessionSettings>({
         useTimer: true,
         startMode: 'min',
+        autoShowPerformanceReport: false,
     });
 
     const options: SessionOptions = getSessionOptions(operation, settingsByOperation, globalSettings);
@@ -675,7 +676,9 @@ export function useMathSession() {
         }));
 
         setSessionPerformanceReport(performanceReport);
-        setIsPerformanceReportVisible(performanceReport.problems.length > 0);
+        setIsPerformanceReportVisible(
+            options.autoShowPerformanceReport && performanceReport.problems.length > 0
+        );
         setIsActive(false);
         setIsInputEnabled(false);
         setIsStadiumActive(true);

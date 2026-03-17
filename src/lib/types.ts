@@ -78,6 +78,7 @@ export interface SessionOptions {
   operandOrder: OperandOrder;
   missingValue: MissingValueMode;
   startMode: StartMode;
+  autoShowPerformanceReport: boolean;
   setsMode: SetsMode;
   activeChips: number[]; // e.g. [1, 2, 3] usually 1-9
   customSet: CustomSet;

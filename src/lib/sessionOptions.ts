@@ -22,6 +22,7 @@ export type OperationScopedSettings = {
 export type GlobalSessionSettings = {
   useTimer: boolean;
   startMode: StartMode;
+  autoShowPerformanceReport: boolean;
 };
 
 export type SettingsByOperation = Record<OperationMode, OperationScopedSettings>;
@@ -42,7 +43,8 @@ export type SessionOptionsUpdate =
   | { type: 'toggleChip'; value: number }
   | { type: 'toggleAllChips' }
   | { type: 'toggleCustomSet'; customSet: Exclude<CustomSet, null> }
-  | { type: 'toggleStartMode' };
+  | { type: 'toggleStartMode' }
+  | { type: 'toggleAutoShowPerformanceReport' };
 
 const ALL_CHIPS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 const PROBLEM_ORDER_SEQUENCE: ProblemOrder[] = ['random', 'standard'];
@@ -98,6 +100,7 @@ export function getSessionOptions(
     operandOrder: currentOperationSettings.operandOrder,
     missingValue: currentOperationSettings.missingValue,
     startMode: globalSettings.startMode,
+    autoShowPerformanceReport: globalSettings.autoShowPerformanceReport,
     setsMode: currentOperationSettings.setsMode,
     activeChips: currentOperationSettings.activeChips,
     customSet: currentOperationSettings.customSet,
@@ -196,6 +199,16 @@ export function applySessionOptionsUpdate(
       globalSettings: {
         ...state.globalSettings,
         startMode: state.globalSettings.startMode === 'full' ? 'min' : 'full',
+      },
+    };
+  }
+
+  if (update.type === 'toggleAutoShowPerformanceReport') {
+    return {
+      ...state,
+      globalSettings: {
+        ...state.globalSettings,
+        autoShowPerformanceReport: !state.globalSettings.autoShowPerformanceReport,
       },
     };
   }
