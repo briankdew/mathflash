@@ -15,6 +15,7 @@ import {
 } from '../lib/types';
 import {
   buildVoiceContextualStrings,
+  getVoiceAcceptedAnswerRange,
   getVoiceAnswerRange,
   normalizeVoiceNumber,
 } from '../lib/voiceNumberNormalization';
@@ -365,11 +366,11 @@ export function useVoiceAnswerInput({
         return;
       }
 
-      const range = getVoiceAnswerRange(
+      const acceptedRange = getVoiceAcceptedAnswerRange(
         currentProblemRef.current,
         optionsRef.current.operation
       );
-      const normalized = normalizeVoiceNumber(rawTranscript, range);
+      const normalized = normalizeVoiceNumber(rawTranscript, acceptedRange);
 
       if (normalized.kind === 'valid') {
         lastValidInterimRef.current = {

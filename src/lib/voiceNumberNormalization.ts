@@ -143,6 +143,23 @@ export function getVoiceAnswerRange(
   return operation === 'addsub' ? { min: 2, max: 18 } : { min: 1, max: 81 };
 }
 
+export function getVoiceAcceptedAnswerRange(
+  currentProblem: ProblemDisplay | null,
+  operation: OperationMode
+): VoiceAnswerRange {
+  if (!currentProblem) {
+    return operation === 'addsub' ? { min: 0, max: 18 } : { min: 0, max: 81 };
+  }
+
+  if (currentProblem.missing === 'left' || currentProblem.missing === 'right') {
+    // Keep keypad operand entry single-digit, but let voice submit multi-digit
+    // numeric answers so they can fail through the normal wrong-answer flow.
+    return { min: 0, max: 99 };
+  }
+
+  return operation === 'addsub' ? { min: 0, max: 18 } : { min: 0, max: 81 };
+}
+
 export function normalizeVoiceNumber(
   rawTranscript: string,
   range: VoiceAnswerRange
