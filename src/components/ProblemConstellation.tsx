@@ -10,7 +10,13 @@ import Animated, { useAnimatedStyle, withRepeat, withSequence, withTiming, Easin
 
 import { IconPlus, IconMinus, IconTimes, IconDivide } from './icons/MathIcons';
 
-const AnswerBoxSvg = ({ isActive }: { isActive: boolean }) => (
+const AnswerBoxSvg = ({
+    isActive,
+    isWrongAnswerFill,
+}: {
+    isActive: boolean;
+    isWrongAnswerFill?: boolean;
+}) => (
     <Svg width="100%" height="100%" viewBox="0 0 215 110" style={StyleSheet.absoluteFill} pointerEvents="none" focusable={false}>
         <Defs>
             <Filter id="filterAnswerBox" x="-0.027907" y="-0.054545" width="1.0558" height="1.1364">
@@ -21,7 +27,16 @@ const AnswerBoxSvg = ({ isActive }: { isActive: boolean }) => (
                 <FeComposite in="comp1" in2="SourceGraphic" operator="atop" result="comp2" />
             </Filter>
         </Defs>
-        <Rect x="0" y="0" width="215" height="110" rx="25" ry="25" fill={isActive ? "#ffffff" : theme.bg} filter="url(#filterAnswerBox)" />
+        <Rect
+            x="0"
+            y="0"
+            width="215"
+            height="110"
+            rx="25"
+            ry="25"
+            fill={isWrongAnswerFill ? '#ffc5c5' : (isActive ? '#ffffff' : theme.bg)}
+            filter="url(#filterAnswerBox)"
+        />
     </Svg>
 );
 
@@ -31,19 +46,31 @@ interface ProblemConstellationProps {
     startMode?: StartMode;
     phase: SessionPhase;
     shakeTrigger?: number; // pass a random value to trigger a shake
+    showWrongAnswer?: boolean;
+    showWrongAnswerFill?: boolean;
     renderInput?: React.ReactNode;
     showCorrect?: boolean;
     isActive?: boolean;
 }
 
-export function ProblemConstellation({ problem, operation, startMode = 'full', phase, shakeTrigger = 0, renderInput, showCorrect = false, isActive = false }: ProblemConstellationProps) {
+export function ProblemConstellation({
+    problem,
+    operation,
+    startMode = 'full',
+    phase,
+    shakeTrigger = 0,
+    showWrongAnswer = false,
+    showWrongAnswerFill = false,
+    renderInput,
+    showCorrect = false,
+    isActive = false,
+}: ProblemConstellationProps) {
     const opTheme = getOperationTheme(operation);
     const isPreparing = isSessionPhasePreparing(phase);
 
     const dynamicScale = 1; // Locked to 1 to honor exact Figma coordinates
 
-    // We only animate the problem constellation to react to errors
-    const translateX = useSharedValue(0);
+    const answerTranslateX = useSharedValue(0);
     const leftFlip = useSharedValue(0);
     const rightFlip = useSharedValue(0);
     const resultFlip = useSharedValue(0);
@@ -59,13 +86,13 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
 
     React.useEffect(() => {
         if (shakeTrigger > 0) {
-            translateX.value = withSequence(
+            answerTranslateX.value = withSequence(
                 withTiming(10, { duration: 50 }),
                 withRepeat(withTiming(-10, { duration: 100 }), 3, true),
                 withTiming(0, { duration: 50 })
             );
         }
-    }, [shakeTrigger, translateX]);
+    }, [answerTranslateX, shakeTrigger]);
 
     React.useEffect(() => {
         if (phase === 'idle' || isPreparing) {
@@ -179,9 +206,12 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [
-            { scale: dynamicScale },
-            { translateX: translateX.value }
+            { scale: dynamicScale }
         ]
+    }));
+
+    const answerAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: answerTranslateX.value }],
     }));
 
     const leftCardAnimatedStyle = useAnimatedStyle(() => ({
@@ -332,10 +362,10 @@ export function ProblemConstellation({ problem, operation, startMode = 'full', p
                     </Animated.Text>
                 </Animated.View>
 
-                <View style={styles.cardAnswer}>
-                    <AnswerBoxSvg isActive={isActive && !!problem} />
+                <Animated.View style={[styles.cardAnswer, answerAnimatedStyle]}>
+                    <AnswerBoxSvg isActive={isActive && !!problem} isWrongAnswerFill={showWrongAnswerFill} />
                     {renderInput}
-                </View>
+                </Animated.View>
 
                 {/* Operator Circles */}
                 <View style={[styles.circle, styles.circleMain]}>
