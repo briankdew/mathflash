@@ -69,7 +69,7 @@ export class MathEngine {
             right = p.a;
         }
 
-        const slots: Array<'left' | 'right' | 'result'> = ['left', 'right', 'result'];
+        const slots: ('left' | 'right' | 'result')[] = ['left', 'right', 'result'];
         let missing: 'left' | 'right' | 'result' = 'result';
 
         if (options.missingValue === 'operand') {

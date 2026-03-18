@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { View, StyleSheet } from 'react-native';
 import { OperationMode } from '../lib/types';
 import { getOperationTheme } from '../theme/colors';
 import { LogoWithTagline } from './icons/LogoWithTagline';

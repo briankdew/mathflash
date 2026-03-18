@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { Platform } from 'react-native';
-import {
-  ExpoSpeechRecognitionModule,
-  type ExpoSpeechRecognitionErrorEvent,
-  type ExpoSpeechRecognitionResultEvent,
+import type {
+  ExpoSpeechRecognitionErrorEvent,
+  ExpoSpeechRecognitionResultEvent,
 } from 'expo-speech-recognition';
 import {
-  AnswerAttempt,
   ProblemDisplay,
   SessionOptions,
   VoiceInputState,
@@ -19,17 +17,18 @@ import {
   getVoiceAnswerRange,
   normalizeVoiceNumber,
 } from '../lib/voiceNumberNormalization';
+import {
+  expoSpeechRecognitionAdapter,
+  SpeechRecognitionAdapter,
+} from '../lib/expoSpeechRecognitionAdapter';
+import {
+  buildVoiceInputState,
+  createInitialVoiceControllerState,
+  voiceControllerReducer,
+} from './voice/voiceController';
 
 const RESTART_DELAY_MS = 220;
 const FINALIZE_INTERIM_DELAY_MS = 250;
-
-const INITIAL_VOICE_METRICS: VoiceSessionMetrics = {
-  retryCount: 0,
-  noSpeechCount: 0,
-  noMatchCount: 0,
-  ambiguousFinalCount: 0,
-  processingMsTotal: 0,
-};
 
 interface UseVoiceAnswerInputArgs {
   enabled: boolean;
@@ -39,6 +38,7 @@ interface UseVoiceAnswerInputArgs {
   options: SessionOptions;
   onSpeechStart: (problemInstanceId: string, speechStartPerfMs: number) => void;
   onValidAttemptCaptured: () => void;
+  adapter?: SpeechRecognitionAdapter;
 }
 
 interface UseVoiceAnswerInputResult {
@@ -91,20 +91,16 @@ export function useVoiceAnswerInput({
   options,
   onSpeechStart,
   onValidAttemptCaptured,
+  adapter = expoSpeechRecognitionAdapter,
 }: UseVoiceAnswerInputArgs): UseVoiceAnswerInputResult {
   const platformSupported =
     Platform.OS === 'ios' || Platform.OS === 'android' || Platform.OS === 'web';
   const isWebPlatform = Platform.OS === 'web';
-  const [permissionStatus, setPermissionStatus] = useState<VoicePermissionStatus>(
-    platformSupported ? 'undetermined' : 'unavailable'
+  const [controllerState, dispatch] = useReducer(
+    voiceControllerReducer,
+    platformSupported,
+    createInitialVoiceControllerState
   );
-  const [isAvailable, setIsAvailable] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [statusLabel, setStatusLabel] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [transcriptPreview, setTranscriptPreview] = useState('');
-  const [pendingAttempt, setPendingAttempt] = useState<AnswerAttempt | null>(null);
-  const [voiceMetrics, setVoiceMetrics] = useState<VoiceSessionMetrics>(INITIAL_VOICE_METRICS);
 
   const mountedRef = useRef(true);
   const enabledRef = useRef(enabled);
@@ -116,7 +112,9 @@ export function useVoiceAnswerInput({
   const suppressRestartRef = useRef(false);
   const speechStartPerfRef = useRef<number | null>(null);
   const speechEndPerfRef = useRef<number | null>(null);
-  const finalizeInterimTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finalizeInterimTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const lastValidInterimRef = useRef<LastValidInterim | null>(null);
 
   useEffect(() => {
@@ -128,7 +126,7 @@ export function useVoiceAnswerInput({
     if (shouldListen) {
       suppressRestartRef.current = false;
     } else {
-      setStatusLabel(null);
+      dispatch({ type: 'clearStatus' });
     }
   }, [shouldListen]);
 
@@ -141,9 +139,9 @@ export function useVoiceAnswerInput({
       finalizeInterimTimeoutRef.current = null;
     }
     lastValidInterimRef.current = null;
-    setTranscriptPreview('');
-    setPendingAttempt(null);
-    setErrorMessage('');
+    dispatch({ type: 'transcriptPreviewUpdated', transcriptPreview: '' });
+    dispatch({ type: 'clearPendingAttempt' });
+    dispatch({ type: 'clearStatus' });
   }, [currentProblem]);
 
   useEffect(() => {
@@ -168,35 +166,42 @@ export function useVoiceAnswerInput({
     clearRestartTimeout();
     clearFinalizeInterimTimeout();
     try {
-      ExpoSpeechRecognitionModule.stop();
+      adapter.stop();
     } catch {
       // Stop can throw if recognition is not active. Ignore that case.
     }
-  }, [clearFinalizeInterimTimeout, clearRestartTimeout]);
+  }, [adapter, clearFinalizeInterimTimeout, clearRestartTimeout]);
 
   const refreshAvailability = useCallback(async () => {
     if (!platformSupported) {
       if (!mountedRef.current) return false;
-      setPermissionStatus('unavailable');
-      setIsAvailable(false);
+      dispatch({
+        type: 'availabilityResolved',
+        isAvailable: false,
+        permissionStatus: 'unavailable',
+      });
       return false;
     }
 
-    const isSecureWebContext = !isWebPlatform || globalThis.window?.isSecureContext === true;
-    const available = ExpoSpeechRecognitionModule.isRecognitionAvailable();
-    const supportsOnDevice = ExpoSpeechRecognitionModule.supportsOnDeviceRecognition();
-    supportsOnDeviceRef.current = supportsOnDevice;
+    const isSecureWebContext =
+      !isWebPlatform || globalThis.window?.isSecureContext === true;
+    const available = adapter.isRecognitionAvailable();
+    supportsOnDeviceRef.current = adapter.supportsOnDeviceRecognition();
 
-    const permission = await ExpoSpeechRecognitionModule.getPermissionsAsync();
+    const permission = await adapter.getPermissionsAsync();
     if (!mountedRef.current) return available;
 
-    setIsAvailable(available && isSecureWebContext);
-    setPermissionStatus(
-      permissionStatusFromResponse(permission.granted, permission.canAskAgain)
-    );
+    dispatch({
+      type: 'availabilityResolved',
+      isAvailable: available && isSecureWebContext,
+      permissionStatus: permissionStatusFromResponse(
+        permission.granted,
+        permission.canAskAgain
+      ),
+    });
 
     return available && isSecureWebContext;
-  }, [isWebPlatform, platformSupported]);
+  }, [adapter, isWebPlatform, platformSupported]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -208,66 +213,71 @@ export function useVoiceAnswerInput({
       clearFinalizeInterimTimeout();
       stopRecognition();
     };
-  }, [clearFinalizeInterimTimeout, clearRestartTimeout, refreshAvailability, stopRecognition]);
+  }, [
+    clearFinalizeInterimTimeout,
+    clearRestartTimeout,
+    refreshAvailability,
+    stopRecognition,
+  ]);
 
-  const submitVoiceAttempt = useCallback((
-    value: string,
-    rawTranscript: string,
-    finalResultPerfMs: number | null
-  ) => {
-    const problemInstanceId = currentProblemRef.current?.problemInstanceId;
-    if (!problemInstanceId) {
-      return;
-    }
+  const submitVoiceAttempt = useCallback(
+    (value: string, rawTranscript: string, finalResultPerfMs: number | null) => {
+      const problemInstanceId = currentProblemRef.current?.problemInstanceId;
+      if (!problemInstanceId) {
+        return;
+      }
 
-    const speechEndPerfMs =
-      speechEndPerfRef.current ?? finalResultPerfMs ?? performance.now();
-    const voiceProcessingMs =
-      finalResultPerfMs === null
-        ? 0
-        : Math.max(0, finalResultPerfMs - speechEndPerfMs);
+      const speechEndPerfMs =
+        speechEndPerfRef.current ?? finalResultPerfMs ?? performance.now();
+      const voiceProcessingMs =
+        finalResultPerfMs === null
+          ? 0
+          : Math.max(0, finalResultPerfMs - speechEndPerfMs);
 
-    clearFinalizeInterimTimeout();
-    suppressRestartRef.current = true;
-    shouldListenRef.current = false;
-    onValidAttemptCaptured();
-    setStatusLabel(null);
-    setPendingAttempt({
-      problemInstanceId,
-      value,
-      source: 'voice',
-      completedAtPerfMs: speechEndPerfMs,
-      speechStartPerfMs: speechStartPerfRef.current,
-      speechEndPerfMs,
-      finalResultPerfMs,
-      voiceProcessingMs,
-      rawTranscript,
-    });
-
-    if (voiceProcessingMs > 0) {
-      setVoiceMetrics(prev => ({
-        ...prev,
-        processingMsTotal: prev.processingMsTotal + voiceProcessingMs,
-      }));
-    }
-  }, [clearFinalizeInterimTimeout, onValidAttemptCaptured]);
+      clearFinalizeInterimTimeout();
+      suppressRestartRef.current = true;
+      shouldListenRef.current = false;
+      onValidAttemptCaptured();
+      dispatch({
+        type: 'attemptCaptured',
+        attempt: {
+          problemInstanceId,
+          value,
+          source: 'voice',
+          completedAtPerfMs: speechEndPerfMs,
+          speechStartPerfMs: speechStartPerfRef.current,
+          speechEndPerfMs,
+          finalResultPerfMs,
+          voiceProcessingMs,
+          rawTranscript,
+        },
+        voiceProcessingMs,
+      });
+    },
+    [clearFinalizeInterimTimeout, onValidAttemptCaptured]
+  );
 
   const ensureReadyForSession = useCallback(async () => {
+    dispatch({ type: 'readyCheckStarted' });
+
     if (!platformSupported) {
       if (mountedRef.current) {
-        setPermissionStatus('unavailable');
-        setIsAvailable(false);
-        setStatusLabel('Voice unavailable');
-        setErrorMessage('Voice unsupported here');
+        dispatch({
+          type: 'unsupported',
+          errorMessage: 'Voice unsupported here',
+          statusLabel: 'Voice unavailable',
+        });
       }
       return false;
     }
 
     if (isWebPlatform && globalThis.window?.isSecureContext !== true) {
       if (mountedRef.current) {
-        setIsAvailable(false);
-        setStatusLabel('Secure origin required');
-        setErrorMessage('Use localhost or HTTPS');
+        dispatch({
+          type: 'unsupported',
+          errorMessage: 'Use localhost or HTTPS',
+          statusLabel: 'Secure origin required',
+        });
       }
       return false;
     }
@@ -275,15 +285,17 @@ export function useVoiceAnswerInput({
     const available = await refreshAvailability();
     if (!available) {
       if (mountedRef.current) {
-        setStatusLabel('Voice unavailable');
-        setErrorMessage(
-          isWebPlatform ? 'Browser speech unavailable' : 'Speech recognition unavailable'
-        );
+        dispatch({
+          type: 'unsupported',
+          errorMessage: isWebPlatform
+            ? 'Browser speech unavailable'
+            : 'Speech recognition unavailable',
+        });
       }
       return false;
     }
 
-    const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    const permission = await adapter.requestPermissionsAsync();
     const nextStatus = permissionStatusFromResponse(
       permission.granted,
       permission.canAskAgain
@@ -293,71 +305,83 @@ export function useVoiceAnswerInput({
       return permission.granted;
     }
 
-    setPermissionStatus(nextStatus);
+    dispatch({
+      type: 'availabilityResolved',
+      isAvailable: available,
+      permissionStatus: nextStatus,
+    });
 
     if (!permission.granted) {
-      setStatusLabel('Permission needed');
-      setErrorMessage('Microphone permission needed');
+      dispatch({
+        type: 'permissionDenied',
+        permissionStatus: nextStatus,
+        errorMessage: 'Microphone permission needed',
+        statusLabel: 'Permission needed',
+      });
       return false;
     }
 
-    setErrorMessage('');
-    setStatusLabel(null);
+    dispatch({ type: 'ready' });
     return true;
-  }, [isWebPlatform, platformSupported, refreshAvailability]);
+  }, [adapter, isWebPlatform, platformSupported, refreshAvailability]);
 
-  const scheduleRestart = useCallback((isRetry: boolean) => {
-    if (!mountedRef.current || restartTimeoutRef.current) {
-      return;
-    }
-
-    if (isRetry) {
-      setVoiceMetrics(prev => ({ ...prev, retryCount: prev.retryCount + 1 }));
-      setStatusLabel('Retrying…');
-    }
-
-    const restartDelayMs = isRetry ? RESTART_DELAY_MS : 0;
-
-    restartTimeoutRef.current = setTimeout(() => {
-      restartTimeoutRef.current = null;
-      if (!mountedRef.current || !enabledRef.current || !shouldListenRef.current) {
+  const scheduleRestart = useCallback(
+    (isRetry: boolean) => {
+      if (!mountedRef.current || restartTimeoutRef.current) {
         return;
       }
 
-      void ensureReadyForSession().then(ready => {
-        if (!ready || !mountedRef.current || !shouldListenRef.current) {
+      if (isRetry) {
+        dispatch({ type: 'retryScheduled' });
+      }
+
+      const restartDelayMs = isRetry ? RESTART_DELAY_MS : 0;
+
+      restartTimeoutRef.current = setTimeout(() => {
+        restartTimeoutRef.current = null;
+        if (!mountedRef.current || !enabledRef.current || !shouldListenRef.current) {
           return;
         }
 
-        try {
-          setErrorMessage('');
-          const range = getVoiceAnswerRange(
-            currentProblemRef.current,
-            optionsRef.current.operation
-          );
+        void ensureReadyForSession().then(ready => {
+          if (!ready || !mountedRef.current || !shouldListenRef.current) {
+            return;
+          }
 
-          ExpoSpeechRecognitionModule.start({
-            lang: 'en-US',
-            interimResults: true,
-            continuous: false,
-            maxAlternatives: 1,
-            addsPunctuation: false,
-            contextualStrings: buildVoiceContextualStrings(range),
-            requiresOnDeviceRecognition: supportsOnDeviceRef.current,
-            iosTaskHint: 'confirmation',
-            iosCategory: {
-              category: 'playAndRecord',
-              categoryOptions: ['defaultToSpeaker', 'allowBluetooth'],
-              mode: 'measurement',
-            },
-          });
-        } catch {
-          setStatusLabel('Voice unavailable');
-          setErrorMessage('Unable to start voice input');
-        }
-      });
-    }, restartDelayMs);
-  }, [ensureReadyForSession]);
+          try {
+            dispatch({ type: 'clearStatus' });
+            const range = getVoiceAnswerRange(
+              currentProblemRef.current,
+              optionsRef.current.operation
+            );
+
+            adapter.start({
+              lang: 'en-US',
+              interimResults: true,
+              continuous: false,
+              maxAlternatives: 1,
+              addsPunctuation: false,
+              contextualStrings: buildVoiceContextualStrings(range),
+              requiresOnDeviceRecognition: supportsOnDeviceRef.current,
+              iosTaskHint: 'confirmation',
+              iosCategory: {
+                category: 'playAndRecord',
+                categoryOptions: ['defaultToSpeaker', 'allowBluetooth'],
+                mode: 'measurement',
+              },
+            });
+          } catch {
+            dispatch({
+              type: 'error',
+              errorMessage: 'Unable to start voice input',
+              statusLabel: 'Voice unavailable',
+            });
+          }
+        });
+      }, restartDelayMs);
+    },
+    [adapter, ensureReadyForSession]
+  );
 
   const handleResult = useCallback(
     (event: ExpoSpeechRecognitionResultEvent) => {
@@ -378,8 +402,11 @@ export function useVoiceAnswerInput({
           value: normalized.normalizedText,
           rawTranscript,
         };
-        setTranscriptPreview(normalized.normalizedText);
-        setErrorMessage('');
+        dispatch({
+          type: 'transcriptPreviewUpdated',
+          transcriptPreview: normalized.normalizedText,
+        });
+        dispatch({ type: 'clearStatus' });
 
         if (!event.isFinal) {
           return;
@@ -387,20 +414,25 @@ export function useVoiceAnswerInput({
 
         const finalResultPerfMs = performance.now();
         lastValidInterimRef.current = null;
-        submitVoiceAttempt(normalized.normalizedText, rawTranscript, finalResultPerfMs);
+        submitVoiceAttempt(
+          normalized.normalizedText,
+          rawTranscript,
+          finalResultPerfMs
+        );
         return;
       }
 
       if (event.isFinal) {
         clearFinalizeInterimTimeout();
         lastValidInterimRef.current = null;
-        setTranscriptPreview('');
-        setErrorMessage('Say a number only');
-        setStatusLabel('Retrying…');
-        setVoiceMetrics(prev => ({
-          ...prev,
-          ambiguousFinalCount: prev.ambiguousFinalCount + 1,
-        }));
+        dispatch({ type: 'transcriptPreviewUpdated', transcriptPreview: '' });
+        dispatch({
+          type: 'error',
+          errorMessage: 'Say a number only',
+          statusLabel: 'Retrying…',
+          metricKey: 'ambiguousFinalCount',
+          status: 'retrying',
+        });
       }
     },
     [clearFinalizeInterimTimeout, submitVoiceAttempt]
@@ -411,12 +443,19 @@ export function useVoiceAnswerInput({
       return;
     }
 
-    setIsListening(false);
-    setErrorMessage(getVoiceErrorMessage(event));
-    setStatusLabel(getVoiceErrorMessage(event));
+    const message = getVoiceErrorMessage(event);
+    const retryableError =
+      event.error === 'no-speech' || event.error === 'speech-timeout';
 
-    if (event.error === 'no-speech' || event.error === 'speech-timeout') {
-      setVoiceMetrics(prev => ({ ...prev, noSpeechCount: prev.noSpeechCount + 1 }));
+    dispatch({
+      type: 'error',
+      errorMessage: message,
+      statusLabel: message,
+      metricKey: retryableError ? 'noSpeechCount' : undefined,
+      status: retryableError ? 'retrying' : 'error',
+    });
+
+    if (retryableError) {
       return;
     }
 
@@ -438,22 +477,20 @@ export function useVoiceAnswerInput({
     }
 
     const subscriptions = [
-      ExpoSpeechRecognitionModule.addListener('start', () => {
-        setIsListening(true);
-        setStatusLabel('Listening…');
-        setErrorMessage('');
+      adapter.addListener('start', () => {
+        dispatch({ type: 'listeningStarted' });
       }),
-      ExpoSpeechRecognitionModule.addListener('end', () => {
-        setIsListening(false);
-        if (
+      adapter.addListener('end', () => {
+        const shouldRetry =
           enabledRef.current &&
           shouldListenRef.current &&
-          !suppressRestartRef.current
-        ) {
+          !suppressRestartRef.current;
+        dispatch({ type: 'listeningEnded', shouldRetry });
+        if (shouldRetry) {
           scheduleRestart(true);
         }
       }),
-      ExpoSpeechRecognitionModule.addListener('speechstart', () => {
+      adapter.addListener('speechstart', () => {
         const problemInstanceId = currentProblemRef.current?.problemInstanceId;
         if (!problemInstanceId) {
           return;
@@ -464,13 +501,14 @@ export function useVoiceAnswerInput({
         speechStartPerfRef.current = speechStartPerfMs;
         onSpeechStart(problemInstanceId, speechStartPerfMs);
       }),
-      ExpoSpeechRecognitionModule.addListener('speechend', () => {
+      adapter.addListener('speechend', () => {
         speechEndPerfRef.current = performance.now();
         clearFinalizeInterimTimeout();
         finalizeInterimTimeoutRef.current = setTimeout(() => {
           finalizeInterimTimeoutRef.current = null;
 
-          const currentProblemInstanceId = currentProblemRef.current?.problemInstanceId;
+          const currentProblemInstanceId =
+            currentProblemRef.current?.problemInstanceId;
           const lastValidInterim = lastValidInterimRef.current;
 
           if (
@@ -491,13 +529,17 @@ export function useVoiceAnswerInput({
           );
         }, FINALIZE_INTERIM_DELAY_MS);
       }),
-      ExpoSpeechRecognitionModule.addListener('result', handleResult),
-      ExpoSpeechRecognitionModule.addListener('error', handleError),
-      ExpoSpeechRecognitionModule.addListener('nomatch', () => {
-        setTranscriptPreview('');
-        setErrorMessage('Say a number only');
-        setStatusLabel('Retrying…');
-        setVoiceMetrics(prev => ({ ...prev, noMatchCount: prev.noMatchCount + 1 }));
+      adapter.addListener('result', handleResult),
+      adapter.addListener('error', handleError),
+      adapter.addListener('nomatch', () => {
+        dispatch({ type: 'transcriptPreviewUpdated', transcriptPreview: '' });
+        dispatch({
+          type: 'error',
+          errorMessage: 'Say a number only',
+          statusLabel: 'Retrying…',
+          metricKey: 'noMatchCount',
+          status: 'retrying',
+        });
       }),
     ];
 
@@ -505,6 +547,7 @@ export function useVoiceAnswerInput({
       subscriptions.forEach(subscription => subscription.remove());
     };
   }, [
+    adapter,
     clearFinalizeInterimTimeout,
     handleError,
     handleResult,
@@ -521,8 +564,8 @@ export function useVoiceAnswerInput({
       }
       stopRecognition();
       if (!isSessionActive) {
-        setStatusLabel(null);
-        setTranscriptPreview('');
+        dispatch({ type: 'clearStatus' });
+        dispatch({ type: 'transcriptPreviewUpdated', transcriptPreview: '' });
       }
       return;
     }
@@ -545,54 +588,24 @@ export function useVoiceAnswerInput({
   ]);
 
   const clearPendingAttempt = useCallback(() => {
-    setPendingAttempt(null);
+    dispatch({ type: 'clearPendingAttempt' });
   }, []);
 
   const resetSessionMetrics = useCallback(() => {
     clearFinalizeInterimTimeout();
-    setVoiceMetrics(INITIAL_VOICE_METRICS);
-    setTranscriptPreview('');
-    setPendingAttempt(null);
-    setErrorMessage('');
-    setStatusLabel(null);
+    dispatch({ type: 'resetSessionMetrics' });
     speechStartPerfRef.current = null;
     speechEndPerfRef.current = null;
     lastValidInterimRef.current = null;
     suppressRestartRef.current = false;
   }, [clearFinalizeInterimTimeout]);
 
-  const voiceState = useMemo<VoiceInputState>(
-    () => ({
-      platformSupported,
-      isAvailable,
-      permissionStatus,
-      isListening,
-      statusLabel,
-      errorMessage,
-      transcriptPreview,
-      retryCount: voiceMetrics.retryCount,
-      noSpeechCount: voiceMetrics.noSpeechCount,
-      noMatchCount: voiceMetrics.noMatchCount,
-      ambiguousFinalCount: voiceMetrics.ambiguousFinalCount,
-      processingMsTotal: voiceMetrics.processingMsTotal,
-      pendingAttempt,
-    }),
-    [
-      errorMessage,
-      isAvailable,
-      isListening,
-      pendingAttempt,
-      permissionStatus,
-      platformSupported,
-      statusLabel,
-      transcriptPreview,
-      voiceMetrics,
-    ]
-  );
-
   return {
-    voiceState,
-    voiceMetrics,
+    voiceState: useMemo(
+      () => buildVoiceInputState(platformSupported, controllerState),
+      [controllerState, platformSupported]
+    ),
+    voiceMetrics: controllerState.metrics,
     ensureReadyForSession,
     clearPendingAttempt,
     resetSessionMetrics,

@@ -6,6 +6,8 @@ import {
     VoiceSessionMetrics,
 } from './types';
 
+export type TelemetryPayload = Record<string, string>;
+
 interface BuildSessionLogPayloadArgs {
     options: SessionOptions;
     sessionId: string;
@@ -30,7 +32,7 @@ export function buildSessionLogPayload({
     inputMode,
     voiceMetrics,
     sessionPerformanceReport,
-}: BuildSessionLogPayloadArgs): Record<string, string> {
+}: BuildSessionLogPayloadArgs): TelemetryPayload {
     const performanceSummary = sessionPerformanceReport?.summary ?? null;
     const performanceProblems = sessionPerformanceReport?.problems ?? [];
     const completed = stats.completed;
@@ -119,6 +121,5 @@ export function buildSessionLogPayload({
         'Session Performance Report JSON': sessionPerformanceReport
             ? JSON.stringify(sessionPerformanceReport)
             : '',
-        // Formatting other columns omitted for brevity but should be hydrated before saveLogToCloud is called natively.
     };
 }

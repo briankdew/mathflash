@@ -1,12 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Svg, { Ellipse, Defs, Filter, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect } from 'react-native-svg';
 import { ProblemDisplay, OperationMode, StartMode, SessionPhase } from '../lib/types';
 import { isSessionPhasePreparing } from '../lib/sessionPhases';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
 import { theme, getOperationTheme } from '../theme/colors';
 import { constellationStyles as styles } from '../theme/ProblemConstellation.styles';
-import Animated, { useAnimatedStyle, withRepeat, withSequence, withTiming, Easing, useSharedValue } from 'react-native-reanimated';
+import Animated, {
+    cancelAnimation,
+    useAnimatedStyle,
+    withRepeat,
+    withSequence,
+    withTiming,
+    Easing,
+    useSharedValue,
+} from 'react-native-reanimated';
 
 import { IconPlus, IconMinus, IconTimes, IconDivide } from './icons/MathIcons';
 
@@ -95,6 +103,13 @@ export function ProblemConstellation({
     }, [answerTranslateX, shakeTrigger]);
 
     React.useEffect(() => {
+        if (!showWrongAnswer) {
+            cancelAnimation(answerTranslateX);
+            answerTranslateX.value = 0;
+        }
+    }, [answerTranslateX, showWrongAnswer]);
+
+    React.useEffect(() => {
         if (phase === 'idle' || isPreparing) {
             flipTimeoutRefs.current.forEach(clearTimeout);
             flipTimeoutRefs.current = [];
@@ -177,7 +192,19 @@ export function ProblemConstellation({
             flipTimeoutRefs.current.forEach(clearTimeout);
             flipTimeoutRefs.current = [];
         };
-    }, [phase, isPreparing, startMode]);
+    }, [
+        isPreparing,
+        leftBackTextRotation,
+        leftFlip,
+        operatorRevealOpacity,
+        phase,
+        resultBackTextRotation,
+        resultFlip,
+        rightBackTextRotation,
+        rightFlip,
+        startMode,
+        textRevealOpacity,
+    ]);
 
     React.useEffect(() => {
         if (phase === 'idle') {
@@ -202,7 +229,15 @@ export function ProblemConstellation({
         if (problem) {
             setShowProblemValues(true);
         }
-    }, [phase, problem, textRevealOpacity]);
+    }, [
+        leftFlip,
+        operatorRevealOpacity,
+        phase,
+        problem,
+        resultFlip,
+        rightFlip,
+        textRevealOpacity,
+    ]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [
