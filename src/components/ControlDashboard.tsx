@@ -27,6 +27,28 @@ const GEAR_REVEAL_OFFSET = 145.5;
 const START_BUTTON_FLASH_DURATION_MS = 180;
 const MIC_BUTTON_SIZE = 40;
 const MIC_BUTTON_GAP = 12;
+const VOICE_HALO_COLORS = {
+  neutral: '#f4f2e7',
+  listening: '#c5ffd0',
+  retrying: '#fcffc5',
+  error: '#ffc5c5',
+} as const;
+
+function getVoiceHaloColor(message: string): string {
+  if (!message) {
+    return VOICE_HALO_COLORS.neutral;
+  }
+
+  if (message === 'Listening…') {
+    return VOICE_HALO_COLORS.listening;
+  }
+
+  if (message === 'Retrying…') {
+    return VOICE_HALO_COLORS.retrying;
+  }
+
+  return VOICE_HALO_COLORS.error;
+}
 
 interface ControlDashboardProps {
   phase: SessionPhase;
@@ -68,6 +90,7 @@ export function ControlDashboard({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsMeasuredHeight, setSettingsMeasuredHeight] = useState(0);
   const [isStartButtonFlashActive, setIsStartButtonFlashActive] = useState(false);
+  const [voiceHaloColor, setVoiceHaloColor] = useState<string>(VOICE_HALO_COLORS.neutral);
   const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const untuckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startButtonFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,6 +114,19 @@ export function ControlDashboard({
   const voiceStatusText = inputMode === 'voice'
     ? (voiceState.statusLabel || voiceState.errorMessage)
     : '';
+
+  useEffect(() => {
+    if (!isActive) {
+      setVoiceHaloColor(VOICE_HALO_COLORS.neutral);
+      return;
+    }
+
+    if (!voiceStatusText) {
+      return;
+    }
+
+    setVoiceHaloColor(getVoiceHaloColor(voiceStatusText));
+  }, [isActive, voiceStatusText]);
 
   useEffect(() => {
     if (rollTimeoutRef.current) {
@@ -325,7 +361,7 @@ export function ControlDashboard({
         ]}
       >
         <Animated.View style={[{ width: '100%', alignItems: 'center' }, voiceIconContentStyle]}>
-          <IconVoiceInputMicrophone width={330} />
+          <IconVoiceInputMicrophone width={330} haloFill={voiceHaloColor} />
         </Animated.View>
       </Animated.View>
 

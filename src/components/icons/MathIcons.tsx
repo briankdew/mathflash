@@ -55,7 +55,13 @@ export const IconAudioMicrophone = ({
     </Svg>
 );
 
-export const IconVoiceInputMicrophone = ({ width = 330 }: { width?: number }) => (
+export const IconVoiceInputMicrophone = ({
+    width = 330,
+    haloFill = '#f4f2e7',
+}: {
+    width?: number;
+    haloFill?: string;
+}) => (
     <Svg width={width} height={width * (240 / 330)} viewBox="0 0 330 240">
         <Defs>
             <Filter id="filterVoiceInputMicShell" x="-0.042588" y="-0.025923" width="1.0852" height="1.0626">
@@ -77,7 +83,7 @@ export const IconVoiceInputMicrophone = ({ width = 330 }: { width?: number }) =>
             <G filter="url(#filterVoiceInputMicShell)">
                 <Path
                     d="m87.383 124.35c-7.7808 0-14.088 6.3076-14.088 14.088v18.114c5e-6 7.7809 6.3076 14.088 14.088 14.088 7.7808 0 14.088-6.3076 14.088-14.088v-18.114c0-7.7809-6.3076-14.088-14.088-14.088z"
-                    fill="#f4f2e7"
+                    fill={haloFill}
                     strokeWidth="3.8034"
                 />
             </G>
