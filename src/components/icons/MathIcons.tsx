@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path, Defs, Filter, G, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect } from 'react-native-svg';
+import Svg, { Path, Defs, Filter, G, FeFlood, FeGaussianBlur, FeOffset, FeComposite, Rect, Circle, Image as SvgImage } from 'react-native-svg';
 
 type OperatorIconProps = {
     circleFill?: string;
@@ -62,44 +62,29 @@ export const IconVoiceInputMicrophone = ({
     width?: number;
     haloFill?: string;
 }) => (
-    <Svg width={width} height={width * (240 / 330)} viewBox="0 0 330 240">
-        <Defs>
-            <Filter id="filterVoiceInputMicShell" x="-0.042588" y="-0.025923" width="1.0852" height="1.0626">
-                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".50196" in="SourceGraphic" result="flood" />
-                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.5" />
-                <FeOffset dx="0" dy="0.5" in="blur" result="offset" />
-                <FeComposite in="flood" in2="offset" operator="out" result="comp1" />
-                <FeComposite in="comp1" in2="SourceGraphic" operator="atop" result="comp2" />
-            </Filter>
-            <Filter id="filterVoiceInputMicDetail" x="-0.03138" y="-0.021304" width="1.0628" height="1.0515">
-                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".50196" in="SourceGraphic" result="flood" />
-                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.5" />
-                <FeOffset dx="0" dy="0.5" in="blur" result="offset" />
-                <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
-                <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
-            </Filter>
-        </Defs>
-        <G transform="matrix(3.7794 0 0 3.7794 -165.26 -469.97)">
-            <G filter="url(#filterVoiceInputMicShell)">
-                <Path
-                    d="m87.383 124.35c-7.7808 0-14.088 6.3076-14.088 14.088v18.114c5e-6 7.7809 6.3076 14.088 14.088 14.088 7.7808 0 14.088-6.3076 14.088-14.088v-18.114c0-7.7809-6.3076-14.088-14.088-14.088z"
-                    fill={haloFill}
-                    strokeWidth="3.8034"
-                />
-            </G>
-            <G filter="url(#filterVoiceInputMicDetail)">
-                <Path
-                    d="m70.812 154.06c-1.3894-0.019-2.5299 1.0948-2.5472 2.4843-0.09231 7.2902 4.2513 14.16 10.828 17.26 1.4452 0.71244 2.9652 1.2212 4.5183 1.533v5.3648h-7.0715c-1.3894 0-2.5157 1.1263-2.5157 2.5157 0 1.3894 1.1263 2.5157 2.5157 2.5157h21.727c3.3058-0.0479 3.3058-4.9833 0-5.0314h-7.1087v-5.369c3.1282-0.62617 6.1066-2.0284 8.5749-4.1646 4.2821-3.5901 6.8109-9.0111 6.771-14.611-0.01-1.3894-1.144-2.5078-2.5334-2.498-1.3894 0.0114-2.5078 1.144-2.498 2.5334 0.0289 4.0395-1.882 8.1428-4.9861 10.737-0.0118 0.0114-0.0236 0.019-0.0354 0.0304-4.0269 3.4911-10.37 4.2916-15.149 1.9281-0.01483-8e-3 -0.03005-0.0152-0.04522-0.0228-4.7157-2.2136-8.0257-7.4533-7.9599-12.657 0.0175-1.3894-1.0949-2.5298-2.4843-2.5471z"
-                    fill="#a7a597"
-                    strokeWidth="3.8033"
-                />
-                <Path
-                    d="m87.383 129.41a9.0571 9.0571 0 0 0-9.0567 9.0567v18.114a9.0571 9.0571 0 0 0 9.0567 9.0567 9.0571 9.0571 0 0 0 9.0571-9.0567v-18.114a9.0571 9.0571 0 0 0-9.0571-9.0567z"
-                    fill="#c0beb1"
-                    strokeWidth="3.8034"
-                />
-            </G>
-        </G>
+    <Svg width={width} height={width * (241 / 330)} viewBox="0 0 330 241">
+        <Path
+            d="m165 0a53.25 53.25 0 0 0-53.25 53.25v68.5a53.25 53.25 0 0 0 26.625 46.115 53.25 53.25 0 0 0 53.25 0 53.25 53.25 0 0 0 26.625-46.115v-68.5a53.25 53.25 0 0 0-53.25-53.25z"
+            fill={haloFill}
+        />
+        <SvgImage
+            x={80.093}
+            y={-6}
+            width={169.81}
+            height={247}
+            href={require('../../../assets/voice-input-mic-shadows.png')}
+            preserveAspectRatio="none"
+        />
+        <Path
+            d="m165 19a34.25 34.25 0 0 0-34.25 34.25v68.5a34.25 34.25 0 0 0 17.125 29.662 34.25 34.25 0 0 0 34.25 0 34.25 34.25 0 0 0 17.125-29.662v-68.5a34.25 34.25 0 0 0-34.25-34.25z"
+            fill="#c0beb1"
+            stroke="#c0beb1"
+        />
+        <Path
+            d="m102.25 112.25a9.5 9.5 0 0 0-9.5 9.5c0 25.797 13.784 49.672 36.125 62.57 6.972 4.0253 14.453 6.7937 22.125 8.3066v20.373h-27a9.5 9.5 0 0 0-9.5 9.5 9.5 9.5 0 0 0 9.5 9.5h82a9.5 9.5 0 0 0 9.5-9.5 9.5 9.5 0 0 0-9.5-9.5h-27v-20.373c7.6724-1.5129 15.153-4.2813 22.125-8.3066 22.341-12.899 36.125-36.773 36.125-62.57a9.5 9.5 0 0 0-9.5-9.5 9.5 9.5 0 0 0-9.5 9.5c0 19.04-10.136 36.595-26.625 46.115-16.489 9.5198-36.761 9.5198-53.25 0s-26.625-27.076-26.625-46.115a9.5 9.5 0 0 0-9.5-9.5z"
+            fill="#a7a597"
+            stroke="#a7a597"
+        />
     </Svg>
 );
 
@@ -107,70 +92,63 @@ type MiniToggleIconProps = {
     size?: number;
 };
 
-export const IconMiniKeypadAddSub = ({ size = 40 }: MiniToggleIconProps) => (
-    <Svg width={size} height={size} viewBox="0 0 40 40">
-        <Defs>
-            <Filter id="filterMiniKeypadAddSub" x="-0.029639" y="-0.030277" width="1.0593" height="1.1221">
-                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25098" in="SourceGraphic" result="flood" />
-                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.41" />
-                <FeOffset dx="0" dy="2" in="blur" result="offset" />
-                <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
-                <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
-            </Filter>
-        </Defs>
-        <G transform="translate(1.7193 .53)" filter="url(#filterMiniKeypadAddSub)">
-            <G transform="translate(.9607 2.5)" fill="#53789e">
-                <Rect x="23.52" y="26.22" width="10.4" height="7" rx="2" ry="2" fill="#85a8cd" />
-                <Rect x=".72" y="26.22" width="21.8" height="7" rx="2" ry="2" />
-                <Rect x=".72" y=".72" width="10.4" height="7" rx="2" ry="2" />
-                <Rect x="12.12" y=".72" width="10.4" height="7" rx="2" ry="2" />
-                <Rect x="23.52" y=".72" width="10.4" height="7" rx="2" ry="2" />
-                <Rect x=".72" y="9.22" width="10.4" height="7" rx="2" ry="2" />
-                <Rect x="12.12" y="9.22" width="10.4" height="7" rx="2" ry="2" />
-                <Rect x="23.52" y="9.22" width="10.4" height="7" rx="2" ry="2" />
-                <Rect x=".72" y="17.72" width="10.4" height="7" rx="2" ry="2" />
-                <Rect x="12.12" y="17.72" width="10.4" height="7" rx="2" ry="2" />
-                <Rect x="23.52" y="17.72" width="10.4" height="7" rx="2" ry="2" />
-            </G>
-        </G>
-    </Svg>
-);
+const MINI_KEYPAD_ICON_SIZE = 41;
+const MINI_MICROPHONE_ICON_SIZE = 43;
 
-export const IconMiniKeypadMulDiv = ({ size = 40 }: MiniToggleIconProps) => (
-    <Svg width={size} height={size} viewBox="0 0 40 40">
-        <Defs>
-            <Filter id="filterMiniKeypadMulDiv" x="-0.029639" y="-0.030277" width="1.0593" height="1.1221">
-                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25098" in="SourceGraphic" result="flood" />
-                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.41" />
-                <FeOffset dx="0" dy="2" in="blur" result="offset" />
-                <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
-                <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
-            </Filter>
-        </Defs>
-        <G transform="translate(.8033 -.736)" filter="url(#filterMiniKeypadMulDiv)">
-            <G transform="translate(2.416 3.516)">
-                <Rect x="22.981" y="26.47" width="10.4" height="7" rx="2" ry="2" fill="#91ae85" />
-                <G fill="#607f53">
-                    <Rect x=".1807" y="26.47" width="21.8" height="7" rx="2" ry="2" />
-                    <Rect x=".1807" y=".97" width="10.4" height="7" rx="2" ry="2" />
-                    <Rect x="11.581" y=".97" width="10.4" height="7" rx="2" ry="2" />
-                    <Rect x="22.981" y=".97" width="10.4" height="7" rx="2" ry="2" />
-                    <Rect x=".1807" y="9.47" width="10.4" height="7" rx="2" ry="2" />
-                    <Rect x="11.581" y="9.47" width="10.4" height="7" rx="2" ry="2" />
-                    <Rect x="22.981" y="9.47" width="10.4" height="7" rx="2" ry="2" />
-                    <Rect x=".1807" y="17.97" width="10.4" height="7" rx="2" ry="2" />
-                    <Rect x="11.581" y="17.97" width="10.4" height="7" rx="2" ry="2" />
-                    <Rect x="22.981" y="17.97" width="10.4" height="7" rx="2" ry="2" />
+export const IconMiniKeypadAddSub = ({ size = MINI_KEYPAD_ICON_SIZE }: MiniToggleIconProps) => (
+    <Svg width={size} height={size} viewBox="0 0 41 41">
+        <G transform="translate(1.7193 .53)">
+            <G transform="matrix(1.0769 0 0 1.0769 .50532 1.6946)" fill="#53789e">
+                <Rect x="23.006" y="26.349" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" fill="#85a8cd" />
+                <Rect x=".72" y="26.349" width="21.357" height="6.8714" rx="1.9594" ry="1.9633" />
+                <G>
+                    <Rect x=".72" y=".72" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                    <Rect x="11.863" y=".72" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                    <Rect x="23.006" y=".72" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                </G>
+                <G>
+                    <Rect x=".72" y="9.2629" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                    <Rect x="11.863" y="9.2629" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                    <Rect x="23.006" y="9.2629" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                    <Rect x=".72" y="17.806" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                    <Rect x="11.863" y="17.806" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                    <Rect x="23.006" y="17.806" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
                 </G>
             </G>
         </G>
     </Svg>
 );
 
-export const IconMiniMicrophoneAddSub = ({ size = 40 }: MiniToggleIconProps) => (
-    <Svg width={size} height={size} viewBox="0 0 10.584 10.584">
+export const IconMiniKeypadMulDiv = ({ size = MINI_KEYPAD_ICON_SIZE }: MiniToggleIconProps) => (
+    <Svg width={size} height={size} viewBox="0 0 41 41">
+        <G transform="translate(-38.303 15.423)">
+            <G transform="matrix(1.0769 0 0 1.0769 40.528 -13.199)">
+                <Rect x="23.006" y="26.349" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" fill="#91ae85" />
+                <G fill="#607f53">
+                    <Rect x=".72" y="26.349" width="21.357" height="6.8714" rx="1.9594" ry="1.9633" />
+                    <G>
+                        <Rect x=".72" y=".72" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                        <Rect x="11.863" y=".72" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                        <Rect x="23.006" y=".72" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                    </G>
+                    <G>
+                        <Rect x=".72" y="9.2629" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                        <Rect x="11.863" y="9.2629" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                        <Rect x="23.006" y="9.2629" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                        <Rect x=".72" y="17.806" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                        <Rect x="11.863" y="17.806" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                        <Rect x="23.006" y="17.806" width="10.214" height="6.8714" rx="1.9643" ry="1.9633" />
+                    </G>
+                </G>
+            </G>
+        </G>
+    </Svg>
+);
+
+export const IconMiniMicrophoneAddSub = ({ size = MINI_MICROPHONE_ICON_SIZE }: MiniToggleIconProps) => (
+    <Svg width={size} height={size} viewBox="0 0 43 43">
         <Defs>
-            <Filter id="filterMiniMicrophoneAddSub" x="-0.061701" y="-0.041864" width="1.1234" height="1.1419">
+            <Filter id="filterMiniMicrophoneAddSub" x="-0.015158" y="-0.010286" width="1.0303" height="1.0349">
                 <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25" in="SourceGraphic" result="flood" />
                 <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.15" />
                 <FeOffset dx="0" dy="0.5" in="blur" result="offset" />
@@ -179,13 +157,13 @@ export const IconMiniMicrophoneAddSub = ({ size = 40 }: MiniToggleIconProps) => 
             </Filter>
         </Defs>
         <G filter="url(#filterMiniMicrophoneAddSub)">
-            <G transform="translate(-64.565 -124.69)" strokeWidth=".58028">
+            <G transform="matrix(4.0703 0 0 4.0703 -262.84 -507.55)" strokeWidth=".5803">
                 <Path
-                    d="m67.329 129.44c-0.21199-3e-3 -0.386 0.16705-0.38863 0.37904-0.01408 1.1123 0.64864 2.1604 1.652 2.6334 0.2205 0.1087 0.45242 0.18632 0.68938 0.2339v0.82494h-1.0789c-0.21198 0-0.38383 0.17184-0.38384 0.38382-3e-6 0.21199 0.17185 0.38384 0.38384 0.38384h3.315c0.50448-7e-3 0.50448-0.76042 0-0.76766h-1.0846v-0.82557c0.47728-0.0955 0.9317-0.30949 1.3083-0.63541 0.65334-0.54775 1.0392-1.3749 1.0331-2.2292-0.0015-0.21199-0.17455-0.38263-0.38653-0.38113-0.21199 1e-3 -0.38263 0.17454-0.38114 0.38653 0.0044 0.61632-0.28715 1.2424-0.76075 1.6382-0.0018 2e-3 -0.0036 3e-3 -0.0054 5e-3 -0.6144 0.53265-1.5822 0.6548-2.3114 0.29418l-0.0069-3e-3c-0.71949-0.33773-1.2245-1.1372-1.2145-1.9312 0.0027-0.21199-0.16705-0.38599-0.37904-0.38862z"
+                    d="m67.329 129.44c-0.212-3e-3 -0.38602 0.16705-0.38865 0.37904-0.01408 1.1123 0.64868 2.1604 1.6521 2.6334 0.22051 0.1087 0.45245 0.18632 0.68942 0.2339v0.82494h-1.079c-0.21199 0-0.38385 0.17184-0.38386 0.38382-3e-6 0.21199 0.17186 0.38384 0.38386 0.38384h3.3152c0.50451-7e-3 0.50451-0.76042 0-0.76766h-1.0847v-0.82557c0.47731-0.0955 0.93176-0.30949 1.3084-0.63541 0.65338-0.54775 1.0393-1.3749 1.0332-2.2292-0.0015-0.21199-0.17456-0.38263-0.38655-0.38113-0.212 1e-3 -0.38265 0.17454-0.38116 0.38653 0.0044 0.61632-0.28717 1.2424-0.7608 1.6382-0.0018 2e-3 -0.0036 3e-3 -0.0054 5e-3 -0.61444 0.53265-1.5823 0.6548-2.3115 0.29418l-0.0069-3e-3c-0.71954-0.33773-1.2246-1.1372-1.2146-1.9312 0.0027-0.21199-0.16706-0.38599-0.37906-0.38862z"
                     fill="#53789e"
                 />
                 <Path
-                    d="m69.857 125.68a1.3818 1.3818 0 0 0-1.3818 1.3818v2.7636a1.3818 1.3818 0 0 0 1.3818 1.3818 1.3818 1.3818 0 0 0 1.3818-1.3818v-2.7636a1.3818 1.3818 0 0 0-1.3818-1.3818z"
+                    d="m69.857 125.68a1.3819 1.3818 0 0 0-1.3819 1.3818v2.7636a1.3819 1.3818 0 0 0 1.3819 1.3818 1.3819 1.3818 0 0 0 1.3819-1.3818v-2.7636a1.3819 1.3818 0 0 0-1.3819-1.3818z"
                     fill="#85a8cd"
                 />
             </G>
@@ -193,10 +171,10 @@ export const IconMiniMicrophoneAddSub = ({ size = 40 }: MiniToggleIconProps) => 
     </Svg>
 );
 
-export const IconMiniMicrophoneMulDiv = ({ size = 40 }: MiniToggleIconProps) => (
-    <Svg width={size} height={size} viewBox="0 0 10.584 10.584">
+export const IconMiniMicrophoneMulDiv = ({ size = MINI_MICROPHONE_ICON_SIZE }: MiniToggleIconProps) => (
+    <Svg width={size} height={size} viewBox="0 0 43 43">
         <Defs>
-            <Filter id="filterMiniMicrophoneMulDiv" x="-0.061701" y="-0.041866" width="1.1234" height="1.1419">
+            <Filter id="filterMiniMicrophoneMulDiv" x="-0.015158" y="-0.010286" width="1.0303" height="1.0349">
                 <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25" in="SourceGraphic" result="flood" />
                 <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.15" />
                 <FeOffset dx="0" dy="0.5" in="blur" result="offset" />
@@ -205,13 +183,13 @@ export const IconMiniMicrophoneMulDiv = ({ size = 40 }: MiniToggleIconProps) => 
             </Filter>
         </Defs>
         <G filter="url(#filterMiniMicrophoneMulDiv)">
-            <G transform="translate(-64.565 -124.69)" strokeWidth=".58028">
+            <G transform="matrix(4.0703 0 0 4.0703 -262.84 -507.55)" strokeWidth=".5803">
                 <Path
-                    d="m67.329 129.44a0.38383 0.38383 0 0 0-0.38863 0.37904c-0.01408 1.1123 0.64864 2.1604 1.652 2.6334 0.2205 0.1087 0.45242 0.18632 0.68938 0.2339v0.82494h-1.0789a0.38383 0.38383 0 0 0-0.38384 0.38382 0.38383 0.38383 0 0 0 0.38384 0.38384h3.315a0.38387 0.38387 0 0 0 0-0.76766h-1.0846v-0.82557c0.47728-0.0955 0.9317-0.30949 1.3083-0.63541 0.65334-0.54775 1.0392-1.3749 1.0331-2.2292a0.38383 0.38383 0 0 0-0.38653-0.38113 0.38383 0.38383 0 0 0-0.38114 0.38653c0.0044 0.61632-0.28715 1.2424-0.76075 1.6382a0.38387 0.38387 0 0 0-0.0054 5e-3c-0.6144 0.53265-1.5822 0.6548-2.3114 0.29418a0.38387 0.38387 0 0 0-0.0069-3e-3c-0.71949-0.33773-1.2245-1.1372-1.2145-1.9312a0.38383 0.38383 0 0 0-0.37904-0.38862z"
+                    d="m67.329 129.44c-0.212-3e-3 -0.38602 0.16705-0.38865 0.37904-0.01408 1.1123 0.64868 2.1604 1.6521 2.6334 0.22051 0.1087 0.45245 0.18632 0.68942 0.2339v0.82494h-1.079c-0.21199 0-0.38385 0.17184-0.38386 0.38382-3e-6 0.21199 0.17186 0.38384 0.38386 0.38384h3.3152c0.50451-7e-3 0.50451-0.76042 0-0.76766h-1.0847v-0.82557c0.47731-0.0955 0.93176-0.30949 1.3084-0.63541 0.65338-0.54775 1.0393-1.3749 1.0332-2.2292-0.0015-0.21199-0.17456-0.38263-0.38655-0.38113-0.212 1e-3 -0.38265 0.17454-0.38116 0.38653 0.0044 0.61632-0.28717 1.2424-0.7608 1.6382-0.0018 2e-3 -0.0036 3e-3 -0.0054 5e-3 -0.61444 0.53265-1.5823 0.6548-2.3115 0.29418l-0.0069-3e-3c-0.71954-0.33773-1.2246-1.1372-1.2146-1.9312 0.0027-0.21199-0.16706-0.38599-0.37906-0.38862z"
                     fill="#607f53"
                 />
                 <Path
-                    d="m69.857 125.68a1.3818 1.3818 0 0 0-1.3818 1.3818v2.7636a1.3818 1.3818 0 0 0 1.3818 1.3818 1.3818 1.3818 0 0 0 1.3818-1.3818v-2.7636a1.3818 1.3818 0 0 0-1.3818-1.3818z"
+                    d="m69.857 125.68a1.3819 1.3818 0 0 0-1.3819 1.3818v2.7636a1.3819 1.3818 0 0 0 1.3819 1.3818 1.3819 1.3818 0 0 0 1.3819-1.3818v-2.7636a1.3819 1.3818 0 0 0-1.3819-1.3818z"
                     fill="#91ae85"
                 />
             </G>
@@ -220,7 +198,7 @@ export const IconMiniMicrophoneMulDiv = ({ size = 40 }: MiniToggleIconProps) => 
 );
 
 export const IconInputModeToggle = ({
-    size = 40,
+    size,
     operation,
     inputMode,
 }: {
@@ -230,103 +208,107 @@ export const IconInputModeToggle = ({
 }) => {
     if (inputMode === 'voice') {
         return operation === 'addsub'
-            ? <IconMiniMicrophoneAddSub size={size} />
-            : <IconMiniMicrophoneMulDiv size={size} />;
+            ? <IconMiniMicrophoneAddSub size={size ?? MINI_MICROPHONE_ICON_SIZE} />
+            : <IconMiniMicrophoneMulDiv size={size ?? MINI_MICROPHONE_ICON_SIZE} />;
     }
 
     return operation === 'addsub'
-        ? <IconMiniKeypadAddSub size={size} />
-        : <IconMiniKeypadMulDiv size={size} />;
+        ? <IconMiniKeypadAddSub size={size ?? MINI_KEYPAD_ICON_SIZE} />
+        : <IconMiniKeypadMulDiv size={size ?? MINI_KEYPAD_ICON_SIZE} />;
 };
 
 export const IconSettingsAddSub = ({ size = 35 }: { size?: number }) => (
-    <Svg width={size * (58 / 40)} height={size} viewBox="0 0 15.346 10.584">
+    <Svg width={size * (51 / 39)} height={size} viewBox="0 0 51 39">
         <Defs>
-            <Filter id="filterSettingsAddSubGear" x="-0.051834" y="-0.051834" width="1.1037" height="1.1253">
+            <Filter id="filterSettingsAddSubGear" x="-0.013714" y="-0.013714" width="1.0274" height="1.0331">
                 <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25098" in="SourceGraphic" result="flood" />
-                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.83" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.2" />
                 <FeOffset dx="0" dy="0.2" in="blur" result="offset" />
                 <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
                 <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
             </Filter>
-            <Filter id="filterSettingsAddSubMinus" x="-0.065217" y="-0.065217" width="1.1304" height="1.1576">
+            <Filter id="filterSettingsAddSubCircles" x="-0.027174" y="-0.065217" width="1.0543" height="1.1576">
                 <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25098" in="SourceGraphic" result="flood" />
-                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.83" />
-                <FeOffset dx="0" dy="0.2" in="blur" result="offset" />
-                <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
-                <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
-            </Filter>
-            <Filter id="filterSettingsAddSubPlus" x="-0.065217" y="-0.065217" width="1.1304" height="1.1576">
-                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25098" in="SourceGraphic" result="flood" />
-                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.83" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.2" />
                 <FeOffset dx="0" dy="0.2" in="blur" result="offset" />
                 <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
                 <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
             </Filter>
         </Defs>
-        <G transform="matrix(1 0 0 1 .39681 .56147)">
-            <Path
-                d="m8.7088 5.2237a1.5509 1.5509 0 0 1-2.0263 0.83934 1.5509 1.5509 0 0 1-0.83934-2.0263 1.5509 1.5509 0 0 1 2.0263-0.83934 1.5509 1.5509 0 0 1 0.83934 2.0263zm0.38722-4.9874-0.30901-0.12712c-0.52469-0.21569-0.56771-0.13016-0.88701 0.42265l-0.28814 0.49862a3.6187 3.6187 0 0 0-0.66856 0.0053l-0.29119-0.50396c-0.31932-0.55281-0.36241-0.63822-0.88708-0.42253l-0.30906 0.12698-0.30833 0.12874c-0.52353 0.21849-0.4936 0.30936-0.3285 0.92605l0.15047 0.56228a3.6187 3.6187 0 0 0-0.47651 0.46898l-0.55632-0.14884c-0.61669-0.1651-0.70759-0.19517-0.92605 0.32837l-0.12861 0.30839-0.12712 0.30901c-0.21567 0.5247-0.13016 0.5677 0.42265 0.88701l0.49863 0.28813a3.6187 3.6187 0 0 0 0.0053 0.66856l-0.50399 0.29119c-0.55281 0.31932-0.63822 0.36241-0.42253 0.88708l0.12698 0.30906 0.12874 0.30833c0.21849 0.52353 0.30936 0.4936 0.92605 0.3285l0.56228-0.15047a3.6187 3.6187 0 0 0 0.46898 0.47651l-0.14883 0.55633c-0.1651 0.61669-0.19517 0.70759 0.32837 0.92605l0.30839 0.12861 0.30901 0.12712c0.5247 0.21567 0.56771 0.13016 0.88701-0.42265l0.28814-0.49862a3.6187 3.6187 0 0 0 0.66856-0.00532l0.29119 0.50399c0.31932 0.55281 0.36241 0.63822 0.88708 0.42253l0.30906-0.12698 0.30833-0.12874c0.52353-0.21849 0.4936-0.30936 0.3285-0.92605l-0.15047-0.56228a3.6187 3.6187 0 0 0 0.47651-0.46898l0.55632 0.14884c0.61669 0.1651 0.70758 0.19516 0.92605-0.32837l0.12861-0.30839 0.12712-0.30901c0.21567-0.5247 0.13016-0.56771-0.42265-0.88701l-0.4958-0.28653a3.6187 3.6187 0 0 0-1.58e-4 -0.67472l0.49598-0.28664c0.55281-0.31932 0.63822-0.36241 0.42253-0.88708l-0.12696-0.30906-0.12874-0.30833c-0.21849-0.52353-0.30936-0.4936-0.92605-0.3285l-0.5534 0.14803a3.6187 3.6187 0 0 0-0.477-0.4772l0.14798-0.55318c0.1651-0.61669 0.19516-0.70759-0.32837-0.92605z"
-                fill="#3a6187"
-                filter="url(#filterSettingsAddSubGear)"
-                strokeLinejoin="round"
-                strokeMiterlimit="0"
-                strokeWidth=".064633"
-            />
-            <G transform="translate(-10.635 -13.87)">
-                <Path transform="matrix(.71898 0 0 .71898 19.896 17.839)" d="m3.68 0a3.68 3.68 0 0 0-3.68 3.68 3.68 3.68 0 0 0 3.68 3.68 3.68 3.68 0 0 0 3.68-3.68 3.68 3.68 0 0 0-3.68-3.68z" fill="#c7daef" filter="url(#filterSettingsAddSubMinus)" />
-                <Path transform="matrix(.71898 0 0 .71898 19.844 17.727)" d="m1.55 3.01a0.672 0.672 0 0 0-0.672 0.672 0.672 0.672 0 0 0 0.672 0.672h4.256a0.672 0.672 0 0 0 0.672-0.672 0.672 0.672 0 0 0-0.672-0.672z" fill="#6b90b6" />
+        <G transform="translate(.39685 .06127)">
+            <G filter="url(#filterSettingsAddSubGear)">
+                <Path
+                    d="m30.518 21.682a5.8616 5.8616 0 0 1-7.6584 3.1723 5.8616 5.8616 0 0 1-3.1723-7.6584 5.8616 5.8616 0 0 1 7.6584-3.1723 5.8616 5.8616 0 0 1 3.1723 7.6584zm1.4635-18.85-1.1679-0.48045c-1.9831-0.8152-2.1457-0.49194-3.3525 1.5974l-1.089 1.8845a13.677 13.677 0 0 0-2.5268 0.020031l-1.1006-1.9047c-1.2069-2.0894-1.3697-2.4122-3.3527-1.597l-1.1681 0.47992-1.1653 0.48657c-1.9787 0.82579-1.8656 1.1692-1.2416 3.5l0.5687 2.1251a13.677 13.677 0 0 0-1.801 1.7725l-2.1026-0.56254c-2.3308-0.624-2.6743-0.73765-3.5 1.2411l-0.48608 1.1656-0.48045 1.1679c-0.81513 1.9831-0.49194 2.1456 1.5974 3.3525l1.8846 1.089a13.677 13.677 0 0 0 0.02003 2.5268l-1.9048 1.1006c-2.0894 1.2069-2.4122 1.3697-1.597 3.3527l0.47992 1.1681 0.48657 1.1653c0.82578 1.9787 1.1692 1.8656 3.5 1.2416l2.1251-0.5687a13.677 13.677 0 0 0 1.7725 1.801l-0.5625 2.1027c-0.624 2.3308-0.73765 2.6743 1.2411 3.5l1.1656 0.48608 1.1679 0.48045c1.9831 0.81513 2.1457 0.49194 3.3525-1.5974l1.089-1.8845a13.677 13.677 0 0 0 2.5268-0.02011l1.1006 1.9048c1.2069 2.0894 1.3697 2.4122 3.3527 1.597l1.1681-0.47992 1.1653-0.48657c1.9787-0.82579 1.8656-1.1692 1.2416-3.5l-0.5687-2.1251a13.677 13.677 0 0 0 1.801-1.7725l2.1026 0.56254c2.3308 0.624 2.6743 0.73761 3.5-1.2411l0.48608-1.1656 0.48045-1.1679c0.81513-1.9831 0.49194-2.1457-1.5974-3.3525l-1.8739-1.0829a13.677 13.677 0 0 0-5.97e-4 -2.5501l1.8746-1.0834c2.0894-1.2069 2.4122-1.3697 1.597-3.3527l-0.47984-1.1681-0.48657-1.1653c-0.82579-1.9787-1.1692-1.8656-3.5-1.2416l-2.0916 0.55948a13.677 13.677 0 0 0-1.8028-1.8036l0.55929-2.0907c0.624-2.3308 0.73761-2.6743-1.2411-3.5z"
+                    fill="#53789e"
+                    strokeLinejoin="round"
+                    strokeMiterlimit="0"
+                    strokeWidth=".24428"
+                />
             </G>
-            <G transform="matrix(.71898 0 0 .71898 -.051462 3.8563)">
-                <Path d="m3.7515 0.1564a3.68 3.68 0 0 0-3.68 3.68 3.68 3.68 0 0 0 3.68 3.68 3.68 3.68 0 0 0 3.68-3.68 3.68 3.68 0 0 0-3.68-3.68z" fill="#85a8cd" filter="url(#filterSettingsAddSubPlus)" />
-                <Path transform="translate(-3.8517e-4,3.8543e-4)" d="m3.68 0.82c-0.32353 0-0.5858 0.26227-0.5858 0.58579v1.6876h-1.6876c-0.32352 0-0.58578 0.26227-0.58578 0.58578 0 0.32352 0.26226 0.58579 0.58578 0.58579h1.6876v1.6876c0 0.32352 0.26227 0.58579 0.5858 0.58579 0.32352 0 0.58579-0.26227 0.58579-0.58579v-1.6876h1.6876c0.32353 0 0.58579-0.26227 0.58579-0.58579 0-0.32351-0.26226-0.58578-0.58579-0.58578h-1.6876v-1.6876c0-0.32352-0.26227-0.58579-0.58579-0.58579z" fill="#c7daef" strokeLinejoin="round" strokeMiterlimit="0" strokeWidth=".01973" />
+            <G transform="matrix(2.7174 0 0 2.7174 .0010582 14.999)" filter="url(#filterSettingsAddSubCircles)">
+                <Circle cx="14.39" cy="4.3937" r="3.68" fill="#c7daef" />
+                <Circle cx="4.0856" cy="4.3938" r="3.68" fill="#85a8cd" />
             </G>
         </G>
+        <Path
+            d="m11.5 19.231c-0.87911 0-1.5918 0.71265-1.5918 1.5917v4.5856h-4.5856c-0.87908 0-1.5917 0.71265-1.5917 1.5917 0 0.87908 0.71262 1.5917 1.5917 1.5917h4.5856v4.5856c0 0.87908 0.71265 1.5917 1.5918 1.5917 0.87908 0 1.5917-0.71265 1.5917-1.5917v-4.5856h4.5856c0.87911 0 1.5917-0.71265 1.5917-1.5917s-0.71262-1.5917-1.5917-1.5917h-4.5856v-4.5856c0-0.87908-0.71265-1.5917-1.5917-1.5917z"
+            fill="#c7daef"
+            strokeLinejoin="round"
+            strokeMiterlimit="0"
+            strokeWidth=".053611"
+        />
+        <Path
+            d="m33.718 25.174a1.826 1.826 0 0 0-1.826 1.826 1.826 1.826 0 0 0 1.826 1.826h11.565a1.826 1.826 0 0 0 1.826-1.826 1.826 1.826 0 0 0-1.826-1.826z"
+            fill="#6b90b6"
+            strokeWidth="2.7172"
+        />
     </Svg>
 );
 
 export const IconSettingsMulDiv = ({ size = 35 }: { size?: number }) => (
-    <Svg width={size * (58 / 40)} height={size} viewBox="0 0 15.346 10.583">
+    <Svg width={size * (51 / 39)} height={size} viewBox="0 0 51 39">
         <Defs>
-            <Filter id="filterSettingsMulDivGear" x="-0.051834" y="-0.051834" width="1.1037" height="1.1253">
+            <Filter id="filterSettingsMulDivGear" x="-0.013714" y="-0.013714" width="1.0274" height="1.0331">
                 <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25098" in="SourceGraphic" result="flood" />
-                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.83" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.2" />
                 <FeOffset dx="0" dy="0.2" in="blur" result="offset" />
                 <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
                 <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
             </Filter>
-            <Filter id="filterSettingsMulDivDivide" x="-0.065217" y="-0.065217" width="1.1304" height="1.1576">
+            <Filter id="filterSettingsMulDivCircles" x="-0.027174" y="-0.065216" width="1.0543" height="1.1576">
                 <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25098" in="SourceGraphic" result="flood" />
-                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.83" />
-                <FeOffset dx="0" dy="0.2" in="blur" result="offset" />
-                <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
-                <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
-            </Filter>
-            <Filter id="filterSettingsMulDivTimes" x="-0.065217" y="-0.065217" width="1.1304" height="1.1576">
-                <FeFlood floodColor="rgb(0,0,0)" floodOpacity=".25098" in="SourceGraphic" result="flood" />
-                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.83" />
+                <FeGaussianBlur in="SourceGraphic" result="blur" stdDeviation="0.2" />
                 <FeOffset dx="0" dy="0.2" in="blur" result="offset" />
                 <FeComposite in="flood" in2="offset" operator="in" result="comp1" />
                 <FeComposite in="SourceGraphic" in2="comp1" result="comp2" />
             </Filter>
         </Defs>
-        <G transform="translate(.39685 .56146)">
-            <Path
-                d="m8.7088 5.2237a1.5509 1.5509 0 0 1-2.0263 0.83934 1.5509 1.5509 0 0 1-0.83934-2.0263 1.5509 1.5509 0 0 1 2.0263-0.83934 1.5509 1.5509 0 0 1 0.83934 2.0263zm0.38722-4.9874-0.30901-0.12712c-0.52469-0.21569-0.56771-0.13016-0.88701 0.42265l-0.28814 0.49862a3.6187 3.6187 0 0 0-0.66856 0.0053l-0.29119-0.50396c-0.31932-0.55281-0.36241-0.63822-0.88708-0.42253l-0.30906 0.12698-0.30833 0.12874c-0.52353 0.21849-0.4936 0.30936-0.3285 0.92605l0.15047 0.56228a3.6187 3.6187 0 0 0-0.47651 0.46898l-0.55632-0.14884c-0.61669-0.1651-0.70759-0.19517-0.92605 0.32837l-0.12861 0.30839-0.12712 0.30901c-0.21567 0.5247-0.13016 0.5677 0.42265 0.88701l0.49863 0.28813a3.6187 3.6187 0 0 0 0.0053 0.66856l-0.50399 0.29119c-0.55281 0.31932-0.63822 0.36241-0.42253 0.88708l0.12698 0.30906 0.12874 0.30833c0.21849 0.52353 0.30936 0.4936 0.92605 0.3285l0.56228-0.15047a3.6187 3.6187 0 0 0 0.46898 0.47651l-0.14883 0.55633c-0.1651 0.61669-0.19517 0.70759 0.32837 0.92605l0.30839 0.12861 0.30901 0.12712c0.5247 0.21567 0.56771 0.13016 0.88701-0.42265l0.28814-0.49862a3.6187 3.6187 0 0 0 0.66856-0.00532l0.29119 0.50399c0.31932 0.55281 0.36241 0.63822 0.88708 0.42253l0.30906-0.12698 0.30833-0.12874c0.52353-0.21849 0.4936-0.30936 0.3285-0.92605l-0.15047-0.56228a3.6187 3.6187 0 0 0 0.47651-0.46898l0.55632 0.14884c0.61669 0.1651 0.70758 0.19516 0.92605-0.32837l0.12861-0.30839 0.12712-0.30901c0.21567-0.5247 0.13016-0.56771-0.42265-0.88701l-0.4958-0.28653a3.6187 3.6187 0 0 0-1.58e-4 -0.67472l0.49598-0.28664c0.55281-0.31932 0.63822-0.36241 0.42253-0.88708l-0.12696-0.30906-0.12874-0.30833c-0.21849-0.52353-0.30936-0.4936-0.92605-0.3285l-0.5534 0.14803a3.6187 3.6187 0 0 0-0.477-0.4772l0.14798-0.55318c0.1651-0.61669 0.19516-0.70759-0.32837-0.92605z"
-                fill="#49683b"
-                filter="url(#filterSettingsMulDivGear)"
-                strokeLinejoin="round"
-                strokeMiterlimit="0"
-                strokeWidth=".064633"
-            />
-            <G transform="matrix(.71898 0 0 .71898 9.2604 3.9687)">
-                <Path d="m3.68 0a3.68 3.68 0 0 0-3.68 3.68 3.68 3.68 0 0 0 3.68 3.68 3.68 3.68 0 0 0 3.68-3.68 3.68 3.68 0 0 0-3.68-3.68z" fill="#cdddc6" filter="url(#filterSettingsMulDivDivide)" />
-                <Path d="m1.41 3.08a0.59449 0.59449 0 0 0-0.59449 0.59449 0.59449 0.59449 0 0 0 0.59449 0.59449h4.5294a0.59449 0.59449 0 0 0 0.59449-0.59449 0.59449 0.59449 0 0 0-0.59449-0.59449zm2.8342 2.3419a0.60864 0.60864 0 0 1-0.60865 0.60865 0.60864 0.60864 0 0 1-0.60863-0.60865 0.60864 0.60864 0 0 1 0.60863-0.60864 0.60864 0.60864 0 0 1 0.60865 0.60864zm0.0783-3.4948a0.60864 0.60864 0 0 1-0.60863 0.60863 0.60864 0.60864 0 0 1-0.60865-0.60863 0.60864 0.60864 0 0 1 0.60865-0.60865 0.60864 0.60864 0 0 1 0.60863 0.60865z" fill="#79966c" />
+        <G transform="translate(1.8972 .56127)">
+            <G filter="url(#filterSettingsMulDivGear)">
+                <Path
+                    d="m29.018 21.182a5.8616 5.8616 0 0 1-7.6584 3.1723 5.8616 5.8616 0 0 1-3.1723-7.6584 5.8616 5.8616 0 0 1 7.6584-3.1723 5.8616 5.8616 0 0 1 3.1723 7.6584zm1.4635-18.85-1.1679-0.48045c-1.9831-0.8152-2.1457-0.49194-3.3525 1.5974l-1.089 1.8845a13.677 13.677 0 0 0-2.5268 0.020031l-1.1006-1.9047c-1.2069-2.0894-1.3697-2.4122-3.3527-1.597l-1.1681 0.47992-1.1653 0.48657c-1.9787 0.82579-1.8656 1.1692-1.2416 3.5l0.5687 2.1251a13.677 13.677 0 0 0-1.801 1.7725l-2.1026-0.56254c-2.3308-0.624-2.6743-0.73765-3.5 1.2411l-0.48608 1.1656-0.48045 1.1679c-0.81513 1.9831-0.49194 2.1456 1.5974 3.3525l1.8846 1.089a13.677 13.677 0 0 0 0.02003 2.5268l-1.9048 1.1006c-2.0894 1.2069-2.4122 1.3697-1.597 3.3527l0.47992 1.1681 0.48657 1.1653c0.82578 1.9787 1.1692 1.8656 3.5 1.2416l2.1251-0.5687a13.677 13.677 0 0 0 1.7725 1.801l-0.5625 2.1027c-0.624 2.3308-0.73765 2.6743 1.2411 3.5l1.1656 0.48608 1.1679 0.48045c1.9831 0.81513 2.1457 0.49194 3.3525-1.5974l1.089-1.8845a13.677 13.677 0 0 0 2.5268-0.02011l1.1006 1.9048c1.2069 2.0894 1.3697 2.4122 3.3527 1.597l1.1681-0.47992 1.1653-0.48657c1.9787-0.82579 1.8656-1.1692 1.2416-3.5l-0.5687-2.1251a13.677 13.677 0 0 0 1.801-1.7725l2.1026 0.56254c2.3308 0.624 2.6743 0.73761 3.5-1.2411l0.48608-1.1656 0.48045-1.1679c0.81513-1.9831 0.49194-2.1457-1.5974-3.3525l-1.8739-1.0829a13.677 13.677 0 0 0-5.97e-4 -2.5501l1.8746-1.0834c2.0894-1.2069 2.4122-1.3697 1.597-3.3527l-0.47984-1.1681-0.48657-1.1653c-0.82579-1.9787-1.1692-1.8656-3.5-1.2416l-2.0916 0.55948a13.677 13.677 0 0 0-1.8028-1.8036l0.55929-2.0907c0.624-2.3308 0.73761-2.6743-1.2411-3.5z"
+                    fill="#49683b"
+                    strokeLinejoin="round"
+                    strokeMiterlimit="0"
+                    strokeWidth=".24428"
+                />
             </G>
-            <G transform="matrix(.71898 0 0 .71898 .00025867 3.9685)">
-                <Path d="m3.6796 5e-4a3.68 3.68 0 0 0-3.68 3.68 3.68 3.68 0 0 0 3.68 3.68 3.68 3.68 0 0 0 3.68-3.68 3.68 3.68 0 0 0-3.68-3.68z" fill="#91ae85" filter="url(#filterSettingsMulDivTimes)" />
-                <Path d="m5.68 1.68a0.54503 0.54503 0 0 0-0.77078 0l-1.2296 1.2296-1.2296-1.2296a0.54503 0.54503 0 0 0-0.77079 0 0.54503 0.54503 0 0 0 0 0.77079l1.2296 1.2296-1.2296 1.2296a0.54503 0.54503 0 0 0 0 0.77078 0.54503 0.54503 0 0 0 0.77079 0l1.2296-1.2296 1.2296 1.2296a0.54503 0.54503 0 0 0 0.77078 0 0.54503 0.54503 0 0 0 0-0.77078l-1.2296-1.2296 1.2296-1.2296a0.54503 0.54503 0 0 0 0-0.77079z" fill="#cdddc6" strokeLinejoin="round" strokeMiterlimit="0" strokeWidth=".018357" />
+            <G transform="matrix(2.7174 0 0 2.7174 .0010582 14.499)" filter="url(#filterSettingsMulDivCircles)">
+                <Circle cx="13.838" cy="4.3937" r="3.68" fill="#cdddc6" />
+                <Circle cx="3.5336" cy="4.3938" r="3.68" fill="#91ae85" />
             </G>
         </G>
+        <Path
+            d="m16.936 22.064a1.4811 1.4811 0 0 0-2.0945 0l-3.3413 3.3413-3.3413-3.3413a1.4811 1.4811 0 0 0-2.0945 0 1.4811 1.4811 0 0 0 0 2.0945l3.3413 3.3413-3.3413 3.3413a1.4811 1.4811 0 0 0 0 2.0945 1.4811 1.4811 0 0 0 2.0945 0l3.3413-3.3413 3.3413 3.3413a1.4811 1.4811 0 0 0 2.0945 0 1.4811 1.4811 0 0 0 0-2.0945l-3.3413-3.3413 3.3413-3.3413a1.4811 1.4811 0 0 0 0-2.0945z"
+            fill="#cdddc6"
+            strokeLinejoin="round"
+            strokeMiterlimit="0"
+            strokeWidth=".049883"
+        />
+        <Path
+            d="m33.345 25.884a1.6155 1.6155 0 0 0-1.6155 1.6155 1.6155 1.6155 0 0 0 1.6155 1.6155h12.308a1.6155 1.6155 0 0 0 1.6155-1.6155 1.6155 1.6155 0 0 0-1.6155-1.6155zm7.7016 6.3639a1.6539 1.6539 0 0 1-1.6539 1.6539 1.6539 1.6539 0 0 1-1.6539-1.6539 1.6539 1.6539 0 0 1 1.6539-1.6539 1.6539 1.6539 0 0 1 1.6539 1.6539zm0.21277-9.4967a1.6539 1.6539 0 0 1-1.6539 1.6539 1.6539 1.6539 0 0 1-1.6539-1.6539 1.6539 1.6539 0 0 1 1.6539-1.6539 1.6539 1.6539 0 0 1 1.6539 1.6539z"
+            fill="#79966c"
+            strokeWidth="2.7174"
+        />
     </Svg>
 );

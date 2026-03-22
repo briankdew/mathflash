@@ -10,7 +10,7 @@ const VOICE_ICON_CONTENT_HEIGHT = 240;
 const VOICE_ICON_REVEAL_HEIGHT = VOICE_ICON_CONTENT_HEIGHT + 20;
 const SETTINGS_REVEAL_MARGIN = 5;
 const SETTINGS_FALLBACK_HEIGHT = 240;
-const GEAR_REVEAL_OFFSET = 145.5;
+const GEAR_REVEAL_OFFSET = 145;
 
 interface UseControlDashboardMotionArgs {
   inputMode: SessionInputMode;

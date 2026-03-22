@@ -24,9 +24,10 @@ import { useControlDashboardMotion } from '../hooks/ui/useControlDashboardMotion
 const START_BUTTON_HEIGHT = 35;
 const START_BUTTON_MARGIN_BOTTOM = 20;
 const START_BUTTON_WIDTH = 215;
-const GEAR_SIZE = 40;
+const GEAR_BUTTON_WIDTH = 51;
+const GEAR_BUTTON_HEIGHT = 39;
 const START_BUTTON_FLASH_DURATION_MS = 180;
-const MIC_BUTTON_SIZE = 40;
+const MIC_BUTTON_SIZE = 43;
 const MIC_BUTTON_GAP = 12;
 const VOICE_HALO_COLORS = {
   neutral: '#f4f2e7',
@@ -228,15 +229,15 @@ export function ControlDashboard({
             {
               position: 'absolute',
               zIndex: 0,
-              top: (START_BUTTON_HEIGHT - GEAR_SIZE) / 2,
+              top: (START_BUTTON_HEIGHT - GEAR_BUTTON_HEIGHT) / 2,
             },
             gearStyle,
           ]}
         >
           <TouchableOpacity
             style={{
-              width: GEAR_SIZE,
-              height: GEAR_SIZE,
+              width: GEAR_BUTTON_WIDTH,
+              height: GEAR_BUTTON_HEIGHT,
               justifyContent: 'center',
               alignItems: 'center',
             }}
@@ -245,9 +246,9 @@ export function ControlDashboard({
             disabled={isActive}
           >
             {options.operation === 'multdiv' ? (
-              <IconSettingsMulDiv size={40} />
+              <IconSettingsMulDiv size={39} />
             ) : (
-              <IconSettingsAddSub size={40} />
+              <IconSettingsAddSub size={39} />
             )}
           </TouchableOpacity>
         </Animated.View>
@@ -287,7 +288,6 @@ export function ControlDashboard({
             disabled={isVoiceToggleDisabled}
           >
             <IconInputModeToggle
-              size={MIC_BUTTON_SIZE}
               operation={options.operation}
               inputMode={inputMode}
             />

@@ -1,8 +1,51 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import Svg, { Defs, Filter, FeFlood, FeBlend, FeColorMatrix, FeOffset, FeGaussianBlur, FeComposite, Rect } from 'react-native-svg';
+import Svg, { Image as SvgImage, Rect } from 'react-native-svg';
 import { OperationMode } from '../lib/types';
 import { getOperationTheme } from '../theme/colors';
+
+const STADIUM_WIDTH = 316;
+const STADIUM_HEIGHT = 36;
+
+function StadiumGraphic({
+  fill,
+  stroke,
+  strokeWidth = 0,
+  showShadow = false,
+}: {
+  fill: string;
+  stroke?: string;
+  strokeWidth?: number;
+  showShadow?: boolean;
+}) {
+  return (
+    <Svg
+      width={STADIUM_WIDTH}
+      height={STADIUM_HEIGHT}
+      viewBox={`0 0 ${STADIUM_WIDTH} ${STADIUM_HEIGHT}`}
+      style={StyleSheet.absoluteFill}
+    >
+      <Rect
+        width={STADIUM_WIDTH}
+        height={STADIUM_HEIGHT}
+        rx={18}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+      {showShadow ? (
+        <SvgImage
+          x={-6}
+          y={-6}
+          width={328}
+          height={51}
+          href={require('../../assets/stadium-shadow.png')}
+          preserveAspectRatio="none"
+        />
+      ) : null}
+    </Svg>
+  );
+}
 
 interface OperationSelectorProps {
   operation: OperationMode;
@@ -18,23 +61,9 @@ export function OperationSelector({ operation, isActive, isStadiumActive, onTogg
   return (
     <View style={styles.container}>
       {isStadiumActive ? (
-        <Svg width="353" height="36" viewBox="0 0 353 36" style={StyleSheet.absoluteFill}>
-          <Defs>
-            <Filter id="operationSelectorShadow" x="-0.03" y="-0.15" width="1.06" height="1.3" filterUnits="objectBoundingBox">
-              <FeFlood floodOpacity="0" result="BackgroundImageFix" />
-              <FeBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-              <FeColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-              <FeOffset dy="1.5" />
-              <FeGaussianBlur stdDeviation="1.5" />
-              <FeComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1" />
-              <FeColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0" />
-              <FeBlend mode="normal" in2="shape" result="effect1_innerShadow" />
-            </Filter>
-          </Defs>
-          <Rect width="353" height="36" rx="18" fill="#FFFFFF" filter="url(#operationSelectorShadow)" />
-        </Svg>
+        <StadiumGraphic fill="#FFFFFF" stroke="transparent" strokeWidth={1} showShadow />
       ) : (
-        <View style={[styles.borderOnly, { borderColor: stadiumBorderColor }]} pointerEvents="none" />
+        <StadiumGraphic fill="transparent" stroke="transparent" strokeWidth={1} showShadow />
       )}
 
       {isActive ? (
@@ -59,23 +88,16 @@ export function OperationSelector({ operation, isActive, isStadiumActive, onTogg
 
 const styles = StyleSheet.create({
   container: {
-    width: 353,
-    height: 36,
+    width: STADIUM_WIDTH,
+    height: STADIUM_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 0,
     marginBottom: 5,
   },
-  borderOnly: {
-    ...StyleSheet.absoluteFillObject,
-    width: 353,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    backgroundColor: 'transparent',
-  },
   labelRow: {
-    height: 36,
+    width: STADIUM_WIDTH,
+    height: STADIUM_HEIGHT,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
