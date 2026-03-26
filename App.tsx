@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { Header } from './src/components/Header';
 import { PracticeArea } from './src/components/PracticeArea';
@@ -26,6 +27,8 @@ export default function App() {
   const opTheme = getOperationTheme(session.options.operation);
   const pendingCount = session.getPendingCount();
   const selectedCountColor = !session.isActive && pendingCount === 0 ? '#890124' : theme.textMuted;
+  const { width: windowWidth } = useWindowDimensions();
+  const dashboardFrameWidth = Math.min(windowWidth, 600);
 
   let [fontsLoaded] = useFonts({
     Nunito_700Bold,
@@ -94,26 +97,28 @@ export default function App() {
                   </Pressable>
                 ) : null}
 
-                <ControlDashboard
-                  phase={session.phase}
-                  isActive={session.isActive}
-                  isStadiumActive={session.isStadiumActive}
-                  inputMode={session.inputMode}
-                  voiceState={session.voiceState}
-                  options={session.options}
-                  opTheme={opTheme}
-                  onStartSession={session.startSession}
-                  onEndSession={session.endSession}
-                  onToggleInputMode={() =>
-                    session.setInputMode(session.inputMode === 'keypad' ? 'voice' : 'keypad')
-                  }
-                  onDigitInput={session.appendInputDigit}
-                  onClearInput={session.clearInputValue}
-                  isInputEnabled={session.isInputEnabled}
-                  onUpdateOptions={session.updateOptions}
-                  useTimer={session.useTimer}
-                  setUseTimer={session.setUseTimer}
-                />
+                <View style={{ width: dashboardFrameWidth, alignItems: 'center' }}>
+                  <ControlDashboard
+                    phase={session.phase}
+                    isActive={session.isActive}
+                    isStadiumActive={session.isStadiumActive}
+                    inputMode={session.inputMode}
+                    voiceState={session.voiceState}
+                    options={session.options}
+                    opTheme={opTheme}
+                    onStartSession={session.startSession}
+                    onEndSession={session.endSession}
+                    onToggleInputMode={() =>
+                      session.setInputMode(session.inputMode === 'keypad' ? 'voice' : 'keypad')
+                    }
+                    onDigitInput={session.appendInputDigit}
+                    onClearInput={session.clearInputValue}
+                    isInputEnabled={session.isInputEnabled}
+                    onUpdateOptions={session.updateOptions}
+                    useTimer={session.useTimer}
+                    setUseTimer={session.setUseTimer}
+                  />
+                </View>
               </View>
 
             </View>

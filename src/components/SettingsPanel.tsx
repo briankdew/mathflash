@@ -1,80 +1,264 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Svg, {
-  Defs,
-  Filter,
-  FeFlood,
-  FeBlend,
-  FeColorMatrix,
-  FeOffset,
-  FeGaussianBlur,
-  FeComposite,
-  Rect,
-} from 'react-native-svg';
+import { View, Text, StyleSheet, TouchableOpacity, TextStyle } from 'react-native';
 import { SessionOptions } from '../lib/types';
 import { SessionOptionsUpdate } from '../lib/sessionOptions';
-import { theme, palette } from '../theme/colors';
+import { palette } from '../theme/colors';
 
 const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+const TRAY_WIDTH = 373;
+const SECTION_WIDTH = 353;
+const SECTION_RADIUS = 18;
+const SECTION_SIDE_INSET = 10;
+const SECTION_BORDER_WIDTH = 1;
+const CHIP_ROW_WIDTH =
+  SECTION_WIDTH - SECTION_SIDE_INSET * 2 - SECTION_BORDER_WIDTH * 2;
+const BASIC_FACTS_CHIP_WIDTH = 60;
+const BASIC_FACTS_COLUMNS = 5;
+const SHARED_CHIP_ROW_GAP =
+  (CHIP_ROW_WIDTH - BASIC_FACTS_CHIP_WIDTH * BASIC_FACTS_COLUMNS) /
+  (BASIC_FACTS_COLUMNS - 1);
 
-const InnerShadowBox = ({
-  width,
-  height,
-  rx,
-  fill,
-}: {
-  width: number;
-  height: number;
-  rx: number;
-  fill: string;
-}) => (
-  <Svg
-    width={width}
-    height={height}
-    viewBox={`0 0 ${width} ${height}`}
-    style={StyleSheet.absoluteFill}
-  >
-    <Defs>
-      <Filter
-        id="chipInnerShadow"
-        x="-0.2"
-        y="-0.2"
-        width="1.4"
-        height="1.4"
-        filterUnits="objectBoundingBox"
+type TrayColorTheme = {
+  trayBg: string;
+  trayOutline: string;
+  sectionBorder: string;
+  sectionHeaderText: string;
+  sectionHeaderBg: string;
+  globalBorder: string;
+  globalHeaderText: string;
+  globalHeaderBg: string;
+  lightChipBg: string;
+  lightChipText: string;
+  selectorText: string;
+  globalLabelText: string;
+  darkSelectorBg: string;
+};
+
+function getTrayColorTheme(operation: SessionOptions['operation']): TrayColorTheme {
+  if (operation === 'multdiv') {
+    return {
+      trayBg: palette.green[3],
+      trayOutline: 'rgba(255,255,255,0.9)',
+      sectionBorder: palette.green[7],
+      sectionHeaderText: palette.green[7],
+      sectionHeaderBg: palette.green[3],
+      globalBorder: palette.white,
+      globalHeaderText: palette.white,
+      globalHeaderBg: palette.green[3],
+      lightChipBg: palette.green[1],
+      lightChipText: palette.green[6],
+      selectorText: palette.green[6],
+      globalLabelText: palette.green[7],
+      darkSelectorBg: palette.green[6],
+    };
+  }
+
+  return {
+    trayBg: palette.blue[3],
+    trayOutline: 'rgba(255,255,255,0.9)',
+    sectionBorder: palette.blue[7],
+    sectionHeaderText: palette.blue[7],
+    sectionHeaderBg: palette.blue[3],
+    globalBorder: palette.white,
+    globalHeaderText: palette.white,
+    globalHeaderBg: palette.blue[3],
+    lightChipBg: palette.blue[1],
+    lightChipText: palette.blue[6],
+    selectorText: palette.blue[6],
+    globalLabelText: palette.blue[7],
+    darkSelectorBg: palette.blue[6],
+  };
+}
+
+function getProblemOrderLabel(value: SessionOptions['problemOrder']) {
+  return value === 'random' ? 'Random' : 'Standard';
+}
+
+function getOperandOrderLabel(value: SessionOptions['operandOrder']) {
+  if (value === 'random') return 'Random';
+  if (value === 'reverse') return 'Reverse';
+  return 'Standard';
+}
+
+function getMissingValueLabel(value: SessionOptions['missingValue']) {
+  if (value === 'random') return 'Random';
+  if (value === 'operand') return 'Operand';
+  return 'Result';
+}
+
+type ChipVariant = 'selection' | 'action' | 'dark';
+
+interface TrayChipProps {
+  active?: boolean;
+  accessibilityLabel?: string;
+  children: React.ReactNode;
+  colors: TrayColorTheme;
+  disabled?: boolean;
+  onPress: () => void;
+  testID?: string;
+  textStyle?: TextStyle;
+  variant?: ChipVariant;
+  width?: number;
+}
+
+function TrayChip({
+  active = false,
+  accessibilityLabel,
+  children,
+  colors,
+  disabled,
+  onPress,
+  testID,
+  textStyle,
+  variant = 'selection',
+  width = 60,
+}: TrayChipProps) {
+  const isRaised = active || variant === 'action' || variant === 'dark';
+  const backgroundColor =
+    variant === 'dark'
+      ? colors.darkSelectorBg
+      : active || variant === 'action'
+        ? palette.white
+        : colors.lightChipBg;
+
+  return (
+    <TouchableOpacity
+      accessibilityLabel={accessibilityLabel ?? testID}
+      accessibilityRole="button"
+      accessibilityState={disabled ? { disabled: true } : undefined}
+      testID={testID}
+      style={[
+        styles.trayChip,
+        { width, backgroundColor },
+        isRaised ? styles.raisedButton : null,
+        disabled ? styles.disabled : null,
+      ]}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.82}
+    >
+      <Text
+        style={[
+          styles.trayChipText,
+          variant === 'dark'
+            ? { color: palette.white }
+            : { color: colors.lightChipText },
+          textStyle,
+        ]}
       >
-        <FeFlood floodOpacity="0" result="BackgroundImageFix" />
-        <FeBlend
-          mode="normal"
-          in="SourceGraphic"
-          in2="BackgroundImageFix"
-          result="shape"
-        />
-        <FeColorMatrix
-          in="SourceAlpha"
-          type="matrix"
-          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-          result="hardAlpha"
-        />
-        <FeOffset dy="3" />
-        <FeGaussianBlur stdDeviation="1.6" />
-        <FeComposite
-          in2="hardAlpha"
-          operator="arithmetic"
-          k2="-1"
-          k3="1"
-          result="shadowInnerInner1"
-        />
-        <FeColorMatrix
-          type="matrix"
-          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0"
-        />
-        <FeBlend mode="normal" in2="shape" result="effect1_innerShadow" />
-      </Filter>
-    </Defs>
-    <Rect width={width} height={height} rx={rx} fill={fill} filter="url(#chipInnerShadow)" />
-  </Svg>
-);
+        {children}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+function SectionHeader({
+  backgroundColor,
+  color,
+  title,
+  width,
+}: {
+  backgroundColor: string;
+  color: string;
+  title: string;
+  width: number;
+}) {
+  return (
+    <View
+      style={[
+        styles.sectionHeader,
+        {
+          width,
+          backgroundColor,
+          marginLeft: -(width / 2),
+        },
+      ]}
+    >
+      <Text style={[styles.sectionHeaderText, { color }]}>{title}</Text>
+    </View>
+  );
+}
+
+function TraySection({
+  backgroundColor,
+  borderColor,
+  children,
+  headerBackground,
+  headerColor,
+  headerWidth,
+  title,
+}: {
+  backgroundColor: string;
+  borderColor: string;
+  children: React.ReactNode;
+  headerBackground: string;
+  headerColor: string;
+  headerWidth: number;
+  title: string;
+}) {
+  return (
+    <View style={[styles.section, { borderColor, backgroundColor }]}>
+      <SectionHeader
+        backgroundColor={headerBackground}
+        color={headerColor}
+        title={title}
+        width={headerWidth}
+      />
+      {children}
+    </View>
+  );
+}
+
+function RowLabel({
+  color,
+  text,
+}: {
+  color: string;
+  text: string;
+}) {
+  return <Text style={[styles.rowLabel, { color }]}>{text}</Text>;
+}
+
+function SelectorRow({
+  accessibilityLabel,
+  buttonText,
+  buttonWidth = 106,
+  colors,
+  disabled,
+  label,
+  labelColor,
+  onPress,
+  testID,
+  variant = 'action',
+}: {
+  accessibilityLabel?: string;
+  buttonText: string;
+  buttonWidth?: number;
+  colors: TrayColorTheme;
+  disabled?: boolean;
+  label: string;
+  labelColor: string;
+  onPress: () => void;
+  testID?: string;
+  variant?: ChipVariant;
+}) {
+  return (
+    <View style={styles.selectorRow}>
+      <RowLabel color={labelColor} text={label} />
+      <TrayChip
+        accessibilityLabel={accessibilityLabel}
+        colors={colors}
+        disabled={disabled}
+        onPress={onPress}
+        testID={testID}
+        variant={variant}
+        width={buttonWidth}
+      >
+        {buttonText}
+      </TrayChip>
+    </View>
+  );
+}
 
 interface SettingsPanelProps {
   options: SessionOptions;
@@ -84,64 +268,6 @@ interface SettingsPanelProps {
   disabled?: boolean;
 }
 
-interface ChipButtonProps {
-  active: boolean;
-  disabled?: boolean;
-  onPress: () => void;
-  children: React.ReactNode;
-  width?: number;
-}
-
-function ChipButton({
-  active,
-  disabled,
-  onPress,
-  children,
-  width = 64,
-}: ChipButtonProps) {
-  const height = width === 64 ? 44 : 44;
-  return (
-    <TouchableOpacity
-      style={[
-        width === 64 ? styles.digitBox : styles.timerBox,
-        active && styles.chipActive,
-        disabled && styles.chipDisabled,
-        width !== 64 ? { width } : null,
-      ]}
-      onPress={onPress}
-      disabled={disabled}
-    >
-      {active ? <InnerShadowBox width={width} height={height} rx={10} fill="#C0BEB1" /> : null}
-      {children}
-    </TouchableOpacity>
-  );
-}
-
-function SettingItem({
-  label,
-  disabled,
-  onPress,
-  value,
-}: {
-  label: string;
-  disabled?: boolean;
-  onPress: () => void;
-  value: string;
-}) {
-  return (
-    <View style={styles.settingItem}>
-      <Text style={styles.label}>{label}</Text>
-      <TouchableOpacity
-        style={[styles.selectBtn, disabled && styles.chipDisabled]}
-        onPress={onPress}
-        disabled={disabled}
-      >
-        <Text style={styles.selectBtnText}>{value}</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
 export function SettingsPanel({
   options,
   updateOptions,
@@ -149,356 +275,417 @@ export function SettingsPanel({
   setUseTimer,
   disabled,
 }: SettingsPanelProps) {
+  const colors = getTrayColorTheme(options.operation);
   const isAddSubOperation = options.operation === 'addsub';
   const isAllMode = !options.customSet && options.activeChips.length === DIGITS.length;
-  const setsDisplayValue =
-    options.practiceCycles <= 1
-      ? '1'
-      : options.setsMode === 'single'
-        ? '1'
-        : String(options.practiceCycles);
-
-  const digitActions = DIGITS.map(value => ({
-    value,
-    active: !options.customSet && options.activeChips.includes(value),
-  }));
-  const compactSettings = [
+  const selectedDigits =
+    options.customSet === null ? new Set(options.activeChips) : new Set<number>();
+  const cycleValue = `${options.practiceCycles}x`;
+  const cycleTargetLabel = options.setsMode === 'cycles' ? 'Problem' : 'Set';
+  const digitRows = [
+    [1, 2, 3, 4, 5],
+    [6, 7, 8, 9],
+  ] as const;
+  const globalRows = [
     {
-      label: 'CYC',
-      value: String(options.practiceCycles),
-      disabled: !!disabled,
-      onPress: () => updateOptions({ type: 'cyclePracticeCycles' }),
+      label: 'Reports',
+      testID: 'setting-reports',
+      value: options.autoShowPerformanceReport ? 'Instant' : 'Off',
+      onPress: () => updateOptions({ type: 'toggleAutoShowPerformanceReport' }),
     },
     {
-      label: 'SETS',
-      value: setsDisplayValue,
-      disabled: !!disabled || options.practiceCycles <= 1,
-      onPress: () => updateOptions({ type: 'toggleSetsMode' }),
+      label: 'Timer',
+      testID: 'setting-timer',
+      value: useTimer ? 'On' : 'Off',
+      onPress: () => setUseTimer(!useTimer),
+    },
+    {
+      label: 'Start sequence',
+      testID: 'setting-start-sequence',
+      value: options.startMode === 'min' ? 'Minimize' : 'Full',
+      onPress: () => updateOptions({ type: 'toggleStartMode' }),
     },
   ];
-  const selectSettings = [
+  const presentationRows = [
     {
-      label: 'PO',
-      value: options.problemOrder === 'random' ? 'Ran' : 'Std',
+      label: 'Problem order',
+      testID: 'setting-problem-order',
+      value: getProblemOrderLabel(options.problemOrder),
       onPress: () => updateOptions({ type: 'cycleProblemOrder' }),
     },
     {
-      label: 'OO',
-      value:
-        options.operandOrder === 'random'
-          ? 'Ran'
-          : options.operandOrder === 'standard'
-            ? 'Std'
-            : 'Rev',
+      label: 'Operand order',
+      testID: 'setting-operand-order',
+      value: getOperandOrderLabel(options.operandOrder),
       onPress: () => updateOptions({ type: 'cycleOperandOrder' }),
     },
     {
-      label: 'MV',
-      value:
-        options.missingValue === 'result'
-          ? 'Res'
-          : options.missingValue === 'operand'
-            ? 'Opd'
-            : 'Ran',
+      label: 'Missing value',
+      testID: 'setting-missing-value',
+      value: getMissingValueLabel(options.missingValue),
       onPress: () => updateOptions({ type: 'cycleMissingValue' }),
     },
   ];
 
   return (
-    <View style={styles.container}>
-      <View style={styles.controlGroup}>
-        <View style={styles.digitGrid}>
-          {digitActions.map(({ value, active }) => (
-            <ChipButton
-              key={value}
-              active={active}
-              disabled={disabled}
-              onPress={() => updateOptions({ type: 'toggleChip', value })}
-            >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{value}</Text>
-            </ChipButton>
-          ))}
-          <ChipButton
-            active={isAllMode}
-            disabled={disabled}
-            onPress={() => updateOptions({ type: 'toggleAllChips' })}
-          >
-            <Text style={[styles.chipTextAllClr, isAllMode && styles.chipTextActive]}>
-              {isAllMode ? 'Clear\nAll' : 'Select\nAll'}
-            </Text>
-          </ChipButton>
-        </View>
-      </View>
+    <View style={styles.root}>
+      <View
+        style={[
+          styles.tray,
+          {
+            backgroundColor: colors.trayBg,
+            borderColor: colors.trayOutline,
+          },
+        ]}
+      >
+        <TraySection
+          backgroundColor="transparent"
+          borderColor={colors.sectionBorder}
+          headerBackground={colors.sectionHeaderBg}
+          headerColor={colors.sectionHeaderText}
+          headerWidth={198}
+          title="Problem Set Selection"
+        >
+          <Text style={styles.groupLabel}>Basic facts</Text>
+          <View style={styles.digitGrid}>
+            {digitRows.map((row, rowIndex) => (
+              <View key={`digit-row-${rowIndex}`} style={styles.chipRow}>
+                {row.map(value => {
+                  const active = selectedDigits.has(value);
 
-      <View style={styles.customRow}>
-        {isAddSubOperation ? (
-          <>
-            <ChipButton
-              active={options.customSet === '10s'}
-              disabled={disabled}
-              onPress={() => updateOptions({ type: 'toggleCustomSet', customSet: '10s' })}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  options.customSet === '10s' && styles.chipTextActive,
-                ]}
-              >
-                10&apos;s
-              </Text>
-            </ChipButton>
-            <ChipButton
-              active={options.customSet === 'doubles'}
-              disabled={disabled}
-              onPress={() =>
-                updateOptions({ type: 'toggleCustomSet', customSet: 'doubles' })
-              }
-            >
-              <Text
-                style={[
-                  styles.chipTextMath,
-                  options.customSet === 'doubles' && styles.chipTextActiveMath,
-                ]}
-              >
-                n+n
-              </Text>
-            </ChipButton>
-          </>
-        ) : (
-          <ChipButton
-            active={options.customSet === 'squares'}
-            disabled={disabled}
-            onPress={() =>
-              updateOptions({ type: 'toggleCustomSet', customSet: 'squares' })
-            }
-          >
-            <Text
-              style={[
-                styles.chipTextMath,
-                options.customSet === 'squares' && styles.chipTextActiveMath,
-              ]}
-            >
-              n²
-            </Text>
-          </ChipButton>
-        )}
+                  return (
+                    <TrayChip
+                      key={value}
+                      active={active}
+                      colors={colors}
+                      disabled={disabled}
+                      onPress={() => updateOptions({ type: 'toggleChip', value })}
+                      testID={`digit-chip-${value}`}
+                      textStyle={styles.digitChipText}
+                    >
+                      {value}
+                    </TrayChip>
+                  );
+                })}
 
-        {compactSettings.map(setting => (
-          <TouchableOpacity
-            key={setting.label}
-            style={[styles.compactSettingBtn, setting.disabled && styles.chipDisabled]}
-            onPress={setting.onPress}
-            disabled={setting.disabled}
-          >
-            <Text style={styles.compactSettingLabel}>{setting.label}</Text>
-            <Text style={styles.compactSettingValue}>{setting.value}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+                {rowIndex === 1 ? (
+                  <TrayChip
+                    active={isAllMode}
+                    colors={colors}
+                    disabled={disabled}
+                    onPress={() => updateOptions({ type: 'toggleAllChips' })}
+                    testID="digit-chip-all"
+                    textStyle={styles.allChipText}
+                  >
+                    {isAllMode ? 'Clear\nAll' : 'Select\nAll'}
+                  </TrayChip>
+                ) : null}
+              </View>
+            ))}
+          </View>
 
-      <View style={styles.settingsRow}>
-        {selectSettings.map(setting => (
-          <SettingItem
-            key={setting.label}
-            label={setting.label}
-            disabled={disabled}
-            onPress={setting.onPress}
-            value={setting.value}
-          />
-        ))}
+          <Text style={[styles.groupLabel, styles.customSetsLabel]}>Custom sets</Text>
+          <View style={styles.customRow}>
+            {isAddSubOperation ? (
+              <>
+                <TrayChip
+                  accessibilityLabel={`custom-set-10s:10's`}
+                  active={options.customSet === '10s'}
+                  colors={colors}
+                  disabled={disabled}
+                  onPress={() => updateOptions({ type: 'toggleCustomSet', customSet: '10s' })}
+                  testID="custom-set-10s"
+                  textStyle={styles.customChipText}
+                  width={61}
+                >
+                  {"10's"}
+                </TrayChip>
+                <TouchableOpacity
+                  accessibilityLabel="custom-set-doubles:n+n"
+                  accessibilityRole="button"
+                  accessibilityState={disabled ? { disabled: true } : undefined}
+                  testID="custom-set-doubles"
+                  style={[
+                    styles.trayChip,
+                    { width: 61 },
+                    options.customSet === 'doubles'
+                      ? [styles.raisedButton, { backgroundColor: palette.white }]
+                      : { backgroundColor: colors.lightChipBg },
+                    disabled ? styles.disabled : null,
+                  ]}
+                  onPress={() =>
+                    updateOptions({ type: 'toggleCustomSet', customSet: 'doubles' })
+                  }
+                  disabled={disabled}
+                  activeOpacity={0.82}
+                >
+                  <Text
+                    style={[
+                      styles.mathChipText,
+                      { color: colors.lightChipText },
+                    ]}
+                  >
+                    n+n
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity
+                  accessibilityLabel="custom-set-squares:n²"
+                  accessibilityRole="button"
+                  accessibilityState={disabled ? { disabled: true } : undefined}
+                  testID="custom-set-squares"
+                  style={[
+                    styles.trayChip,
+                    { width: 61 },
+                    options.customSet === 'squares'
+                      ? [styles.raisedButton, { backgroundColor: palette.white }]
+                      : { backgroundColor: colors.lightChipBg },
+                    disabled ? styles.disabled : null,
+                  ]}
+                  onPress={() =>
+                    updateOptions({ type: 'toggleCustomSet', customSet: 'squares' })
+                  }
+                  disabled={disabled}
+                  activeOpacity={0.82}
+                >
+                  <Text
+                    style={[
+                      styles.mathChipText,
+                      { color: colors.lightChipText },
+                    ]}
+                  >
+                    n²
+                  </Text>
+                </TouchableOpacity>
+                <View style={styles.customSpacer} />
+              </>
+            )}
+          </View>
+        </TraySection>
 
-        <View style={styles.settingItem}>
-          <Text style={styles.label}>TIMER</Text>
-          <ChipButton
-            active={useTimer}
-            disabled={disabled}
-            onPress={() => setUseTimer(!useTimer)}
-            width={44}
-          >
-            <Text style={[styles.chipTextAllClr, useTimer && styles.chipTextActive]}>
-              {useTimer ? 'On' : 'Off'}
-            </Text>
-          </ChipButton>
-        </View>
+        <TraySection
+          backgroundColor="transparent"
+          borderColor={colors.sectionBorder}
+          headerBackground={colors.sectionHeaderBg}
+          headerColor={colors.sectionHeaderText}
+          headerWidth={193}
+          title="Problem Presentation"
+        >
+          <View style={styles.presentationRows}>
+            <View style={styles.selectorRow}>
+              <RowLabel color={palette.white} text="Cycles" />
+              <View style={styles.cyclesControl}>
+                <TrayChip
+                  accessibilityLabel={`setting-cycles-value:${cycleValue}`}
+                  colors={colors}
+                  disabled={disabled}
+                  onPress={() => updateOptions({ type: 'cyclePracticeCycles' })}
+                  testID="setting-cycles-value"
+                  textStyle={styles.cycleValueText}
+                  variant="action"
+                  width={48}
+                >
+                  {cycleValue}
+                </TrayChip>
+                <Text style={styles.perLabel}>per</Text>
+                <TrayChip
+                  accessibilityLabel={`setting-cycles-target:${cycleTargetLabel}`}
+                  colors={colors}
+                  disabled={disabled || options.practiceCycles <= 1}
+                  onPress={() => updateOptions({ type: 'toggleSetsMode' })}
+                  testID="setting-cycles-target"
+                  variant="action"
+                  width={106}
+                >
+                  {cycleTargetLabel}
+                </TrayChip>
+              </View>
+            </View>
 
-        <View style={styles.settingItem}>
-          <Text style={styles.label}>START</Text>
-          <ChipButton
-            active={options.startMode === 'full'}
-            disabled={disabled}
-            onPress={() => updateOptions({ type: 'toggleStartMode' })}
-            width={44}
-          >
-            <Text
-              style={[
-                styles.chipTextAllClr,
-                options.startMode === 'full' && styles.chipTextActive,
-              ]}
-            >
-              {options.startMode === 'full' ? 'Full' : 'Min'}
-            </Text>
-          </ChipButton>
-        </View>
+            {presentationRows.map(row => (
+              <SelectorRow
+                accessibilityLabel={`${row.testID}:${row.value}`}
+                key={row.label}
+                buttonText={row.value}
+                colors={colors}
+                disabled={disabled}
+                label={row.label}
+                labelColor={palette.white}
+                onPress={row.onPress}
+                testID={row.testID}
+              />
+            ))}
+          </View>
+        </TraySection>
 
-        <View style={styles.settingItem}>
-          <Text style={styles.label}>REPORT</Text>
-          <ChipButton
-            active={options.autoShowPerformanceReport}
-            disabled={disabled}
-            onPress={() => updateOptions({ type: 'toggleAutoShowPerformanceReport' })}
-            width={44}
-          >
-            <Text
-              style={[
-                styles.chipTextAllClr,
-                options.autoShowPerformanceReport && styles.chipTextActive,
-              ]}
-            >
-              {options.autoShowPerformanceReport ? 'On' : 'Off'}
-            </Text>
-          </ChipButton>
-        </View>
+        <TraySection
+          backgroundColor="transparent"
+          borderColor={colors.globalBorder}
+          headerBackground={colors.globalHeaderBg}
+          headerColor={colors.globalHeaderText}
+          headerWidth={140}
+          title="Global Settings"
+        >
+          <View style={styles.presentationRows}>
+            {globalRows.map(row => (
+              <SelectorRow
+                accessibilityLabel={`${row.testID}:${row.value}`}
+                key={row.label}
+                buttonText={row.value}
+                colors={colors}
+                disabled={disabled}
+                label={row.label}
+                labelColor={colors.globalLabelText}
+                onPress={row.onPress}
+                testID={row.testID}
+                variant="dark"
+              />
+            ))}
+          </View>
+        </TraySection>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 10,
-    paddingHorizontal: 20,
-    backgroundColor: 'transparent',
-  },
-  settingsRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-    gap: 6,
-    width: 352,
-    alignSelf: 'center',
-  },
-  controlGroup: {
-    marginBottom: 8,
-  },
-  customRow: {
-    flexDirection: 'row',
+  root: {
+    width: '100%',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 8,
-    width: 352,
+  },
+  tray: {
+    width: TRAY_WIDTH,
+    borderRadius: 28,
+    borderWidth: 1,
+    paddingTop: 68,
+    paddingBottom: 12,
+    paddingHorizontal: 10,
+  },
+  section: {
+    width: SECTION_WIDTH,
+    borderWidth: 1,
+    borderRadius: SECTION_RADIUS,
+    paddingTop: 23,
+    paddingBottom: 10,
+    paddingHorizontal: SECTION_SIDE_INSET,
     alignSelf: 'center',
+    position: 'relative',
     marginBottom: 16,
   },
-  settingItem: {
-    alignItems: 'center',
-    marginTop: -2,
-  },
-  label: {
-    fontSize: 12,
-    color: theme.textMuted,
-    marginTop: -3,
-    marginBottom: 5,
-    textTransform: 'uppercase',
-    fontWeight: 'bold',
-  },
-  selectBtn: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#C0BEB1',
-    borderRadius: 10,
-  },
-  selectBtnText: {
-    fontSize: 16,
-    color: '#615e4e',
-    fontFamily: 'NotoSans_500Medium',
-  },
-  compactSettingBtn: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#C0BEB1',
-    borderRadius: 10,
-  },
-  compactSettingLabel: {
+  sectionHeader: {
     position: 'absolute',
-    top: 5,
-    fontSize: 8,
-    lineHeight: 9,
-    letterSpacing: 0.2,
-    color: '#615e4e',
+    top: -12,
+    left: '50%',
+    height: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeaderText: {
+    fontSize: 19,
+    lineHeight: 20,
     fontFamily: 'Archivo_400Regular',
   },
-  compactSettingValue: {
-    marginTop: 9,
-    fontSize: 16,
-    color: '#615e4e',
-    fontFamily: 'NotoSans_500Medium',
+  groupLabel: {
+    fontSize: 19,
+    lineHeight: 20,
+    color: palette.white,
+    fontFamily: 'Archivo_400Regular',
+    marginBottom: 10,
+  },
+  customSetsLabel: {
+    marginBottom: 8,
   },
   digitGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
-    width: 352,
-    alignSelf: 'center',
+    marginBottom: 12,
   },
-  digitBox: {
-    width: 64,
-    height: 44,
-    justifyContent: 'center',
+  chipRow: {
+    width: CHIP_ROW_WIDTH,
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: palette.bg,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
-    elevation: 3,
+    gap: SHARED_CHIP_ROW_GAP,
   },
-  timerBox: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
+  customRow: {
+    width: CHIP_ROW_WIDTH,
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: palette.bg,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
-    elevation: 3,
+    gap: SHARED_CHIP_ROW_GAP,
   },
-  chipActive: {
-    backgroundColor: '#C0BEB1',
-    shadowOpacity: 0,
-    elevation: 0,
+  customSpacer: {
+    width: 61,
+    height: 48,
   },
-  chipText: {
-    fontSize: 22,
-    color: palette.beige[3],
+  trayChip: {
+    height: 48,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  trayChipText: {
+    fontSize: 18,
+    lineHeight: 20,
     fontFamily: 'NotoSans_500Medium',
-  },
-  chipTextActive: {
-    color: '#615e4e',
-  },
-  chipTextMath: {
-    fontSize: 22,
-    color: palette.beige[3],
-    fontFamily: 'LibreBaskerville_400Regular_Italic',
-  },
-  chipTextActiveMath: {
-    color: '#615e4e',
-  },
-  chipTextAllClr: {
-    fontFamily: 'NotoSans_500Medium',
-    fontSize: 16,
-    lineHeight: 17,
-    color: palette.beige[3],
     textAlign: 'center',
   },
-  chipDisabled: {
+  mathChipText: {
+    fontSize: 26,
+    lineHeight: 30,
+    fontFamily: 'LibreBaskerville_400Regular_Italic',
+    textAlign: 'center',
+  },
+  digitChipText: {
+    fontSize: 26,
+    lineHeight: 28,
+  },
+  allChipText: {
+    fontSize: 17,
+    lineHeight: 18,
+  },
+  customChipText: {
+    fontSize: 25,
+    lineHeight: 28,
+  },
+  cycleValueText: {
+    fontSize: 19,
+    lineHeight: 20,
+  },
+  raisedButton: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  disabled: {
     opacity: 0.5,
+  },
+  presentationRows: {
+    gap: 12,
+  },
+  selectorRow: {
+    minHeight: 43,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowLabel: {
+    flex: 1,
+    fontSize: 19,
+    lineHeight: 22,
+    fontFamily: 'Archivo_400Regular',
+    paddingRight: 10,
+  },
+  cyclesControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  perLabel: {
+    fontSize: 19,
+    lineHeight: 20,
+    color: palette.white,
+    fontFamily: 'Archivo_400Regular',
   },
 });

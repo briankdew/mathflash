@@ -4,7 +4,7 @@ import Svg, { Image as SvgImage, Rect } from 'react-native-svg';
 import { OperationMode } from '../lib/types';
 import { getOperationTheme } from '../theme/colors';
 
-const STADIUM_WIDTH = 316;
+const STADIUM_WIDTH = 353;
 const STADIUM_HEIGHT = 36;
 
 function StadiumGraphic({
@@ -35,10 +35,10 @@ function StadiumGraphic({
       />
       {showShadow ? (
         <SvgImage
-          x={-6}
-          y={-6}
-          width={328}
-          height={51}
+          x={0}
+          y={0}
+          width={353}
+          height={36}
           href={require('../../assets/stadium-shadow.png')}
           preserveAspectRatio="none"
         />
@@ -56,7 +56,6 @@ interface OperationSelectorProps {
 
 export function OperationSelector({ operation, isActive, isStadiumActive, onToggleOperation }: OperationSelectorProps) {
   const opTheme = getOperationTheme(operation);
-  const stadiumBorderColor = operation === 'addsub' ? '#A6C1DE' : '#AFC6A6';
 
   return (
     <View style={styles.container}>

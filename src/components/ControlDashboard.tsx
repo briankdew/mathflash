@@ -29,6 +29,10 @@ const GEAR_BUTTON_HEIGHT = 39;
 const START_BUTTON_FLASH_DURATION_MS = 180;
 const MIC_BUTTON_SIZE = 43;
 const MIC_BUTTON_GAP = 12;
+const OPERATION_SELECTOR_HEIGHT = 36;
+const SETTINGS_TRAY_TOP_OVERLAP = 10;
+const SETTINGS_TRAY_VISIBLE_OVERLAP =
+  OPERATION_SELECTOR_HEIGHT + SETTINGS_TRAY_TOP_OVERLAP;
 const VOICE_HALO_COLORS = {
   neutral: '#f4f2e7',
   listening: '#c5ffd0',
@@ -113,13 +117,14 @@ export function ControlDashboard({
     voiceIconContentStyle,
     gearStyle,
     inputToggleStyle,
-    settingsWrapperStyle,
-    settingsContentStyle,
+    settingsRevealStyle,
+    settingsSpacerStyle,
   } = useControlDashboardMotion({
     inputMode,
     phase,
     isSettingsOpen,
     settingsMeasuredHeight,
+    trayVisibleOverlap: SETTINGS_TRAY_VISIBLE_OVERLAP,
   });
 
   const startButtonPressedColor =
@@ -327,20 +332,20 @@ export function ControlDashboard({
         </Text>
       </View>
 
-      <OperationSelector
-        operation={options.operation}
-        isActive={isActive}
-        isStadiumActive={isStadiumActive}
-        onToggleOperation={() =>
-          onUpdateOptions({
-            type: 'setOperation',
-            operation: options.operation === 'addsub' ? 'multdiv' : 'addsub',
-          })
-        }
-      />
-
-      <Animated.View style={[{ width: '100%' }, settingsWrapperStyle]}>
-        <Animated.View style={[{ width: '100%' }, settingsContentStyle]}>
+      <View style={{ width: '100%', alignItems: 'center', position: 'relative' }}>
+        <Animated.View
+          pointerEvents={isSettingsOpen ? 'auto' : 'none'}
+          style={[
+            {
+              position: 'absolute',
+              top: -SETTINGS_TRAY_TOP_OVERLAP,
+              width: '100%',
+              alignItems: 'center',
+              zIndex: 1,
+            },
+            settingsRevealStyle,
+          ]}
+        >
           <View
             onLayout={event => {
               const height = Math.ceil(event.nativeEvent.layout.height);
@@ -358,7 +363,23 @@ export function ControlDashboard({
             />
           </View>
         </Animated.View>
-      </Animated.View>
+
+        <View style={{ zIndex: 2, position: 'relative' }}>
+          <OperationSelector
+            operation={options.operation}
+            isActive={isActive}
+            isStadiumActive={isStadiumActive}
+            onToggleOperation={() =>
+              onUpdateOptions({
+                type: 'setOperation',
+                operation: options.operation === 'addsub' ? 'multdiv' : 'addsub',
+              })
+            }
+          />
+        </View>
+
+        <Animated.View style={[{ width: '100%' }, settingsSpacerStyle]} />
+      </View>
     </View>
   );
 }

@@ -17,6 +17,7 @@ interface UseControlDashboardMotionArgs {
   phase: Parameters<typeof isSessionPhaseActive>[0];
   isSettingsOpen: boolean;
   settingsMeasuredHeight: number;
+  trayVisibleOverlap: number;
 }
 
 export function useControlDashboardMotion({
@@ -24,6 +25,7 @@ export function useControlDashboardMotion({
   phase,
   isSettingsOpen,
   settingsMeasuredHeight,
+  trayVisibleOverlap,
 }: UseControlDashboardMotionArgs) {
   const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const untuckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -31,10 +33,8 @@ export function useControlDashboardMotion({
   const keypadSlide = useSharedValue(-KEYPAD_CONTENT_HEIGHT);
   const voiceIconHeight = useSharedValue(0);
   const voiceIconSlide = useSharedValue(-VOICE_ICON_CONTENT_HEIGHT);
-  const settingsHeight = useSharedValue(0);
-  const settingsSlide = useSharedValue(
-    -(SETTINGS_FALLBACK_HEIGHT + SETTINGS_REVEAL_MARGIN)
-  );
+  const settingsRevealHeight = useSharedValue(0);
+  const settingsSpacerHeight = useSharedValue(0);
   const gearOffset = useSharedValue(GEAR_REVEAL_OFFSET);
   const inputToggleOffset = useSharedValue(0);
   const isSessionInProgress = isSessionPhaseActive(phase);
@@ -150,31 +150,41 @@ export function useControlDashboardMotion({
   ]);
 
   useEffect(() => {
-    const settingsTargetHeight =
+    const settingsTargetRevealHeight =
       (settingsMeasuredHeight > 0
         ? settingsMeasuredHeight
         : SETTINGS_FALLBACK_HEIGHT) + SETTINGS_REVEAL_MARGIN;
+    const settingsTargetSpacerHeight = Math.max(
+      0,
+      settingsTargetRevealHeight - trayVisibleOverlap
+    );
 
     if (isSettingsOpen) {
-      settingsHeight.value = withTiming(settingsTargetHeight, {
+      settingsRevealHeight.value = withTiming(settingsTargetRevealHeight, {
         duration: sessionPrepTimeline.roll,
         easing: Easing.linear,
       });
-      settingsSlide.value = withTiming(0, {
+      settingsSpacerHeight.value = withTiming(settingsTargetSpacerHeight, {
         duration: sessionPrepTimeline.roll,
         easing: Easing.linear,
       });
     } else {
-      settingsSlide.value = withTiming(-settingsTargetHeight, {
+      settingsRevealHeight.value = withTiming(0, {
         duration: sessionPrepTimeline.roll,
         easing: Easing.linear,
       });
-      settingsHeight.value = withTiming(0, {
+      settingsSpacerHeight.value = withTiming(0, {
         duration: sessionPrepTimeline.roll,
         easing: Easing.linear,
       });
     }
-  }, [isSettingsOpen, settingsHeight, settingsMeasuredHeight, settingsSlide]);
+  }, [
+    isSettingsOpen,
+    settingsMeasuredHeight,
+    settingsRevealHeight,
+    settingsSpacerHeight,
+    trayVisibleOverlap,
+  ]);
 
   return {
     isSessionInProgress,
@@ -198,12 +208,12 @@ export function useControlDashboardMotion({
     inputToggleStyle: useAnimatedStyle(() => ({
       transform: [{ translateX: inputToggleOffset.value }],
     })),
-    settingsWrapperStyle: useAnimatedStyle(() => ({
-      height: settingsHeight.value,
+    settingsRevealStyle: useAnimatedStyle(() => ({
+      height: settingsRevealHeight.value,
       overflow: 'hidden' as const,
     })),
-    settingsContentStyle: useAnimatedStyle(() => ({
-      transform: [{ translateY: settingsSlide.value }],
+    settingsSpacerStyle: useAnimatedStyle(() => ({
+      height: settingsSpacerHeight.value,
     })),
   };
 }

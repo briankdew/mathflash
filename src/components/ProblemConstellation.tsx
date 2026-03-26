@@ -90,6 +90,8 @@ const ANSWER_BOX_SHADOW_DATA_URI =
     'vnZzOSR8zwncxwTxXbVUPbd/6u0AAAAAAIDtNTTs79uuJJSfMoBfbQ8N47c5hB8SxE+1/9S1hBA+' +
     '8Mgjj/yZEydO/HpgrSR4a/TmN7/56xeLxc/EGK8uDbCnCt3HbJ/aJucaUutt7VRtyHJsu229';
 
+void ANSWER_BOX_SHADOW_DATA_URI;
+
 const ANSWER_BOX_SHADOW_SOURCE = require('../../assets/answer-box-shadow.png');
 
 const AnswerBoxSvg = ({
