@@ -3,9 +3,9 @@ import { theme } from './colors';
 
 export const constellationStyles = StyleSheet.create({
     container: {
-        height: 370, // Tightened after moving operation selector out of this container
+        width: 355,
+        height: 330,
         alignItems: 'center',
-        width: '100%',
     },
     opDisplay: {
         position: 'absolute',
@@ -18,7 +18,7 @@ export const constellationStyles = StyleSheet.create({
         width: 0,
         height: 0,
         position: 'relative',
-        top: 117.5, // Align operand-card tops to container top
+        top: 165, // Practice-area vertical center
     },
     operationLabelContainer: {
         position: 'absolute',
@@ -66,8 +66,8 @@ export const constellationStyles = StyleSheet.create({
     },
     card: {
         position: 'absolute',
-        width: 155,
-        height: 110,
+        width: 150,
+        height: 100,
         backgroundColor: '#DAD8CC',
         borderRadius: 25,
         justifyContent: 'center',
@@ -81,22 +81,19 @@ export const constellationStyles = StyleSheet.create({
         zIndex: 2,
     },
     cardLeft: {
-        // Top calculation: Bottom tangent is -7.5. Height 110. Top = -7.5 - 110 = -117.5
-        top: -117.5,
-        // Left calculation: Circle right edge -22.5. Gap 9. Card right edge -31.5. Width 155. Left = -186.5
-        left: -186.5,
+        top: -165,
+        left: -177.5,
     },
     cardRight: {
-        top: -117.5,
-        // Left calculation: Circle left edge 22.5. Gap 9. Card left edge 31.5
-        left: 31.5,
+        top: -165,
+        left: 27.5,
     },
     cardResult: {
         position: 'absolute',
-        top: 7.5, // 15 down from operand cards bottom (-7.5)
-        left: -107.5, // Center of width 215
-        width: 215,
-        height: 110,
+        top: -50,
+        left: -97.5,
+        width: 195,
+        height: 100,
         backgroundColor: '#C0BEB1',
         borderRadius: 25,
         justifyContent: 'center',
@@ -110,16 +107,16 @@ export const constellationStyles = StyleSheet.create({
     },
     cardAnswer: {
         position: 'absolute',
-        top: 142.5, // 25 down from result card bottom (7.5 + 110 + 25)
-        left: -107.5,
-        width: 215,
-        height: 110,
+        top: 65,
+        left: -97.5,
+        width: 195,
+        height: 100,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 2,
     },
     cardText: {
-        fontSize: 98,
+        fontSize: 90,
         fontWeight: '700',
         fontFamily: 'Nunito_700Bold',
         textShadowColor: 'rgba(0, 0, 0, 0.5)',
@@ -129,53 +126,45 @@ export const constellationStyles = StyleSheet.create({
     },
     ellipseLarge: {
         position: 'absolute',
-        width: 297,
-        height: 202,
+        width: 270,
+        height: 184,
         left: 0,
-        top: 0,
-        transform: [{ translateX: -148.5 }, { translateY: -101 }],
+        top: -53,
+        transform: [{ translateX: -135 }, { translateY: -92 }],
         zIndex: -1,
     },
     ellipseSmall: {
         position: 'absolute',
-        width: 167,
-        height: 137,
+        width: 153,
+        height: 130,
         left: 0,
-        top: 32.5,
-        transform: [{ translateX: -83.5 }, { translateY: -68.5 }],
+        top: -26,
+        transform: [{ translateX: -76.5 }, { translateY: -65 }],
         zIndex: -1,
     },
     circle: {
         position: 'absolute',
-        width: 45, // From Figma W
-        height: 45, // From Figma H
-        borderRadius: 22.5,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        transform: [{ translateX: -22.5 }, { translateY: -22.5 }],
+        transform: [{ translateX: -20 }, { translateY: -20 }],
         zIndex: 3,
     },
     circleMain: {
         left: 0,
-        // Centering logic based on your confirmed math:
-        // Center of Small Ellipse: 32.5
-        // Top Apogee of small path (125 / 2): 62.5
-        // Result: 32.5 - 62.5 = -30
-        top: -30,
+        top: -85,
         backgroundColor: theme.operatorCircleBg,
     },
     circleInvLeft: {
-        // Horizontal: Visual edge at -116.5, center at -139
-        left: -139,
-        // Vertical: Visual top at 7.5, center at 30
-        top: 30,
+        left: -123.5,
+        top: -30,
         backgroundColor: theme.inverseCircleBg,
     },
     circleInvRight: {
-        // Horizontal: Visual edge at 116.5, center at 139
-        left: 139,
-        // Vertical: Visual top at 7.5, center at 30
-        top: 30,
+        left: 123.5,
+        top: -30,
         backgroundColor: theme.inverseCircleBg,
     }
 });

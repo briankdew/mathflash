@@ -5,7 +5,7 @@ export const appStyles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: theme.bg,
-        maxHeight: 852, // iPhone 14 Pro design constraint
+        maxHeight: 759, // Current base-layout height constraint
         borderBottomWidth: 2,
         borderBottomColor: 'rgba(255, 0, 0, 0.2)', // Faint red "floor" line
     },
@@ -34,6 +34,8 @@ export const appStyles = StyleSheet.create({
     constellationWrapper: {
         width: '100%',
         alignItems: 'center',
+        marginTop: 0,
+        marginBottom: 5,
     },
     inputArea: {
         width: '100%',
@@ -52,7 +54,7 @@ export const appStyles = StyleSheet.create({
     textInput: {
         width: '100%',
         height: '100%',
-        fontSize: 98,
+        fontSize: 90,
         fontFamily: 'Nunito_700Bold',
         fontWeight: '700',
         textAlign: 'center',

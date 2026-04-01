@@ -101,12 +101,12 @@ const AnswerBoxSvg = ({
     isActive: boolean;
     isWrongAnswerFill?: boolean;
 }) => (
-    <Svg width="100%" height="100%" viewBox="0 0 215 110" style={StyleSheet.absoluteFill} pointerEvents="none" focusable={false}>
+    <Svg width="100%" height="100%" viewBox="0 0 195 100" style={StyleSheet.absoluteFill} pointerEvents="none" focusable={false}>
         <Rect
             x="0"
             y="0"
-            width="215"
-            height="110"
+            width="195"
+            height="100"
             rx="25"
             ry="25"
             fill={isWrongAnswerFill ? '#ffc5c5' : (isActive ? '#ffffff' : theme.bg)}
@@ -114,8 +114,8 @@ const AnswerBoxSvg = ({
         <SvgImage
             x={0}
             y={0}
-            width={215}
-            height={110}
+            width={195}
+            height={100}
             href={ANSWER_BOX_SHADOW_SOURCE}
             preserveAspectRatio="none"
         />
@@ -436,12 +436,12 @@ export function ProblemConstellation({
                 {/* Ellipses */}
                 <View style={[styles.ellipseLarge, { zIndex: -1 }]}>
                     <Svg width="100%" height="100%">
-                        <Ellipse cx="50%" cy="50%" rx={(297 - 12) / 2} ry={(202 - 12) / 2} stroke="#E7E5D9" strokeWidth="12" fill="none" />
+                        <Ellipse cx="50%" cy="50%" rx={258 / 2} ry={172 / 2} stroke="#E7E5D9" strokeWidth="12" fill="none" />
                     </Svg>
                 </View>
                 <View style={[styles.ellipseSmall, { zIndex: -1 }]}>
                     <Svg width="100%" height="100%">
-                        <Ellipse cx="50%" cy="50%" rx={(167 - 12) / 2} ry={(137 - 12) / 2} stroke="#DAD8CC" strokeWidth="12" fill="none" />
+                        <Ellipse cx="50%" cy="50%" rx={141 / 2} ry={118 / 2} stroke="#DAD8CC" strokeWidth="12" fill="none" />
                     </Svg>
                 </View>
 
@@ -514,8 +514,8 @@ const localStyles = StyleSheet.create({
     },
     operatorLayer: {
         position: 'absolute',
-        width: 45,
-        height: 45,
+        width: 40,
+        height: 40,
         justifyContent: 'center',
         alignItems: 'center',
     },
