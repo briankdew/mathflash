@@ -35,7 +35,7 @@ export const appStyles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         marginTop: 0,
-        marginBottom: 5,
+        marginBottom: 7,
     },
     inputArea: {
         width: '100%',
@@ -45,11 +45,16 @@ export const appStyles = StyleSheet.create({
     statsBlock: {
         width: '100%',
         alignItems: 'center',
+        justifyContent: 'center',
+    },
+    statsTextRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     keypadBlock: {
         width: '100%',
         alignItems: 'center',
-        marginTop: 9, // Reduced 2px (1 to offset stats shift, 1 to move up)
+        marginTop: 0,
     },
     textInput: {
         width: '100%',
@@ -68,9 +73,9 @@ export const appStyles = StyleSheet.create({
     },
     startBtn: {
         width: 215,
-        height: 35,
+        height: 40,
         justifyContent: 'center',
-        borderRadius: 17.5,
+        borderRadius: 20,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
@@ -81,13 +86,25 @@ export const appStyles = StyleSheet.create({
     },
     startBtnText: {
         color: '#fff',
-        fontSize: 15,
+        fontSize: 19,
         fontFamily: 'Archivo_400Regular',
         fontWeight: 'normal',
     },
     countText: {
         fontSize: 16,
+        lineHeight: 16,
         fontFamily: 'Archivo_400Regular',
+        color: theme.textMuted,
+    },
+    statsLabelText: {
+        marginRight: 3,
+        textAlign: 'right',
+    },
+    statsCountText: {
+        fontSize: 16,
+        lineHeight: 16,
+        fontFamily: 'Nunito_700Bold',
+        textAlign: 'left',
         color: theme.textMuted,
     },
     reportLinkBtn: {

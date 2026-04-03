@@ -79,23 +79,16 @@ export default function App() {
               />
 
               <View style={styles.inputArea}>
-                <View style={[styles.statsBlock, { marginTop: 4 }]}>
-                  <Text style={[styles.countText, { lineHeight: 22, color: selectedCountColor }]}>
-                    {session.isActive && !!session.currentProblem ? 'Problems remaining: ' : 'Problems selected: '}
-                    <Text style={{ fontFamily: 'Nunito_700Bold', lineHeight: 22, color: selectedCountColor }}>
+                <View style={[styles.statsBlock, { marginTop: 0, marginBottom: 7 }]}>
+                  <View style={styles.statsTextRow}>
+                    <Text style={[styles.countText, styles.statsLabelText, { color: selectedCountColor }]}>
+                      {session.isActive && !!session.currentProblem ? 'Problems remaining:' : 'Problems selected:'}
+                    </Text>
+                    <Text style={[styles.statsCountText, { color: selectedCountColor }]}>
                       {session.isActive && !!session.currentProblem ? session.totalProblems - session.stats.completed : pendingCount}
                     </Text>
-                  </Text>
+                  </View>
                 </View>
-
-                {!session.isActive && session.sessionPerformanceReport ? (
-                  <Pressable
-                    style={styles.reportLinkBtn}
-                    onPress={session.openPerformanceReport}
-                  >
-                    <Text style={styles.reportLinkText}>View last performance report</Text>
-                  </Pressable>
-                ) : null}
 
                 <View style={{ width: dashboardFrameWidth, alignItems: 'center' }}>
                   <ControlDashboard
@@ -118,6 +111,15 @@ export default function App() {
                     useTimer={session.useTimer}
                     setUseTimer={session.setUseTimer}
                   />
+
+                  {!session.isActive && session.sessionPerformanceReport ? (
+                    <Pressable
+                      style={styles.reportLinkBtn}
+                      onPress={session.openPerformanceReport}
+                    >
+                      <Text style={styles.reportLinkText}>View last performance report</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
               </View>
 

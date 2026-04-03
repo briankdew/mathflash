@@ -4,10 +4,10 @@ import { SessionInputMode } from '../../lib/types';
 import { isSessionPhaseActive } from '../../lib/sessionPhases';
 import { sessionPrepMarks, sessionPrepTimeline } from '../../lib/sessionPrepTimeline';
 
-const KEYPAD_CONTENT_HEIGHT = 232;
-const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 20;
-const VOICE_ICON_CONTENT_HEIGHT = 240;
-const VOICE_ICON_REVEAL_HEIGHT = VOICE_ICON_CONTENT_HEIGHT + 20;
+const KEYPAD_CONTENT_HEIGHT = 222;
+const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 15;
+const VOICE_ICON_CONTENT_HEIGHT = 222;
+const VOICE_ICON_REVEAL_HEIGHT = VOICE_ICON_CONTENT_HEIGHT + 15;
 const SETTINGS_REVEAL_MARGIN = 5;
 const SETTINGS_FALLBACK_HEIGHT = 240;
 const GEAR_REVEAL_OFFSET = 145;

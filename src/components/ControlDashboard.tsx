@@ -21,7 +21,7 @@ import { appStyles as styles } from '../theme/App.styles';
 import { theme } from '../theme/colors';
 import { useControlDashboardMotion } from '../hooks/ui/useControlDashboardMotion';
 
-const START_BUTTON_HEIGHT = 35;
+const START_BUTTON_HEIGHT = 40;
 const START_BUTTON_MARGIN_BOTTOM = 20;
 const START_BUTTON_WIDTH = 215;
 const GEAR_BUTTON_WIDTH = 51;
@@ -29,6 +29,10 @@ const GEAR_BUTTON_HEIGHT = 39;
 const START_BUTTON_FLASH_DURATION_MS = 180;
 const MIC_BUTTON_SIZE = 43;
 const MIC_BUTTON_GAP = 12;
+const INPUT_CONTAINER_WIDTH = 320;
+const INPUT_CONTAINER_HEIGHT = 222;
+const INPUT_CONTAINER_MARGIN_BOTTOM = 15;
+const VOICE_MICROPHONE_WIDTH = (INPUT_CONTAINER_HEIGHT * 330) / 241;
 const OPERATION_SELECTOR_HEIGHT = 36;
 const SETTINGS_TRAY_TOP_OVERLAP = 10;
 const SETTINGS_TRAY_VISIBLE_OVERLAP =
@@ -197,7 +201,17 @@ export function ControlDashboard({
           keypadWrapperStyle,
         ]}
       >
-        <Animated.View style={[{ width: '100%', alignItems: 'center' }, keypadContentStyle]}>
+        <Animated.View
+          style={[
+            {
+              width: INPUT_CONTAINER_WIDTH,
+              height: INPUT_CONTAINER_HEIGHT,
+              alignItems: 'center',
+              marginBottom: INPUT_CONTAINER_MARGIN_BOTTOM,
+            },
+            keypadContentStyle,
+          ]}
+        >
           <NumberPad
             onDigit={onDigitInput}
             onClear={onClearInput}
@@ -213,8 +227,19 @@ export function ControlDashboard({
           voiceIconWrapperStyle,
         ]}
       >
-        <Animated.View style={[{ width: '100%', alignItems: 'center' }, voiceIconContentStyle]}>
-          <IconVoiceInputMicrophone width={330} haloFill={voiceHaloColor} />
+        <Animated.View
+          style={[
+            {
+              width: INPUT_CONTAINER_WIDTH,
+              height: INPUT_CONTAINER_HEIGHT,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: INPUT_CONTAINER_MARGIN_BOTTOM,
+            },
+            voiceIconContentStyle,
+          ]}
+        >
+          <IconVoiceInputMicrophone width={VOICE_MICROPHONE_WIDTH} haloFill={voiceHaloColor} />
         </Animated.View>
       </Animated.View>
 
@@ -317,19 +342,6 @@ export function ControlDashboard({
           </Text>
         </Pressable>
 
-        <Text
-          pointerEvents="none"
-          style={[
-            styles.voiceStatusText,
-            {
-              position: 'absolute',
-              top: START_BUTTON_HEIGHT + 2,
-              opacity: voiceStatusText ? 1 : 0,
-            },
-          ]}
-        >
-          {voiceStatusText || ' '}
-        </Text>
       </View>
 
       <View style={{ width: '100%', alignItems: 'center', position: 'relative' }}>
@@ -380,6 +392,13 @@ export function ControlDashboard({
 
         <Animated.View style={[{ width: '100%' }, settingsSpacerStyle]} />
       </View>
+
+      <Text
+        pointerEvents="none"
+        style={[styles.voiceStatusText, { opacity: voiceStatusText ? 1 : 0 }]}
+      >
+        {voiceStatusText || ' '}
+      </Text>
     </View>
   );
 }
