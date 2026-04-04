@@ -265,6 +265,8 @@ interface SettingsPanelProps {
   updateOptions: (update: SessionOptionsUpdate) => void;
   useTimer: boolean;
   setUseTimer: (val: boolean) => void;
+  isMeasureOverlayEnabled: boolean;
+  setIsMeasureOverlayEnabled: (val: boolean) => void;
   disabled?: boolean;
 }
 
@@ -273,6 +275,8 @@ export function SettingsPanel({
   updateOptions,
   useTimer,
   setUseTimer,
+  isMeasureOverlayEnabled,
+  setIsMeasureOverlayEnabled,
   disabled,
 }: SettingsPanelProps) {
   const colors = getTrayColorTheme(options.operation);
@@ -306,6 +310,14 @@ export function SettingsPanel({
       onPress: () => updateOptions({ type: 'toggleStartMode' }),
     },
   ];
+  if (__DEV__) {
+    globalRows.push({
+      label: 'Measure',
+      testID: 'setting-measure',
+      value: isMeasureOverlayEnabled ? 'On' : 'Off',
+      onPress: () => setIsMeasureOverlayEnabled(!isMeasureOverlayEnabled),
+    });
+  }
   const presentationRows = [
     {
       label: 'Problem order',

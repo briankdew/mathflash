@@ -23,12 +23,15 @@ describe('SettingsPanel', () => {
   it('renders operation-specific custom sets', () => {
     const updateOptions = jest.fn();
     const setUseTimer = jest.fn();
+    const setIsMeasureOverlayEnabled = jest.fn();
     const view = render(
       <SettingsPanel
         options={createOptions({ operation: 'addsub' })}
         updateOptions={updateOptions}
         useTimer
         setUseTimer={setUseTimer}
+        isMeasureOverlayEnabled={false}
+        setIsMeasureOverlayEnabled={setIsMeasureOverlayEnabled}
       />
     );
 
@@ -41,6 +44,8 @@ describe('SettingsPanel', () => {
         updateOptions={updateOptions}
         useTimer
         setUseTimer={setUseTimer}
+        isMeasureOverlayEnabled={false}
+        setIsMeasureOverlayEnabled={setIsMeasureOverlayEnabled}
       />
     );
 
@@ -52,6 +57,7 @@ describe('SettingsPanel', () => {
   it('keeps global setting labels stable across operations', () => {
     const updateOptions = jest.fn();
     const setUseTimer = jest.fn();
+    const setIsMeasureOverlayEnabled = jest.fn();
     const globalState = createOptions({
       autoShowPerformanceReport: true,
       startMode: 'min',
@@ -62,6 +68,8 @@ describe('SettingsPanel', () => {
         updateOptions={updateOptions}
         useTimer={false}
         setUseTimer={setUseTimer}
+        isMeasureOverlayEnabled={false}
+        setIsMeasureOverlayEnabled={setIsMeasureOverlayEnabled}
       />
     );
 
@@ -82,6 +90,8 @@ describe('SettingsPanel', () => {
         updateOptions={updateOptions}
         useTimer={false}
         setUseTimer={setUseTimer}
+        isMeasureOverlayEnabled={false}
+        setIsMeasureOverlayEnabled={setIsMeasureOverlayEnabled}
       />
     );
 
@@ -93,6 +103,7 @@ describe('SettingsPanel', () => {
   it('reflects sets mode and enum labels in the selector buttons', () => {
     const updateOptions = jest.fn();
     const setUseTimer = jest.fn();
+    const setIsMeasureOverlayEnabled = jest.fn();
     const view = render(
       <SettingsPanel
         options={createOptions({
@@ -104,6 +115,8 @@ describe('SettingsPanel', () => {
         updateOptions={updateOptions}
         useTimer
         setUseTimer={setUseTimer}
+        isMeasureOverlayEnabled={false}
+        setIsMeasureOverlayEnabled={setIsMeasureOverlayEnabled}
       />
     );
 
@@ -123,6 +136,8 @@ describe('SettingsPanel', () => {
         updateOptions={updateOptions}
         useTimer
         setUseTimer={setUseTimer}
+        isMeasureOverlayEnabled={false}
+        setIsMeasureOverlayEnabled={setIsMeasureOverlayEnabled}
       />
     );
 
@@ -135,12 +150,15 @@ describe('SettingsPanel', () => {
   it('does not fire handlers while disabled', () => {
     const updateOptions = jest.fn();
     const setUseTimer = jest.fn();
+    const setIsMeasureOverlayEnabled = jest.fn();
     const view = render(
       <SettingsPanel
         options={createOptions()}
         updateOptions={updateOptions}
         useTimer
         setUseTimer={setUseTimer}
+        isMeasureOverlayEnabled={false}
+        setIsMeasureOverlayEnabled={setIsMeasureOverlayEnabled}
         disabled
       />
     );
@@ -154,5 +172,27 @@ describe('SettingsPanel', () => {
     expect(timerButton.props.disabled).toBe(true);
     expect(updateOptions).not.toHaveBeenCalled();
     expect(setUseTimer).not.toHaveBeenCalled();
+  });
+
+  it('renders the development measure toggle and reflects its state', () => {
+    const updateOptions = jest.fn();
+    const setUseTimer = jest.fn();
+    const setIsMeasureOverlayEnabled = jest.fn();
+    const view = render(
+      <SettingsPanel
+        options={createOptions()}
+        updateOptions={updateOptions}
+        useTimer
+        setUseTimer={setUseTimer}
+        isMeasureOverlayEnabled
+        setIsMeasureOverlayEnabled={setIsMeasureOverlayEnabled}
+      />
+    );
+
+    if (__DEV__) {
+      expect(view.getByLabelText('setting-measure:On')).toBeTruthy();
+    } else {
+      expect(view.queryByLabelText('setting-measure:On')).toBeNull();
+    }
   });
 });

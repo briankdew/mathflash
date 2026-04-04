@@ -84,6 +84,8 @@ interface ControlDashboardProps {
   onUpdateOptions: (update: SessionOptionsUpdate) => void;
   useTimer: boolean;
   setUseTimer: (val: boolean) => void;
+  isMeasureOverlayEnabled: boolean;
+  setIsMeasureOverlayEnabled: (val: boolean) => void;
 }
 
 export function ControlDashboard({
@@ -103,6 +105,8 @@ export function ControlDashboard({
   onUpdateOptions,
   useTimer,
   setUseTimer,
+  isMeasureOverlayEnabled,
+  setIsMeasureOverlayEnabled,
 }: ControlDashboardProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsMeasuredHeight, setSettingsMeasuredHeight] = useState(0);
@@ -371,6 +375,8 @@ export function ControlDashboard({
               updateOptions={onUpdateOptions}
               useTimer={useTimer}
               setUseTimer={setUseTimer}
+              isMeasureOverlayEnabled={isMeasureOverlayEnabled}
+              setIsMeasureOverlayEnabled={setIsMeasureOverlayEnabled}
               disabled={isActive}
             />
           </View>

@@ -9,7 +9,9 @@ import {
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Header } from './src/components/Header';
+import { MeasureOverlay } from './src/components/MeasureOverlay';
 import { PracticeArea } from './src/components/PracticeArea';
 import { ControlDashboard } from './src/components/ControlDashboard';
 import { SessionPerformanceSheet } from './src/components/SessionPerformanceSheet';
@@ -29,6 +31,10 @@ export default function App() {
   const selectedCountColor = !session.isActive && pendingCount === 0 ? '#890124' : theme.textMuted;
   const { width: windowWidth } = useWindowDimensions();
   const dashboardFrameWidth = Math.min(windowWidth, 600);
+  const [safeAreaSize, setSafeAreaSize] = React.useState({ width: 0, height: 0 });
+  const [isMeasureOverlayEnabled, setIsMeasureOverlayEnabled] = React.useState(false);
+  const [measureLineY, setMeasureLineY] = React.useState<number | null>(null);
+  const [measureLabelX, setMeasureLabelX] = React.useState<number | null>(null);
 
   let [fontsLoaded] = useFonts({
     Nunito_700Bold,
@@ -39,94 +45,178 @@ export default function App() {
     LibreBaskerville_400Regular_Italic,
   });
 
+  React.useEffect(() => {
+    if (safeAreaSize.width <= 0 || safeAreaSize.height <= 0) {
+      return;
+    }
+
+    if (measureLineY !== null) {
+      const clampedLineY = Math.min(
+        Math.max(measureLineY, 0),
+        Math.max(0, safeAreaSize.height - 1)
+      );
+      if (clampedLineY !== measureLineY) {
+        setMeasureLineY(clampedLineY);
+      }
+    }
+
+    if (measureLabelX !== null) {
+      const clampedLabelX = Math.min(Math.max(measureLabelX, 0), safeAreaSize.width);
+      if (clampedLabelX !== measureLabelX) {
+        setMeasureLabelX(clampedLabelX);
+      }
+    }
+
+    if (isMeasureOverlayEnabled && measureLineY === null) {
+      setMeasureLineY(Math.round(safeAreaSize.height / 2));
+    }
+
+    if (isMeasureOverlayEnabled && measureLabelX === null) {
+      setMeasureLabelX(Math.round(safeAreaSize.width / 2));
+    }
+  }, [
+    isMeasureOverlayEnabled,
+    measureLabelX,
+    measureLineY,
+    safeAreaSize.height,
+    safeAreaSize.width,
+  ]);
+
   if (!fontsLoaded) return null;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <SessionPerformanceSheet
-        visible={session.isPerformanceReportVisible}
-        report={session.sessionPerformanceReport}
-        onClose={session.closePerformanceReport}
-      />
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <GestureHandlerRootView style={styles.gestureRoot}>
+      <SafeAreaView
+        style={styles.safeArea}
+        onLayout={event => {
+          const { width, height } = event.nativeEvent.layout;
+          if (width !== safeAreaSize.width || height !== safeAreaSize.height) {
+            setSafeAreaSize({ width, height });
+          }
+        }}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+        <SessionPerformanceSheet
+          visible={session.isPerformanceReportVisible}
+          report={session.sessionPerformanceReport}
+          onClose={session.closePerformanceReport}
+        />
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <Header operation={session.options.operation} />
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Header operation={session.options.operation} />
 
-          <View style={styles.mainLayout}>
-            <View style={styles.panelCenter}>
+            <View style={styles.mainLayout}>
+              <View style={styles.panelCenter}>
 
-              <PracticeArea
-                currentProblem={session.currentProblem}
-                options={session.options}
-                phase={session.phase}
-                isActive={session.isActive}
-                isInputEnabled={session.isInputEnabled}
-                inputMode={session.inputMode}
-                voiceState={session.voiceState}
-                onCheckAnswer={session.submitAnswerAttempt}
-                onAdvanceProblem={session.advanceToNextProblem}
-                onInputChanged={session.setInputValue}
-                onPauseVoiceInput={session.pauseVoiceInput}
-                onResumeVoiceInput={session.resumeVoiceInput}
-                onClearPendingVoiceAttempt={session.clearPendingVoiceAttempt}
-                inputValue={session.inputValue}
-              />
+                <PracticeArea
+                  currentProblem={session.currentProblem}
+                  options={session.options}
+                  phase={session.phase}
+                  isActive={session.isActive}
+                  isInputEnabled={session.isInputEnabled}
+                  inputMode={session.inputMode}
+                  voiceState={session.voiceState}
+                  onCheckAnswer={session.submitAnswerAttempt}
+                  onAdvanceProblem={session.advanceToNextProblem}
+                  onInputChanged={session.setInputValue}
+                  onPauseVoiceInput={session.pauseVoiceInput}
+                  onResumeVoiceInput={session.resumeVoiceInput}
+                  onClearPendingVoiceAttempt={session.clearPendingVoiceAttempt}
+                  inputValue={session.inputValue}
+                />
 
-              <View style={styles.inputArea}>
-                <View style={[styles.statsBlock, { marginTop: 0, marginBottom: 7 }]}>
-                  <View style={styles.statsTextRow}>
-                    <Text style={[styles.countText, styles.statsLabelText, { color: selectedCountColor }]}>
-                      {session.isActive && !!session.currentProblem ? 'Problems remaining:' : 'Problems selected:'}
-                    </Text>
-                    <Text style={[styles.statsCountText, { color: selectedCountColor }]}>
-                      {session.isActive && !!session.currentProblem ? session.totalProblems - session.stats.completed : pendingCount}
-                    </Text>
+                <View style={styles.inputArea}>
+                  <View
+                    style={[
+                      styles.statsBlock,
+                      {
+                        marginTop: 0,
+                        marginBottom: 7,
+                      },
+                    ]}
+                  >
+                    <View style={styles.statsTextRow}>
+                      <Text
+                        style={[
+                          styles.countText,
+                          styles.statsLabelText,
+                          {
+                            color: selectedCountColor,
+                          },
+                        ]}
+                      >
+                        {session.isActive && !!session.currentProblem ? 'Problems remaining:' : 'Problems selected:'}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.statsCountText,
+                          {
+                            color: selectedCountColor,
+                          },
+                        ]}
+                      >
+                        {session.isActive && !!session.currentProblem ? session.totalProblems - session.stats.completed : pendingCount}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ width: dashboardFrameWidth, alignItems: 'center' }}>
+                    <ControlDashboard
+                      phase={session.phase}
+                      isActive={session.isActive}
+                      isStadiumActive={session.isStadiumActive}
+                      inputMode={session.inputMode}
+                      voiceState={session.voiceState}
+                      options={session.options}
+                      opTheme={opTheme}
+                      onStartSession={session.startSession}
+                      onEndSession={session.endSession}
+                      onToggleInputMode={() =>
+                        session.setInputMode(session.inputMode === 'keypad' ? 'voice' : 'keypad')
+                      }
+                      onDigitInput={session.appendInputDigit}
+                      onClearInput={session.clearInputValue}
+                      isInputEnabled={session.isInputEnabled}
+                      onUpdateOptions={session.updateOptions}
+                      useTimer={session.useTimer}
+                      setUseTimer={session.setUseTimer}
+                      isMeasureOverlayEnabled={isMeasureOverlayEnabled}
+                      setIsMeasureOverlayEnabled={setIsMeasureOverlayEnabled}
+                    />
+
+                    {!session.isActive && session.sessionPerformanceReport ? (
+                      <Pressable
+                        style={styles.reportLinkBtn}
+                        onPress={session.openPerformanceReport}
+                      >
+                        <Text style={styles.reportLinkText}>View last performance report</Text>
+                      </Pressable>
+                    ) : null}
                   </View>
                 </View>
 
-                <View style={{ width: dashboardFrameWidth, alignItems: 'center' }}>
-                  <ControlDashboard
-                    phase={session.phase}
-                    isActive={session.isActive}
-                    isStadiumActive={session.isStadiumActive}
-                    inputMode={session.inputMode}
-                    voiceState={session.voiceState}
-                    options={session.options}
-                    opTheme={opTheme}
-                    onStartSession={session.startSession}
-                    onEndSession={session.endSession}
-                    onToggleInputMode={() =>
-                      session.setInputMode(session.inputMode === 'keypad' ? 'voice' : 'keypad')
-                    }
-                    onDigitInput={session.appendInputDigit}
-                    onClearInput={session.clearInputValue}
-                    isInputEnabled={session.isInputEnabled}
-                    onUpdateOptions={session.updateOptions}
-                    useTimer={session.useTimer}
-                    setUseTimer={session.setUseTimer}
-                  />
-
-                  {!session.isActive && session.sessionPerformanceReport ? (
-                    <Pressable
-                      style={styles.reportLinkBtn}
-                      onPress={session.openPerformanceReport}
-                    >
-                      <Text style={styles.reportLinkText}>View last performance report</Text>
-                    </Pressable>
-                  ) : null}
-                </View>
               </View>
-
             </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+
+        {__DEV__ ? (
+          <MeasureOverlay
+            enabled={isMeasureOverlayEnabled}
+            safeAreaHeight={safeAreaSize.height}
+            safeAreaWidth={safeAreaSize.width}
+            lineY={measureLineY}
+            onChangeLineY={setMeasureLineY}
+            labelX={measureLabelX}
+            onChangeLabelX={setMeasureLabelX}
+          />
+        ) : null}
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }

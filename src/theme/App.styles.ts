@@ -2,6 +2,9 @@ import { StyleSheet } from 'react-native';
 import { theme } from './colors';
 
 export const appStyles = StyleSheet.create({
+    gestureRoot: {
+        flex: 1,
+    },
     safeArea: {
         flex: 1,
         backgroundColor: theme.bg,
