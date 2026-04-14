@@ -4,7 +4,7 @@ import Svg, { Ellipse } from 'react-native-svg';
 import { ProblemDisplay, OperationMode, StartMode, SessionPhase } from '../lib/types';
 import { isSessionPhasePreparing } from '../lib/sessionPhases';
 import { sessionPrepMarks, sessionPrepTimeline } from '../lib/sessionPrepTimeline';
-import { theme, getOperationTheme } from '../theme/colors';
+import { palette, theme, getOperationTheme } from '../theme/colors';
 import { constellationStyles as styles } from '../theme/ProblemConstellation.styles';
 import Animated, {
     cancelAnimation,
@@ -47,7 +47,7 @@ function getProblemSlotValue(
 
 function getAnswerHostFill(isActive: boolean, showWrongAnswerFill: boolean) {
     if (showWrongAnswerFill) {
-        return '#ffc5c5';
+        return theme.statusError;
     }
 
     if (isActive) {
@@ -363,24 +363,18 @@ export function ProblemConstellation({
     };
 
     const slotTextColors = {
-        left: problem ? opTheme.textOperand : '#c0beb1',
-        right: problem ? opTheme.textOperand : '#c0beb1',
-        result: problem ? opTheme.textResult : '#a7a597',
+        left: problem ? opTheme.textOperand : palette.beige[3],
+        right: problem ? opTheme.textOperand : palette.beige[3],
+        result: problem ? opTheme.textResult : palette.beige[4],
     };
-    const prepBackTextColors = operation === 'addsub'
-        ? { ready: '#85A8CD', set: '#53789E', result: '#224A71' }
-        : { ready: '#91AE85', set: '#49683B', result: '#325124' };
+    const prepBackTextColors = opTheme.prepBackText;
     const prepResultLabel = operation === 'addsub' ? 'add!' : 'multiply!';
     const shouldShowPrepBackText = !problem && startMode !== 'min' && !showBlankFinalBackText;
     const answerHostFill = getAnswerHostFill(isActive && !!problem, showWrongAnswerFill);
-    const mainOperatorStandardColors = operation === 'addsub'
-        ? { circleFill: '#85a8cd', operatorFill: '#c7daef' }
-        : { circleFill: '#91ae85', operatorFill: '#cdddc6' };
-    const mainOperatorMutedColors = { circleFill: '#dad8cc', operatorFill: '#cdcbbe' };
-    const secondaryOperatorStandardColors = operation === 'addsub'
-        ? { circleFill: '#c7daef', operatorFill: '#6b90b6' }
-        : { circleFill: '#cdddc6', operatorFill: '#79966c' };
-    const secondaryOperatorMutedColors = { circleFill: '#e7e5d9', operatorFill: '#dad8cc' };
+    const mainOperatorStandardColors = opTheme.mainOperator;
+    const mainOperatorMutedColors = { circleFill: palette.beige[2], operatorFill: palette.beige[3] };
+    const secondaryOperatorStandardColors = opTheme.secondaryOperator;
+    const secondaryOperatorMutedColors = { circleFill: palette.beige[1], operatorFill: palette.beige[2] };
 
     const MainIcon = operation === 'addsub' ? IconPlus : IconTimes;
     const InvIcon = operation === 'addsub' ? IconMinus : IconDivide;
@@ -527,12 +521,12 @@ export function ProblemConstellation({
                 {/* Ellipses */}
                 <View style={[styles.ellipseLarge, { zIndex: -1 }]}>
                     <Svg width="100%" height="100%">
-                        <Ellipse cx="50%" cy="50%" rx={258 / 2} ry={172 / 2} stroke="#E7E5D9" strokeWidth="12" fill="none" />
+                        <Ellipse cx="50%" cy="50%" rx={258 / 2} ry={172 / 2} stroke={theme.ellipseLargeStroke} strokeWidth="12" fill="none" />
                     </Svg>
                 </View>
                 <View style={[styles.ellipseSmall, { zIndex: -1 }]}>
                     <Svg width="100%" height="100%">
-                        <Ellipse cx="50%" cy="50%" rx={141 / 2} ry={118 / 2} stroke="#DAD8CC" strokeWidth="12" fill="none" />
+                        <Ellipse cx="50%" cy="50%" rx={141 / 2} ry={118 / 2} stroke={theme.ellipseSmallStroke} strokeWidth="12" fill="none" />
                     </Svg>
                 </View>
 
@@ -604,9 +598,6 @@ const localStyles = StyleSheet.create({
     },
     backTextBase: {
         zIndex: 10,
-        textShadowColor: 'transparent',
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 0,
     },
     operandBackText: {
         fontFamily: 'Nunito_700Bold',

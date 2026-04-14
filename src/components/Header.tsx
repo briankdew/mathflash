@@ -10,11 +10,16 @@ interface HeaderProps {
 
 export function Header({ operation }: HeaderProps) {
   const currentTheme = getOperationTheme(operation);
+  const logoColors = {
+    logoMath: currentTheme.logoMath,
+    logoFlash: currentTheme.logoFlash,
+    tagline: currentTheme.tagline,
+  };
 
   return (
     <View style={styles.headerContainer}>
       <View style={styles.headerContent}>
-        <LogoWithTagline colors={currentTheme} />
+        <LogoWithTagline colors={logoColors} />
       </View>
     </View >
   );

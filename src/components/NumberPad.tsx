@@ -63,7 +63,7 @@ export function NumberPad({ onDigit, onClear, disabled = false }: NumberPadProps
                         <Path
                             d="m48.087 21.321 9.3579 9.3579m0-9.3579-9.3579 9.3579m-5.0406 5.6407c-0.54054 0-1.0319-0.14129-1.4743-0.42384-0.44226-0.28254-0.82302-0.64494-1.1424-1.0872l-5.3439-7.5184c-0.2703-0.39232-0.40543-0.8222-0.40543-1.2895 0-0.46709 0.1351-0.89724 0.40543-1.2903l5.3439-7.5184c0.31943-0.44226 0.70019-0.80466 1.1424-1.0872 0.44226-0.28254 0.93369-0.42384 1.4743-0.42384l17.824 1.3e-5c0.60812 0 1.1288 0.2165 1.5619 0.64939 0.43294 0.43323 0.64939 0.95379 0.64939 1.5619v16.216c0 0.60811-0.21644 1.1287-0.64939 1.5615-0.43317 0.43322-0.95379 0.64977-1.5619 0.64977z"
                             fill="none"
-                            stroke={palette.beige[7]}
+                            stroke={palette.beige[8]}
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={3.36}
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
         width: 100,
         height: 48,
         borderRadius: 14,
-        backgroundColor: palette.beige[1],
+        backgroundColor: palette.beige[2],
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#000',
@@ -110,6 +110,6 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: 33,
         fontFamily: 'Nunito_700Bold',
-        color: palette.beige[7],
+        color: palette.beige[8],
     },
 });

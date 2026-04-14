@@ -17,18 +17,14 @@ import { ControlDashboard } from './src/components/ControlDashboard';
 import { SessionPerformanceSheet } from './src/components/SessionPerformanceSheet';
 import { useMathSession } from './src/hooks/useMathSession';
 import { theme, getOperationTheme } from './src/theme/colors';
-import { useFonts, Nunito_700Bold, Nunito_800ExtraBold_Italic } from '@expo-google-fonts/nunito';
-import { Archivo_400Regular } from '@expo-google-fonts/archivo';
-import { Fredoka_400Regular } from '@expo-google-fonts/fredoka';
-import { NotoSans_500Medium } from '@expo-google-fonts/noto-sans';
-import { LibreBaskerville_400Regular_Italic } from '@expo-google-fonts/libre-baskerville';
+import { useFonts } from 'expo-font';
 import { appStyles as styles } from './src/theme/App.styles';
 
 export default function App() {
   const session = useMathSession();
   const opTheme = getOperationTheme(session.options.operation);
   const pendingCount = session.getPendingCount();
-  const selectedCountColor = !session.isActive && pendingCount === 0 ? '#890124' : theme.textMuted;
+  const selectedCountColor = !session.isActive && pendingCount === 0 ? theme.dangerText : theme.textMuted;
   const { width: windowWidth } = useWindowDimensions();
   const dashboardFrameWidth = Math.min(windowWidth, 600);
   const [safeAreaSize, setSafeAreaSize] = React.useState({ width: 0, height: 0 });
@@ -37,12 +33,12 @@ export default function App() {
   const [measureLabelX, setMeasureLabelX] = React.useState<number | null>(null);
 
   let [fontsLoaded] = useFonts({
-    Nunito_700Bold,
-    Nunito_800ExtraBold_Italic,
-    Archivo_400Regular,
-    Fredoka_400Regular,
-    NotoSans_500Medium,
-    LibreBaskerville_400Regular_Italic,
+    Nunito_700Bold: require('./assets/fonts/Nunito_700Bold.ttf'),
+    Nunito_800ExtraBold_Italic: require('./assets/fonts/Nunito_800ExtraBold_Italic.ttf'),
+    Archivo_400Regular: require('./assets/fonts/Archivo_400Regular.ttf'),
+    Fredoka_400Regular: require('./assets/fonts/Fredoka_400Regular.ttf'),
+    NotoSans_500Medium: require('./assets/fonts/NotoSans_500Medium.ttf'),
+    LibreBaskerville_400Regular_Italic: require('./assets/fonts/LibreBaskerville_400Regular_Italic.ttf'),
   });
 
   React.useEffect(() => {

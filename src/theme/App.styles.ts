@@ -10,7 +10,7 @@ export const appStyles = StyleSheet.create({
         backgroundColor: theme.bg,
         maxHeight: 759, // Current base-layout height constraint
         borderBottomWidth: 2,
-        borderBottomColor: 'rgba(255, 0, 0, 0.2)', // Faint red "floor" line
+        borderBottomColor: theme.floorLine, // Faint red "floor" line
     },
     keyboardView: {
         flex: 1,
@@ -38,7 +38,7 @@ export const appStyles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         marginTop: 0,
-        marginBottom: 7,
+        marginBottom: 10,
     },
     inputArea: {
         width: '100%',
@@ -66,7 +66,7 @@ export const appStyles = StyleSheet.create({
         fontFamily: 'Nunito_700Bold',
         fontWeight: '700',
         textAlign: 'center',
-        color: '#777565',
+        color: theme.textMuted,
         backgroundColor: 'transparent',
         zIndex: 10,
     },

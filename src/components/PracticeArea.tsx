@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { Platform, TextInput, type StyleProp, type TextStyle, View } from 'react-native';
 import { appStyles as styles } from '../theme/App.styles';
+import { theme } from '../theme/colors';
 import { ProblemConstellation } from './ProblemConstellation';
 import {
   AnswerAttempt,
@@ -200,7 +201,7 @@ export function PracticeArea({
             ref={inputRef}
             style={[
               styles.textInput,
-              isWrongAnswerDisplayActive ? { color: '#890124' } : null,
+              isWrongAnswerDisplayActive ? { color: theme.dangerText } : null,
               webInputResetStyle,
             ]}
             keyboardType="number-pad"

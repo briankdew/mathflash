@@ -4,10 +4,10 @@ import { SessionInputMode } from '../../lib/types';
 import { isSessionPhaseActive } from '../../lib/sessionPhases';
 import { sessionPrepMarks, sessionPrepTimeline } from '../../lib/sessionPrepTimeline';
 
-const KEYPAD_CONTENT_HEIGHT = 222;
-const KEYPAD_REVEAL_HEIGHT = KEYPAD_CONTENT_HEIGHT + 15;
-const VOICE_ICON_CONTENT_HEIGHT = 222;
-const VOICE_ICON_REVEAL_HEIGHT = VOICE_ICON_CONTENT_HEIGHT + 15;
+const INPUT_CONTENT_HEIGHT = 231;
+const INPUT_CONTENT_MARGIN_BOTTOM = 6;
+const INPUT_VIEWPORT_HEIGHT = INPUT_CONTENT_HEIGHT + INPUT_CONTENT_MARGIN_BOTTOM;
+const INPUT_INACTIVE_OFFSET = INPUT_VIEWPORT_HEIGHT;
 const SETTINGS_REVEAL_MARGIN = 5;
 const SETTINGS_FALLBACK_HEIGHT = 240;
 const GEAR_REVEAL_OFFSET = 145;
@@ -29,10 +29,8 @@ export function useControlDashboardMotion({
 }: UseControlDashboardMotionArgs) {
   const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const untuckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const keypadHeight = useSharedValue(0);
-  const keypadSlide = useSharedValue(-KEYPAD_CONTENT_HEIGHT);
-  const voiceIconHeight = useSharedValue(0);
-  const voiceIconSlide = useSharedValue(-VOICE_ICON_CONTENT_HEIGHT);
+  const keypadOffset = useSharedValue(0);
+  const voiceIconOffset = useSharedValue(INPUT_INACTIVE_OFFSET);
   const settingsRevealHeight = useSharedValue(0);
   const settingsSpacerHeight = useSharedValue(0);
   const gearOffset = useSharedValue(GEAR_REVEAL_OFFSET);
@@ -60,60 +58,37 @@ export function useControlDashboardMotion({
       });
 
       rollTimeoutRef.current = setTimeout(() => {
-        if (inputMode === 'keypad') {
-          keypadHeight.value = withTiming(KEYPAD_REVEAL_HEIGHT, {
+        keypadOffset.value = withTiming(
+          inputMode === 'keypad' ? 0 : -INPUT_INACTIVE_OFFSET,
+          {
             duration: sessionPrepTimeline.roll,
             easing: Easing.linear,
-          });
-          keypadSlide.value = withTiming(0, {
+          }
+        );
+        voiceIconOffset.value = withTiming(
+          inputMode === 'keypad' ? INPUT_INACTIVE_OFFSET : 0,
+          {
             duration: sessionPrepTimeline.roll,
             easing: Easing.linear,
-          });
-          voiceIconSlide.value = withTiming(-VOICE_ICON_CONTENT_HEIGHT, {
-            duration: sessionPrepTimeline.roll,
-            easing: Easing.linear,
-          });
-          voiceIconHeight.value = withTiming(0, {
-            duration: sessionPrepTimeline.roll,
-            easing: Easing.linear,
-          });
-        } else {
-          voiceIconHeight.value = withTiming(VOICE_ICON_REVEAL_HEIGHT, {
-            duration: sessionPrepTimeline.roll,
-            easing: Easing.linear,
-          });
-          voiceIconSlide.value = withTiming(0, {
-            duration: sessionPrepTimeline.roll,
-            easing: Easing.linear,
-          });
-          keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
-            duration: sessionPrepTimeline.roll,
-            easing: Easing.linear,
-          });
-          keypadHeight.value = withTiming(0, {
-            duration: sessionPrepTimeline.roll,
-            easing: Easing.linear,
-          });
-        }
+          }
+        );
         rollTimeoutRef.current = null;
       }, sessionPrepMarks.keypadRollStartAt);
     } else {
-      keypadSlide.value = withTiming(-KEYPAD_CONTENT_HEIGHT, {
-        duration: sessionPrepTimeline.roll,
-        easing: Easing.linear,
-      });
-      keypadHeight.value = withTiming(0, {
-        duration: sessionPrepTimeline.roll,
-        easing: Easing.linear,
-      });
-      voiceIconSlide.value = withTiming(-VOICE_ICON_CONTENT_HEIGHT, {
-        duration: sessionPrepTimeline.roll,
-        easing: Easing.linear,
-      });
-      voiceIconHeight.value = withTiming(0, {
-        duration: sessionPrepTimeline.roll,
-        easing: Easing.linear,
-      });
+      keypadOffset.value = withTiming(
+        inputMode === 'keypad' ? 0 : -INPUT_INACTIVE_OFFSET,
+        {
+          duration: sessionPrepTimeline.roll,
+          easing: Easing.linear,
+        }
+      );
+      voiceIconOffset.value = withTiming(
+        inputMode === 'keypad' ? INPUT_INACTIVE_OFFSET : 0,
+        {
+          duration: sessionPrepTimeline.roll,
+          easing: Easing.linear,
+        }
+      );
 
       untuckTimeoutRef.current = setTimeout(() => {
         gearOffset.value = withTiming(GEAR_REVEAL_OFFSET, {
@@ -143,10 +118,8 @@ export function useControlDashboardMotion({
     inputMode,
     inputToggleOffset,
     isSessionInProgress,
-    keypadHeight,
-    keypadSlide,
-    voiceIconHeight,
-    voiceIconSlide,
+    keypadOffset,
+    voiceIconOffset,
   ]);
 
   useEffect(() => {
@@ -188,19 +161,11 @@ export function useControlDashboardMotion({
 
   return {
     isSessionInProgress,
-    keypadWrapperStyle: useAnimatedStyle(() => ({
-      height: keypadHeight.value,
-      overflow: 'hidden' as const,
-    })),
     keypadContentStyle: useAnimatedStyle(() => ({
-      transform: [{ translateY: keypadSlide.value }],
-    })),
-    voiceIconWrapperStyle: useAnimatedStyle(() => ({
-      height: voiceIconHeight.value,
-      overflow: 'hidden' as const,
+      transform: [{ translateY: keypadOffset.value }],
     })),
     voiceIconContentStyle: useAnimatedStyle(() => ({
-      transform: [{ translateY: voiceIconSlide.value }],
+      transform: [{ translateY: voiceIconOffset.value }],
     })),
     gearStyle: useAnimatedStyle(() => ({
       transform: [{ translateX: gearOffset.value }],

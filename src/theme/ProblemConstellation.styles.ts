@@ -4,7 +4,7 @@ import { theme } from './colors';
 export const constellationStyles = StyleSheet.create({
     container: {
         width: 355,
-        height: 330,
+        height: 215,
         alignItems: 'center',
     },
     opDisplay: {
@@ -66,9 +66,9 @@ export const constellationStyles = StyleSheet.create({
     },
     card: {
         position: 'absolute',
-        width: 150,
+        width: 160,
         height: 100,
-        backgroundColor: '#DAD8CC',
+        backgroundColor: theme.cardOperandBg,
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
@@ -82,7 +82,7 @@ export const constellationStyles = StyleSheet.create({
     },
     cardLeft: {
         top: -165,
-        left: -177.5,
+        left: -187.5,
     },
     cardRight: {
         top: -165,
@@ -94,7 +94,7 @@ export const constellationStyles = StyleSheet.create({
         left: -97.5,
         width: 195,
         height: 100,
-        backgroundColor: '#C0BEB1',
+        backgroundColor: theme.cardResultBg,
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
@@ -119,9 +119,6 @@ export const constellationStyles = StyleSheet.create({
         fontSize: 90,
         fontWeight: '700',
         fontFamily: 'Nunito_700Bold',
-        textShadowColor: 'rgba(0, 0, 0, 0.5)',
-        textShadowOffset: { width: 0, height: 3 },
-        textShadowRadius: 6,
         zIndex: 10,
     },
     ellipseLarge: {

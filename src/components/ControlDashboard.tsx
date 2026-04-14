@@ -18,7 +18,7 @@ import {
 } from '../lib/types';
 import { SessionOptionsUpdate } from '../lib/sessionOptions';
 import { appStyles as styles } from '../theme/App.styles';
-import { theme } from '../theme/colors';
+import { theme, type OperationTheme } from '../theme/colors';
 import { useControlDashboardMotion } from '../hooks/ui/useControlDashboardMotion';
 
 const START_BUTTON_HEIGHT = 40;
@@ -30,18 +30,18 @@ const START_BUTTON_FLASH_DURATION_MS = 180;
 const MIC_BUTTON_SIZE = 43;
 const MIC_BUTTON_GAP = 12;
 const INPUT_CONTAINER_WIDTH = 320;
-const INPUT_CONTAINER_HEIGHT = 222;
-const INPUT_CONTAINER_MARGIN_BOTTOM = 15;
-const VOICE_MICROPHONE_WIDTH = (INPUT_CONTAINER_HEIGHT * 330) / 241;
+const INPUT_CONTAINER_HEIGHT = 231;
+const INPUT_CONTAINER_MARGIN_BOTTOM = 6;
+const VOICE_MICROPHONE_WIDTH = (INPUT_CONTAINER_HEIGHT * 162.49) / 231;
 const OPERATION_SELECTOR_HEIGHT = 36;
 const SETTINGS_TRAY_TOP_OVERLAP = 10;
 const SETTINGS_TRAY_VISIBLE_OVERLAP =
   OPERATION_SELECTOR_HEIGHT + SETTINGS_TRAY_TOP_OVERLAP;
 const VOICE_HALO_COLORS = {
-  neutral: '#f4f2e7',
-  listening: '#c5ffd0',
-  retrying: '#fcffc5',
-  error: '#ffc5c5',
+  neutral: theme.bg,
+  listening: theme.statusListening,
+  retrying: theme.statusRetrying,
+  error: theme.statusError,
 } as const;
 
 function getVoiceHaloColor(message: string): string {
@@ -68,14 +68,7 @@ interface ControlDashboardProps {
   inputMode: SessionInputMode;
   voiceState: VoiceInputState;
   options: SessionOptions;
-  opTheme: {
-    textOperand: string;
-    textResult: string;
-    logoMath: string;
-    logoFlash: string;
-    tagline: string;
-    btnBg: string;
-  };
+  opTheme: OperationTheme;
   onStartSession: () => void | Promise<void>;
   onEndSession: () => void;
   onToggleInputMode: () => void;
@@ -119,9 +112,7 @@ export function ControlDashboard({
   );
   const resetSessionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const {
-    keypadWrapperStyle,
     keypadContentStyle,
-    voiceIconWrapperStyle,
     voiceIconContentStyle,
     gearStyle,
     inputToggleStyle,
@@ -135,8 +126,6 @@ export function ControlDashboard({
     trayVisibleOverlap: SETTINGS_TRAY_VISIBLE_OVERLAP,
   });
 
-  const startButtonPressedColor =
-    options.operation === 'addsub' ? '#07345b' : '#1d3c0b';
   const isVoiceToggleDisabled =
     isActive ||
     (inputMode === 'keypad' &&
@@ -198,54 +187,69 @@ export function ControlDashboard({
 
   return (
     <View style={styles.keypadBlock}>
-      <Animated.View
-        pointerEvents={isActive && isInputEnabled ? 'auto' : 'none'}
-        style={[
-          { alignItems: 'center', width: '100%', backgroundColor: theme.bg, zIndex: 10 },
-          keypadWrapperStyle,
-        ]}
+      <View
+        style={{
+          alignItems: 'center',
+          width: '100%',
+          height: INPUT_CONTAINER_HEIGHT + INPUT_CONTAINER_MARGIN_BOTTOM,
+          backgroundColor: theme.bg,
+          zIndex: 10,
+          overflow: 'hidden',
+        }}
       >
         <Animated.View
+          pointerEvents={isActive && isInputEnabled && inputMode === 'keypad' ? 'auto' : 'none'}
           style={[
             {
-              width: INPUT_CONTAINER_WIDTH,
-              height: INPUT_CONTAINER_HEIGHT,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
               alignItems: 'center',
-              marginBottom: INPUT_CONTAINER_MARGIN_BOTTOM,
             },
             keypadContentStyle,
           ]}
         >
-          <NumberPad
-            onDigit={onDigitInput}
-            onClear={onClearInput}
-            disabled={!isActive || !isInputEnabled || inputMode !== 'keypad'}
-          />
+          <View
+            style={{
+              width: INPUT_CONTAINER_WIDTH,
+              height: INPUT_CONTAINER_HEIGHT + INPUT_CONTAINER_MARGIN_BOTTOM,
+              alignItems: 'center',
+            }}
+          >
+            <NumberPad
+              onDigit={onDigitInput}
+              onClear={onClearInput}
+              disabled={!isActive || !isInputEnabled || inputMode !== 'keypad'}
+            />
+          </View>
         </Animated.View>
-      </Animated.View>
 
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          { alignItems: 'center', width: '100%', backgroundColor: theme.bg, zIndex: 10 },
-          voiceIconWrapperStyle,
-        ]}
-      >
         <Animated.View
+          pointerEvents="none"
           style={[
             {
-              width: INPUT_CONTAINER_WIDTH,
-              height: INPUT_CONTAINER_HEIGHT,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
               alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: INPUT_CONTAINER_MARGIN_BOTTOM,
             },
             voiceIconContentStyle,
           ]}
         >
-          <IconVoiceInputMicrophone width={VOICE_MICROPHONE_WIDTH} haloFill={voiceHaloColor} />
+          <View
+            style={{
+              width: INPUT_CONTAINER_WIDTH,
+              height: INPUT_CONTAINER_HEIGHT + INPUT_CONTAINER_MARGIN_BOTTOM,
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+            }}
+          >
+            <IconVoiceInputMicrophone width={VOICE_MICROPHONE_WIDTH} haloFill={voiceHaloColor} />
+          </View>
         </Animated.View>
-      </Animated.View>
+      </View>
 
       <View
         style={{
@@ -333,8 +337,8 @@ export function ControlDashboard({
             styles.startBtn,
             {
               backgroundColor: isStartButtonFlashActive
-                ? startButtonPressedColor
-                : opTheme.textOperand,
+                ? opTheme.btnPressedBg
+                : opTheme.btnBg,
               zIndex: 1,
             },
           ]}

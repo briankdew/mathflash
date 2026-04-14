@@ -13,8 +13,9 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from 'react-native-reanimated';
+import { theme } from '../theme/colors';
 
-const LINE_COLOR = '#b00131';
+const LINE_COLOR = theme.dangerAccent;
 const LINE_THICKNESS = 1;
 const LABEL_GAP = 2;
 const DRAG_HIT_SLOP = 10;

@@ -37,36 +37,36 @@ type TrayColorTheme = {
 function getTrayColorTheme(operation: SessionOptions['operation']): TrayColorTheme {
   if (operation === 'multdiv') {
     return {
-      trayBg: palette.green[3],
+      trayBg: palette.green[4],
       trayOutline: 'rgba(255,255,255,0.9)',
-      sectionBorder: palette.green[7],
-      sectionHeaderText: palette.green[7],
-      sectionHeaderBg: palette.green[3],
+      sectionBorder: palette.green[8],
+      sectionHeaderText: palette.green[8],
+      sectionHeaderBg: palette.green[4],
       globalBorder: palette.white,
       globalHeaderText: palette.white,
-      globalHeaderBg: palette.green[3],
-      lightChipBg: palette.green[1],
-      lightChipText: palette.green[6],
-      selectorText: palette.green[6],
-      globalLabelText: palette.green[7],
-      darkSelectorBg: palette.green[6],
+      globalHeaderBg: palette.green[4],
+      lightChipBg: palette.green[2],
+      lightChipText: palette.green[7],
+      selectorText: palette.green[7],
+      globalLabelText: palette.green[8],
+      darkSelectorBg: palette.green[7],
     };
   }
 
   return {
-    trayBg: palette.blue[3],
+    trayBg: palette.blue[4],
     trayOutline: 'rgba(255,255,255,0.9)',
-    sectionBorder: palette.blue[7],
-    sectionHeaderText: palette.blue[7],
-    sectionHeaderBg: palette.blue[3],
+    sectionBorder: palette.blue[8],
+    sectionHeaderText: palette.blue[8],
+    sectionHeaderBg: palette.blue[4],
     globalBorder: palette.white,
     globalHeaderText: palette.white,
-    globalHeaderBg: palette.blue[3],
-    lightChipBg: palette.blue[1],
-    lightChipText: palette.blue[6],
-    selectorText: palette.blue[6],
-    globalLabelText: palette.blue[7],
-    darkSelectorBg: palette.blue[6],
+    globalHeaderBg: palette.blue[4],
+    lightChipBg: palette.blue[2],
+    lightChipText: palette.blue[7],
+    selectorText: palette.blue[7],
+    globalLabelText: palette.blue[8],
+    darkSelectorBg: palette.blue[7],
   };
 }
 
