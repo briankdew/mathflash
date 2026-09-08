@@ -29,6 +29,7 @@ yarn-error.*
 
 # editor settings
 .vscode/
+.codex
 
 # macOS
 .DS_Store
@@ -43,3 +44,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local notes
+gh-pages-setup-history.txt

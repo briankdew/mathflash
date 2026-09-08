@@ -383,7 +383,6 @@ export function ProblemConstellation({
         key,
         frontContainerStyle,
         backContainerStyle,
-        frontTextStyle,
         frontContent,
         backTextStyle,
         backValue,
@@ -391,7 +390,6 @@ export function ProblemConstellation({
         key: ProblemSlot;
         frontContainerStyle: React.ComponentProps<typeof Animated.View>['style'];
         backContainerStyle: React.ComponentProps<typeof Animated.View>['style'];
-        frontTextStyle: React.ComponentProps<typeof Animated.Text>['style'];
         frontContent: React.ReactNode;
         backTextStyle: React.ComponentProps<typeof Animated.Text>['style'];
         backValue: string;
@@ -424,7 +422,6 @@ export function ProblemConstellation({
                 leftBackVisibleStyle,
                 problem && localStyles.hiddenLayer,
             ],
-            frontTextStyle: [styles.cardText, { color: slotTextColors.left }, firstRevealTextStyle],
             backTextStyle: [
                 localStyles.backTextBase,
                 localStyles.operandBackText,
@@ -459,7 +456,6 @@ export function ProblemConstellation({
                 rightBackVisibleStyle,
                 problem && localStyles.hiddenLayer,
             ],
-            frontTextStyle: [styles.cardText, { color: slotTextColors.right }, firstRevealTextStyle],
             backTextStyle: [
                 localStyles.backTextBase,
                 localStyles.operandBackText,
@@ -492,7 +488,6 @@ export function ProblemConstellation({
                 resultBackVisibleStyle,
                 problem && localStyles.hiddenLayer,
             ],
-            frontTextStyle: [styles.cardText, { color: slotTextColors.result }, firstRevealTextStyle],
             backTextStyle: [
                 localStyles.backTextBase,
                 localStyles.resultBackText,
