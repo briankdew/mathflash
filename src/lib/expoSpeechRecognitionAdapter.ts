@@ -4,6 +4,7 @@ import {
   type ExpoSpeechRecognitionOptions,
   type ExpoSpeechRecognitionResultEvent,
 } from 'expo-speech-recognition';
+import { logVoiceDebug } from './voiceDebugLog';
 
 export type SpeechRecognitionEventName =
   | 'start'
@@ -37,6 +38,20 @@ export interface SpeechRecognitionAdapter {
   ) => { remove: () => void };
 }
 
+// Debug-only (?debug=1) summary of an event payload; see voiceDebugLog.ts.
+function describeEvent(eventName: SpeechRecognitionEventName, payload: unknown) {
+  if (eventName === 'error') {
+    const event = payload as ExpoSpeechRecognitionErrorEvent | null;
+    return `${event?.error ?? '?'} ${event?.message ?? ''}`.trim();
+  }
+  if (eventName === 'result') {
+    const event = payload as ExpoSpeechRecognitionResultEvent | null;
+    const transcript = event?.results?.[0]?.transcript ?? '';
+    return `${event?.isFinal ? 'final' : 'interim'} "${transcript}"`;
+  }
+  return '';
+}
+
 export const expoSpeechRecognitionAdapter: SpeechRecognitionAdapter = {
   isRecognitionAvailable: () =>
     ExpoSpeechRecognitionModule.isRecognitionAvailable(),
@@ -45,11 +60,21 @@ export const expoSpeechRecognitionAdapter: SpeechRecognitionAdapter = {
   getPermissionsAsync: ExpoSpeechRecognitionModule.getPermissionsAsync,
   requestPermissionsAsync: ExpoSpeechRecognitionModule.requestPermissionsAsync,
   start: options => {
+    logVoiceDebug('start()');
     ExpoSpeechRecognitionModule.start(options);
   },
   stop: () => {
+    logVoiceDebug('stop()');
     ExpoSpeechRecognitionModule.stop();
   },
-  addListener: (eventName, listener) =>
-    ExpoSpeechRecognitionModule.addListener(eventName, listener as never),
+  addListener: (eventName, listener) => {
+    const loggedListener = (...args: unknown[]) => {
+      logVoiceDebug(eventName, describeEvent(eventName, args[0]));
+      (listener as (...listenerArgs: unknown[]) => void)(...args);
+    };
+    return ExpoSpeechRecognitionModule.addListener(
+      eventName,
+      loggedListener as never
+    );
+  },
 };

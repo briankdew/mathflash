@@ -15,6 +15,7 @@ import { MeasureOverlay } from './src/components/MeasureOverlay';
 import { PracticeArea } from './src/components/PracticeArea';
 import { ControlDashboard } from './src/components/ControlDashboard';
 import { SessionPerformanceSheet } from './src/components/SessionPerformanceSheet';
+import { VoiceDebugOverlay } from './src/components/VoiceDebugOverlay';
 import { useMathSession } from './src/hooks/useMathSession';
 import { theme, getOperationTheme } from './src/theme/colors';
 import { useFonts } from 'expo-font';
@@ -200,6 +201,8 @@ export default function App() {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        <VoiceDebugOverlay />
 
         {__DEV__ ? (
           <MeasureOverlay
