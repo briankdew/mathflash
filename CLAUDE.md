@@ -11,6 +11,12 @@ Expo / React Native (with react-native-web) arithmetic flash-card trainer. One s
 
 Run typecheck, lint and tests before pushing. Node is pinned to 20.19.4 (`.nvmrc`).
 
+## Product priorities
+
+- Voice entry is the main selling point and must be fast. The app exists so users can time their responses and see their improvement.
+- Response-time data (speech onset, final result, processing time, retry and no-speech counts) must be accurate and consistent. Duplicate events or double-counted metrics are bugs, not noise.
+- That timing data will later drive suggested custom problem sets, so keep what we record complete and trustworthy. Check any voice or session change against these.
+
 ## Layout
 
 - `App.tsx` — root screen
