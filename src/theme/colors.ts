@@ -9,6 +9,7 @@ export type OperationTheme = {
     textOperand: string;
     textResult: string;
     logoMath: string;
+    selectorFirst: string;
     logoFlash: string;
     tagline: string;
     btnBg: string;
@@ -138,7 +139,7 @@ export const palette = {
 export const theme = {
     bg: palette.bg,
     textMain: palette.beige[9],
-    textMuted: palette.beige[6],
+    textMuted: palette.beige[7],
 
     cardOperandBg: palette.beige[2],
     cardResultBg: palette.beige[3],
@@ -163,23 +164,24 @@ const operationThemes: Record<'addsub' | 'multdiv', OperationTheme> = {
     addsub: {
         textOperand: palette.blue[8],
         textResult: palette.blue[9],
-        logoMath: palette.blue[4],
+        logoMath: palette.blue[5],
+        selectorFirst: palette.blue[5],
         logoFlash: palette.blue[7],
-        tagline: palette.blue[6],
+        tagline: palette.blue[7],
         btnBg: palette.blue[8],
         btnPressedBg: palette.blue[9],
         prepBackText: {
-            ready: palette.blue[4],
+            ready: palette.blue[6],
             set: palette.blue[6],
             result: palette.blue[8],
         },
         mainOperator: {
-            circleFill: palette.blue[4],
+            circleFill: palette.blue[5],
             operatorFill: palette.blue[2],
         },
         secondaryOperator: {
-            circleFill: palette.blue[2],
-            operatorFill: palette.blue[5],
+            circleFill: palette.blue[3],
+            operatorFill: palette.blue[6],
         },
         settingsIcon: {
             gear: palette.blue[6],
@@ -200,13 +202,14 @@ const operationThemes: Record<'addsub' | 'multdiv', OperationTheme> = {
     multdiv: {
         textOperand: palette.green[8],
         textResult: palette.green[9],
-        logoMath: palette.green[4],
+        logoMath: palette.green[5],
+        selectorFirst: palette.green[5],
         logoFlash: palette.green[7],
-        tagline: palette.green[5],
+        tagline: palette.green[7],
         btnBg: palette.green[8],
         btnPressedBg: palette.green[9],
         prepBackText: {
-            ready: palette.green[4],
+            ready: palette.green[6],
             set: palette.green[7],
             result: palette.green[8],
         },
@@ -215,7 +218,7 @@ const operationThemes: Record<'addsub' | 'multdiv', OperationTheme> = {
             operatorFill: palette.green[2],
         },
         secondaryOperator: {
-            circleFill: palette.green[2],
+            circleFill: palette.green[3],
             operatorFill: palette.green[5],
         },
         settingsIcon: {
