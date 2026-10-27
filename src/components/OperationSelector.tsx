@@ -67,7 +67,7 @@ export function OperationSelector({ operation, isActive, isStadiumActive, onTogg
 
       {isActive ? (
         <View style={styles.labelRow}>
-          <Text style={[styles.text, { color: opTheme.logoMath }]}>{operation === 'addsub' ? 'addition' : 'multiplication'}</Text>
+          <Text style={[styles.text, { color: opTheme.selectorFirst }]}>{operation === 'addsub' ? 'addition' : 'multiplication'}</Text>
           <Text style={[styles.text, { color: opTheme.logoFlash }]}>{operation === 'addsub' ? 'subtraction' : 'division'}</Text>
         </View>
       ) : (
@@ -77,7 +77,7 @@ export function OperationSelector({ operation, isActive, isStadiumActive, onTogg
           style={styles.labelRow}
           hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }}
         >
-          <Text style={[styles.text, { color: opTheme.logoMath }]}>{operation === 'addsub' ? 'addition' : 'multiplication'}</Text>
+          <Text style={[styles.text, { color: opTheme.selectorFirst }]}>{operation === 'addsub' ? 'addition' : 'multiplication'}</Text>
           <Text style={[styles.text, { color: opTheme.logoFlash }]}>{operation === 'addsub' ? 'subtraction' : 'division'}</Text>
         </TouchableOpacity>
       )}
