@@ -34,6 +34,8 @@ export interface SpeechRecognitionAdapter {
   requestPermissionsAsync: typeof ExpoSpeechRecognitionModule.requestPermissionsAsync;
   start: (options: ExpoSpeechRecognitionOptions) => void;
   stop: () => void;
+  // Lets go of a microphone held for the session (?keepmic=1 experiment).
+  releaseMic?: () => void;
   addListener: <TEventName extends SpeechRecognitionEventName>(
     eventName: TEventName,
     listener: SpeechRecognitionListenerMap[TEventName]
@@ -111,13 +113,56 @@ function whenEnded(maxWaitMs: number, callback: () => void) {
   endWaiters.add(finish);
 }
 
+// ?keepmic=1 experiment: iPhone Safari seems to close the microphone when a
+// recognition ends, so the next one starts on a dead source. Holding our own
+// microphone stream open for the whole session may keep it alive.
+let heldMic: MediaStream | null = null;
+
+async function holdMic() {
+  if (heldMic?.getAudioTracks().some(track => track.readyState === 'live')) {
+    return;
+  }
+
+  try {
+    const stream = await globalThis.navigator.mediaDevices.getUserMedia({
+      audio: true,
+    });
+    heldMic = stream;
+    logVoiceDebug('mic held');
+    stream.getAudioTracks().forEach(track =>
+      track.addEventListener('ended', () => logVoiceDebug('held mic ended'))
+    );
+  } catch (error) {
+    logVoiceDebug('mic hold failed', String((error as Error)?.message ?? error));
+  }
+}
+
+function releaseHeldMic() {
+  if (!heldMic) {
+    return;
+  }
+  heldMic.getTracks().forEach(track => track.stop());
+  heldMic = null;
+  logVoiceDebug('mic released');
+}
+
 export const expoSpeechRecognitionAdapter: SpeechRecognitionAdapter = {
   isRecognitionAvailable: () =>
     ExpoSpeechRecognitionModule.isRecognitionAvailable(),
   supportsOnDeviceRecognition: () =>
     ExpoSpeechRecognitionModule.supportsOnDeviceRecognition(),
   getPermissionsAsync: ExpoSpeechRecognitionModule.getPermissionsAsync,
-  requestPermissionsAsync: ExpoSpeechRecognitionModule.requestPermissionsAsync,
+  requestPermissionsAsync: async () => {
+    if (getVoiceExperiments().keepMic) {
+      await holdMic();
+    }
+    return ExpoSpeechRecognitionModule.requestPermissionsAsync();
+  },
+  releaseMic: () => {
+    if (getVoiceExperiments().keepMic) {
+      releaseHeldMic();
+    }
+  },
   start: options => {
     logVoiceDebug('start()');
     const backend = getBackend();

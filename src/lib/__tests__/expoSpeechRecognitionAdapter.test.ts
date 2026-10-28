@@ -10,6 +10,7 @@ const mockCalls: string[] = [];
 
 jest.mock('expo-speech-recognition', () => ({
   ExpoSpeechRecognitionModule: {
+    requestPermissionsAsync: async () => ({ granted: true }),
     start: () => mockCalls.push('start'),
     stop: () => mockCalls.push('stop'),
     abort: () => mockCalls.push('abort'),
@@ -85,6 +86,45 @@ describe('expoSpeechRecognitionAdapter.addListener', () => {
     it('uses abort() instead of stop()', () => {
       expoSpeechRecognitionAdapter.stop();
       expect(mockCalls).toEqual(['abort']);
+    });
+  });
+
+  describe('?keepmic=1 experiment', () => {
+    const originalOS = Platform.OS;
+    const stopTrack = jest.fn();
+    const getUserMedia = jest.fn(async () => ({
+      getAudioTracks: () => [
+        { readyState: 'live', addEventListener: jest.fn() },
+      ],
+      getTracks: () => [{ stop: stopTrack }],
+    }));
+
+    beforeEach(() => {
+      stopTrack.mockClear();
+      getUserMedia.mockClear();
+      Object.defineProperty(Platform, 'OS', { value: 'web', configurable: true });
+      (globalThis as { window?: unknown }).window = {
+        location: { search: '?debug=1&keepmic=1' },
+      };
+      Object.defineProperty(globalThis, 'navigator', {
+        value: { mediaDevices: { getUserMedia } },
+        configurable: true,
+      });
+    });
+
+    afterEach(() => {
+      expoSpeechRecognitionAdapter.releaseMic?.();
+      Object.defineProperty(Platform, 'OS', { value: originalOS });
+      delete (globalThis as { window?: unknown }).window;
+    });
+
+    it('opens the microphone once for the session and releases it at the end', async () => {
+      await expoSpeechRecognitionAdapter.requestPermissionsAsync();
+      await expoSpeechRecognitionAdapter.requestPermissionsAsync();
+      expect(getUserMedia).toHaveBeenCalledTimes(1);
+
+      expoSpeechRecognitionAdapter.releaseMic?.();
+      expect(stopTrack).toHaveBeenCalledTimes(1);
     });
   });
 });

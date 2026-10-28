@@ -21,7 +21,7 @@ Run typecheck, lint and tests before pushing. Node is pinned to 20.19.4 (`.nvmrc
 ## Voice debugging (web only)
 
 - Add `?debug=1` to the page URL for a bottom panel with the full speech-event log: Share saves a `.txt` via the phone's share sheet, Copy copies it, Clear resets it. The log header lists the build and active experiments.
-- Experiments, only with `debug=1` and combinable: `&delay=N` (min ms between recognizer sessions), `&abort=1` (abort and wait for `end` before restarting), `&reuse=1` (one reusable recognizer object), `&fast=N` (accept a valid interim number unchanged for N ms instead of waiting for the final result). See `src/lib/voiceExperiments.ts`.
+- Experiments, only with `debug=1` and combinable: `&delay=N` (min ms between recognizer sessions), `&abort=1` (abort and wait for `end` before restarting), `&reuse=1` (one reusable recognizer object), `&keepmic=1` (hold a microphone stream open for the whole session), `&continuous=1` (one recognizer for the whole session, never restarted between problems), `&fast=N` (accept a valid interim number unchanged for N ms instead of waiting for the final result). See `src/lib/voiceExperiments.ts`.
 - Logs from the iPhone are saved to the Google Drive folder `ClaudeCode`, which appears on the Chromebook at `/mnt/chromeos/GoogleDrive/MyDrive/ClaudeCode/`.
 
 ## Layout

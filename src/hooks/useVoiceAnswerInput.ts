@@ -419,6 +419,15 @@ export function useVoiceAnswerInput({
             return;
           }
 
+          if (
+            getVoiceExperiments().continuous &&
+            isRecognizerRunningRef.current
+          ) {
+            logVoiceDebug('continuous: recognizer already running');
+            dispatch({ type: 'listeningStarted' });
+            return;
+          }
+
           try {
             dispatch({ type: 'clearStatus' });
             const range = getVoiceAnswerRange(
@@ -429,7 +438,7 @@ export function useVoiceAnswerInput({
             adapter.start({
               lang: 'en-US',
               interimResults: true,
-              continuous: false,
+              continuous: getVoiceExperiments().continuous,
               maxAlternatives: 1,
               addsPunctuation: false,
               contextualStrings: buildVoiceContextualStrings(range),
@@ -456,6 +465,13 @@ export function useVoiceAnswerInput({
 
   const handleResult = useCallback(
     (event: ExpoSpeechRecognitionResultEvent) => {
+      // In ?continuous=1 the recognizer keeps running between problems, so
+      // results that arrive while no problem is listening are not answers.
+      if (getVoiceExperiments().continuous && !shouldListenRef.current) {
+        logVoiceDebug('result ignored (not listening)');
+        return;
+      }
+
       const ignoreSince = ignoreResultsSincePerfRef.current;
       if (ignoreSince !== null) {
         if (performance.now() - ignoreSince < LATE_RESULT_GUARD_MS) {
@@ -633,6 +649,7 @@ export function useVoiceAnswerInput({
         }
         handlers.current.clearFinalizeInterimTimeout();
         lastValidInterimRef.current = null;
+        ignoreResultsSincePerfRef.current = null;
         // A new utterance: forget the previous attempt's end-of-speech time so
         // it can't be used to compute this attempt's processing time.
         speechEndPerfRef.current = null;
@@ -671,7 +688,13 @@ export function useVoiceAnswerInput({
       if (!shouldListen) {
         suppressRestartRef.current = true;
       }
-      stopRecognition();
+      if (getVoiceExperiments().continuous && enabled && isSessionActive) {
+        // ?continuous=1: keep the one recognizer running between problems.
+        clearRestartTimeout();
+        clearFinalizeInterimTimeout();
+      } else {
+        stopRecognition();
+      }
       if (!isSessionActive) {
         dispatch({ type: 'clearStatus' });
         dispatch({ type: 'transcriptPreviewUpdated', transcriptPreview: '' });
@@ -694,7 +717,17 @@ export function useVoiceAnswerInput({
     scheduleRestart,
     shouldListen,
     stopRecognition,
+    clearFinalizeInterimTimeout,
+    clearRestartTimeout,
   ]);
+
+  // The held microphone (?keepmic=1) lives for the session, so it is released
+  // only when the session ends, not between problems.
+  useEffect(() => {
+    if (!isSessionActive) {
+      adapter.releaseMic?.();
+    }
+  }, [adapter, isSessionActive]);
 
   const clearPendingAttempt = useCallback(() => {
     dispatch({ type: 'clearPendingAttempt' });
