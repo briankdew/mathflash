@@ -89,7 +89,7 @@ describe('expoSpeechRecognitionAdapter.addListener', () => {
     });
   });
 
-  describe('?keepmic=1 experiment', () => {
+  describe('held microphone on web', () => {
     const originalOS = Platform.OS;
     const stopTrack = jest.fn();
     const getUserMedia = jest.fn(async () => ({
@@ -104,7 +104,7 @@ describe('expoSpeechRecognitionAdapter.addListener', () => {
       getUserMedia.mockClear();
       Object.defineProperty(Platform, 'OS', { value: 'web', configurable: true });
       (globalThis as { window?: unknown }).window = {
-        location: { search: '?debug=1&keepmic=1' },
+        location: { search: '' },
       };
       Object.defineProperty(globalThis, 'navigator', {
         value: { mediaDevices: { getUserMedia } },

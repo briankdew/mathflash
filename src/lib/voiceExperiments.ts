@@ -7,10 +7,9 @@ import { Platform } from 'react-native';
 //   delay=N  keep at least N ms between one recognizer ending and the next start
 //   abort=1  abort() the old recognizer and wait for its end before restarting
 //   reuse=1  use one recognizer object for the whole session (web only)
-//   keepmic=1  hold the microphone open (getUserMedia) for the whole session so
-//            Safari does not close it between problems (web only)
-//   continuous=1  one recognizer for the whole session; never restarted
-//            between problems (web only)
+//   keepmic=0  turn OFF the default of holding the microphone open for the whole
+//            session (web only). Holding it stops iPhone Safari from handing the
+//            next recognition a dead microphone.
 //   fast=N   accept a valid interim number once it has not changed for N ms,
 //            instead of waiting for the browser's final result
 export interface VoiceExperiments {
@@ -18,7 +17,6 @@ export interface VoiceExperiments {
   abortBeforeRestart: boolean;
   reuseRecognizer: boolean;
   keepMic: boolean;
-  continuous: boolean;
   stableInterimMs: number | null;
 }
 
@@ -26,8 +24,7 @@ const NO_EXPERIMENTS: VoiceExperiments = {
   delayMs: 0,
   abortBeforeRestart: false,
   reuseRecognizer: false,
-  keepMic: false,
-  continuous: false,
+  keepMic: true,
   stableInterimMs: null,
 };
 
@@ -58,8 +55,7 @@ export function getVoiceExperiments(): VoiceExperiments {
     delayMs: readMs(params, 'delay', 5000) ?? 0,
     abortBeforeRestart: params.get('abort') === '1',
     reuseRecognizer: params.get('reuse') === '1',
-    keepMic: params.get('keepmic') === '1',
-    continuous: params.get('continuous') === '1',
+    keepMic: params.get('keepmic') !== '0',
     stableInterimMs: readMs(params, 'fast', 3000),
   };
 }
@@ -70,8 +66,7 @@ export function describeVoiceExperiments(): string {
     experiments.delayMs > 0 ? `delay=${experiments.delayMs}` : '',
     experiments.abortBeforeRestart ? 'abort' : '',
     experiments.reuseRecognizer ? 'reuse' : '',
-    experiments.keepMic ? 'keepmic' : '',
-    experiments.continuous ? 'continuous' : '',
+    experiments.keepMic ? '' : 'keepmic=off',
     experiments.stableInterimMs !== null
       ? `fast=${experiments.stableInterimMs}`
       : '',

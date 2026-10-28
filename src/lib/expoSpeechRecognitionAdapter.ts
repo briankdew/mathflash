@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import {
   ExpoSpeechRecognitionModule,
   type ExpoSpeechRecognitionErrorEvent,
@@ -34,7 +35,7 @@ export interface SpeechRecognitionAdapter {
   requestPermissionsAsync: typeof ExpoSpeechRecognitionModule.requestPermissionsAsync;
   start: (options: ExpoSpeechRecognitionOptions) => void;
   stop: () => void;
-  // Lets go of a microphone held for the session (?keepmic=1 experiment).
+  // Lets go of a microphone held for the session (web only).
   releaseMic?: () => void;
   addListener: <TEventName extends SpeechRecognitionEventName>(
     eventName: TEventName,
@@ -113,10 +114,14 @@ function whenEnded(maxWaitMs: number, callback: () => void) {
   endWaiters.add(finish);
 }
 
-// ?keepmic=1 experiment: iPhone Safari seems to close the microphone when a
+// iPhone Safari seems to close the microphone when a
 // recognition ends, so the next one starts on a dead source. Holding our own
 // microphone stream open for the whole session may keep it alive.
 let heldMic: MediaStream | null = null;
+
+function shouldHoldMic() {
+  return Platform.OS === 'web' && getVoiceExperiments().keepMic;
+}
 
 async function holdMic() {
   if (heldMic?.getAudioTracks().some(track => track.readyState === 'live')) {
@@ -153,13 +158,13 @@ export const expoSpeechRecognitionAdapter: SpeechRecognitionAdapter = {
     ExpoSpeechRecognitionModule.supportsOnDeviceRecognition(),
   getPermissionsAsync: ExpoSpeechRecognitionModule.getPermissionsAsync,
   requestPermissionsAsync: async () => {
-    if (getVoiceExperiments().keepMic) {
+    if (shouldHoldMic()) {
       await holdMic();
     }
     return ExpoSpeechRecognitionModule.requestPermissionsAsync();
   },
   releaseMic: () => {
-    if (getVoiceExperiments().keepMic) {
+    if (shouldHoldMic()) {
       releaseHeldMic();
     }
   },
