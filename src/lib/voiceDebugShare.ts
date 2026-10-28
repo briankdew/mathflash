@@ -11,7 +11,7 @@ export async function shareVoiceDebugReport(): Promise<string> {
   try {
     const file = new File([text], fileName, { type: 'text/plain' });
     if (nav?.share && nav.canShare?.({ files: [file] })) {
-      await nav.share({ files: [file], title: fileName });
+      await nav.share({ files: [file] });
       return 'Shared';
     }
   } catch (error) {

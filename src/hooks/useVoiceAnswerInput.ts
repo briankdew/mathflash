@@ -23,6 +23,10 @@ import {
 } from '../lib/expoSpeechRecognitionAdapter';
 import { logVoiceDebug } from '../lib/voiceDebugLog';
 import {
+  computeRestartDelayMs,
+  getVoiceExperiments,
+} from '../lib/voiceExperiments';
+import {
   buildVoiceInputState,
   createInitialVoiceControllerState,
   voiceControllerReducer,
@@ -30,6 +34,8 @@ import {
 
 const RESTART_DELAY_MS = 220;
 const FINALIZE_INTERIM_DELAY_MS = 250;
+// How long results from a recognizer that already produced an answer are ignored.
+const LATE_RESULT_GUARD_MS = 5000;
 
 interface UseVoiceAnswerInputArgs {
   enabled: boolean;
@@ -117,6 +123,12 @@ export function useVoiceAnswerInput({
     null
   );
   const lastValidInterimRef = useRef<LastValidInterim | null>(null);
+  const lastEndPerfRef = useRef<number | null>(null);
+  const isRecognizerRunningRef = useRef(false);
+  // Set when an answer is taken while the recognizer is still running. Its late
+  // results (e.g. the final transcript of the same utterance) must not be
+  // counted as the answer to the next problem. Cleared when it ends.
+  const ignoreResultsSincePerfRef = useRef<number | null>(null);
 
   useEffect(() => {
     enabledRef.current = enabled;
@@ -224,7 +236,12 @@ export function useVoiceAnswerInput({
   ]);
 
   const submitVoiceAttempt = useCallback(
-    (value: string, rawTranscript: string, finalResultPerfMs: number | null) => {
+    (
+      value: string,
+      rawTranscript: string,
+      finalResultPerfMs: number | null,
+      via: 'final' | 'speechend' | 'stable' | 'end'
+    ) => {
       const problemInstanceId = currentProblemRef.current?.problemInstanceId;
       if (!problemInstanceId) {
         return;
@@ -239,9 +256,12 @@ export function useVoiceAnswerInput({
 
       logVoiceDebug(
         'answer captured',
-        `"${value}" processing ${Math.round(voiceProcessingMs)}ms`
+        `"${value}" via ${via} processing ${Math.round(voiceProcessingMs)}ms`
       );
       clearFinalizeInterimTimeout();
+      if (isRecognizerRunningRef.current) {
+        ignoreResultsSincePerfRef.current = performance.now();
+      }
       suppressRestartRef.current = true;
       shouldListenRef.current = false;
       onValidAttemptCaptured();
@@ -262,6 +282,40 @@ export function useVoiceAnswerInput({
       });
     },
     [clearFinalizeInterimTimeout, onValidAttemptCaptured]
+  );
+
+  // Submits the last valid interim number after `delayMs` unless something
+  // newer (speech start, a final result, a new problem) cancels it first.
+  const scheduleInterimFinalize = useCallback(
+    (delayMs: number, via: 'speechend' | 'stable' | 'end') => {
+      clearFinalizeInterimTimeout();
+      finalizeInterimTimeoutRef.current = setTimeout(() => {
+        finalizeInterimTimeoutRef.current = null;
+
+        const currentProblemInstanceId =
+          currentProblemRef.current?.problemInstanceId;
+        const lastValidInterim = lastValidInterimRef.current;
+
+        if (
+          !mountedRef.current ||
+          !enabledRef.current ||
+          !currentProblemInstanceId ||
+          !lastValidInterim ||
+          lastValidInterim.problemInstanceId !== currentProblemInstanceId
+        ) {
+          return;
+        }
+
+        lastValidInterimRef.current = null;
+        submitVoiceAttempt(
+          lastValidInterim.value,
+          lastValidInterim.rawTranscript,
+          null,
+          via
+        );
+      }, delayMs);
+    },
+    [clearFinalizeInterimTimeout, submitVoiceAttempt]
   );
 
   const ensureReadyForSession = useCallback(async () => {
@@ -338,12 +392,21 @@ export function useVoiceAnswerInput({
         return;
       }
 
-      logVoiceDebug('restart scheduled', isRetry ? 'retry' : 'initial');
       if (isRetry) {
         dispatch({ type: 'retryScheduled' });
       }
 
-      const restartDelayMs = isRetry ? RESTART_DELAY_MS : 0;
+      const restartDelayMs = computeRestartDelayMs(
+        isRetry ? RESTART_DELAY_MS : 0,
+        getVoiceExperiments().delayMs,
+        lastEndPerfRef.current === null
+          ? Infinity
+          : performance.now() - lastEndPerfRef.current
+      );
+      logVoiceDebug(
+        'restart scheduled',
+        `${isRetry ? 'retry' : 'initial'} in ${Math.round(restartDelayMs)}ms`
+      );
 
       restartTimeoutRef.current = setTimeout(() => {
         restartTimeoutRef.current = null;
@@ -393,6 +456,15 @@ export function useVoiceAnswerInput({
 
   const handleResult = useCallback(
     (event: ExpoSpeechRecognitionResultEvent) => {
+      const ignoreSince = ignoreResultsSincePerfRef.current;
+      if (ignoreSince !== null) {
+        if (performance.now() - ignoreSince < LATE_RESULT_GUARD_MS) {
+          logVoiceDebug('late result ignored');
+          return;
+        }
+        ignoreResultsSincePerfRef.current = null;
+      }
+
       const rawTranscript = event.results[0]?.transcript?.trim() ?? '';
       if (!rawTranscript || !currentProblemRef.current) {
         return;
@@ -417,6 +489,16 @@ export function useVoiceAnswerInput({
         dispatch({ type: 'clearStatus' });
 
         if (!event.isFinal) {
+          const stableInterimMs = getVoiceExperiments().stableInterimMs;
+          if (stableInterimMs !== null) {
+            // Once the browser has reported the end of speech, don't wait
+            // longer than the normal end-of-speech delay.
+            const delayMs =
+              speechEndPerfRef.current !== null
+                ? Math.min(stableInterimMs, FINALIZE_INTERIM_DELAY_MS)
+                : stableInterimMs;
+            scheduleInterimFinalize(delayMs, 'stable');
+          }
           return;
         }
 
@@ -425,9 +507,15 @@ export function useVoiceAnswerInput({
         submitVoiceAttempt(
           normalized.normalizedText,
           rawTranscript,
-          finalResultPerfMs
+          finalResultPerfMs,
+          'final'
         );
         return;
+      }
+
+      if (!event.isFinal && getVoiceExperiments().stableInterimMs !== null) {
+        // The speech changed into something that is not a valid answer.
+        clearFinalizeInterimTimeout();
       }
 
       if (event.isFinal) {
@@ -443,7 +531,7 @@ export function useVoiceAnswerInput({
         });
       }
     },
-    [clearFinalizeInterimTimeout, submitVoiceAttempt]
+    [clearFinalizeInterimTimeout, scheduleInterimFinalize, submitVoiceAttempt]
   );
 
   const handleError = useCallback((event: ExpoSpeechRecognitionErrorEvent) => {
@@ -488,8 +576,8 @@ export function useVoiceAnswerInput({
     handleError,
     handleResult,
     onSpeechStart,
+    scheduleInterimFinalize,
     scheduleRestart,
-    submitVoiceAttempt,
   });
   useEffect(() => {
     handlersRef.current = {
@@ -497,8 +585,8 @@ export function useVoiceAnswerInput({
       handleError,
       handleResult,
       onSpeechStart,
+      scheduleInterimFinalize,
       scheduleRestart,
-      submitVoiceAttempt,
     };
   });
 
@@ -510,13 +598,29 @@ export function useVoiceAnswerInput({
     const handlers = handlersRef;
     const subscriptions = [
       adapter.addListener('start', () => {
+        isRecognizerRunningRef.current = true;
         dispatch({ type: 'listeningStarted' });
       }),
       adapter.addListener('end', () => {
+        lastEndPerfRef.current = performance.now();
+        isRecognizerRunningRef.current = false;
+        ignoreResultsSincePerfRef.current = null;
+
+        // A valid interim number is waiting to be accepted: don't restart the
+        // recognizer just to shut it down again a moment later. In ?fast mode
+        // the last valid interim is accepted as soon as the recognizer ends.
+        const hasValidInterim = lastValidInterimRef.current !== null;
+        if (hasValidInterim && getVoiceExperiments().stableInterimMs !== null) {
+          handlers.current.scheduleInterimFinalize(0, 'end');
+        }
+        const isAnswerPending =
+          hasValidInterim && finalizeInterimTimeoutRef.current !== null;
+
         const shouldRetry =
           enabledRef.current &&
           shouldListenRef.current &&
-          !suppressRestartRef.current;
+          !suppressRestartRef.current &&
+          !isAnswerPending;
         dispatch({ type: 'listeningEnded', shouldRetry });
         if (shouldRetry) {
           handlers.current.scheduleRestart(true);
@@ -529,37 +633,19 @@ export function useVoiceAnswerInput({
         }
         handlers.current.clearFinalizeInterimTimeout();
         lastValidInterimRef.current = null;
+        // A new utterance: forget the previous attempt's end-of-speech time so
+        // it can't be used to compute this attempt's processing time.
+        speechEndPerfRef.current = null;
         const speechStartPerfMs = performance.now();
         speechStartPerfRef.current = speechStartPerfMs;
         handlers.current.onSpeechStart(problemInstanceId, speechStartPerfMs);
       }),
       adapter.addListener('speechend', () => {
         speechEndPerfRef.current = performance.now();
-        handlers.current.clearFinalizeInterimTimeout();
-        finalizeInterimTimeoutRef.current = setTimeout(() => {
-          finalizeInterimTimeoutRef.current = null;
-
-          const currentProblemInstanceId =
-            currentProblemRef.current?.problemInstanceId;
-          const lastValidInterim = lastValidInterimRef.current;
-
-          if (
-            !mountedRef.current ||
-            !enabledRef.current ||
-            !currentProblemInstanceId ||
-            !lastValidInterim ||
-            lastValidInterim.problemInstanceId !== currentProblemInstanceId
-          ) {
-            return;
-          }
-
-          lastValidInterimRef.current = null;
-          handlers.current.submitVoiceAttempt(
-            lastValidInterim.value,
-            lastValidInterim.rawTranscript,
-            null
-          );
-        }, FINALIZE_INTERIM_DELAY_MS);
+        handlers.current.scheduleInterimFinalize(
+          FINALIZE_INTERIM_DELAY_MS,
+          'speechend'
+        );
       }),
       adapter.addListener('result', event => handlers.current.handleResult(event)),
       adapter.addListener('error', event => handlers.current.handleError(event)),

@@ -5,6 +5,8 @@ import {
   type ExpoSpeechRecognitionResultEvent,
 } from 'expo-speech-recognition';
 import { isVoiceDebugEnabled, logVoiceDebug } from './voiceDebugLog';
+import { getVoiceExperiments } from './voiceExperiments';
+import { webSpeechRecognizer } from './webSpeechRecognizer';
 
 export type SpeechRecognitionEventName =
   | 'start'
@@ -38,6 +40,26 @@ export interface SpeechRecognitionAdapter {
   ) => { remove: () => void };
 }
 
+// The pieces of a recognizer the adapter drives: the library's module, or the
+// reusable web recognizer used by the ?reuse=1 experiment.
+interface SpeechBackend {
+  start: (options: ExpoSpeechRecognitionOptions) => void;
+  stop: () => void;
+  abort: () => void;
+  addListener: (
+    eventName: string,
+    listener: (...args: unknown[]) => void
+  ) => { remove: () => void };
+}
+
+const ABORT_WAIT_MS = 800;
+
+function getBackend(): SpeechBackend {
+  return getVoiceExperiments().reuseRecognizer
+    ? (webSpeechRecognizer as unknown as SpeechBackend)
+    : (ExpoSpeechRecognitionModule as unknown as SpeechBackend);
+}
+
 // Debug-only (?debug=1) summary of an event payload; see voiceDebugLog.ts.
 function describeEvent(eventName: SpeechRecognitionEventName, payload: unknown) {
   if (eventName === 'error') {
@@ -52,6 +74,43 @@ function describeEvent(eventName: SpeechRecognitionEventName, payload: unknown) 
   return '';
 }
 
+// Tracks whether a recognizer is running, for the ?abort=1 experiment.
+let isRunning = false;
+let isTrackingRunState = false;
+const endWaiters = new Set<() => void>();
+
+function trackRunState() {
+  if (isTrackingRunState) {
+    return;
+  }
+  isTrackingRunState = true;
+  addGuardedListener('start', () => {
+    isRunning = true;
+  });
+  addGuardedListener('end', () => {
+    isRunning = false;
+    endWaiters.forEach(waiter => waiter());
+  });
+}
+
+function whenEnded(maxWaitMs: number, callback: () => void) {
+  let finished = false;
+  const finish = () => {
+    if (finished) {
+      return;
+    }
+    finished = true;
+    clearTimeout(timeout);
+    endWaiters.delete(finish);
+    callback();
+  };
+  const timeout = setTimeout(() => {
+    logVoiceDebug('abort wait timed out');
+    finish();
+  }, maxWaitMs);
+  endWaiters.add(finish);
+}
+
 export const expoSpeechRecognitionAdapter: SpeechRecognitionAdapter = {
   isRecognitionAvailable: () =>
     ExpoSpeechRecognitionModule.isRecognitionAvailable(),
@@ -61,11 +120,28 @@ export const expoSpeechRecognitionAdapter: SpeechRecognitionAdapter = {
   requestPermissionsAsync: ExpoSpeechRecognitionModule.requestPermissionsAsync,
   start: options => {
     logVoiceDebug('start()');
-    ExpoSpeechRecognitionModule.start(options);
+    const backend = getBackend();
+
+    if (getVoiceExperiments().abortBeforeRestart) {
+      trackRunState();
+      if (isRunning) {
+        logVoiceDebug('abort() before start');
+        backend.abort();
+        whenEnded(ABORT_WAIT_MS, () => backend.start(options));
+        return;
+      }
+    }
+
+    backend.start(options);
   },
   stop: () => {
+    if (getVoiceExperiments().abortBeforeRestart) {
+      logVoiceDebug('abort()');
+      getBackend().abort();
+      return;
+    }
     logVoiceDebug('stop()');
-    ExpoSpeechRecognitionModule.stop();
+    getBackend().stop();
   },
   addListener: (eventName, listener) => {
     return addGuardedListener(eventName, args => {
@@ -84,13 +160,13 @@ function addGuardedListener(
   handler: (args: unknown[]) => void
 ): { remove: () => void } {
   let active = true;
-  const subscription = ExpoSpeechRecognitionModule.addListener(
-    eventName as never,
-    ((...args: unknown[]) => {
+  const subscription = getBackend().addListener(
+    eventName,
+    (...args: unknown[]) => {
       if (active) {
         handler(args);
       }
-    }) as never
+    }
   );
 
   return {

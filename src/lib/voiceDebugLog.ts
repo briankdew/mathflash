@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { describeVoiceExperiments, getWebQueryParams } from './voiceExperiments';
 
 export interface VoiceDebugEntry {
   id: number;
@@ -17,16 +17,7 @@ let startedAtIso: string | null = null;
 const listeners = new Set<() => void>();
 
 export function isVoiceDebugEnabled(): boolean {
-  if (Platform.OS !== 'web') {
-    return false;
-  }
-
-  try {
-    const search = globalThis.window?.location?.search ?? '';
-    return new URLSearchParams(search).get('debug') === '1';
-  } catch {
-    return false;
-  }
+  return getWebQueryParams()?.get('debug') === '1';
 }
 
 function notify() {
@@ -113,6 +104,7 @@ export function buildVoiceDebugReport(): string {
     'mathflash voice debug log',
     `started: ${startedAtIso ?? 'no events yet'}`,
     ...describeEnvironment(),
+    `experiments: ${describeVoiceExperiments()}`,
     `events: ${entries.length}`,
     '',
   ];

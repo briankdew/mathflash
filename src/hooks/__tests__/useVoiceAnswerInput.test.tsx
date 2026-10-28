@@ -129,4 +129,174 @@ describe('useVoiceAnswerInput speech subscriptions', () => {
     expect(onValidAttemptCaptured).toHaveBeenCalledTimes(1);
     expect(result.current.voiceState.pendingAttempt?.value).toBe('7');
   });
+
+  it('accepts a stable interim number early with ?fast and ignores the late final result', async () => {
+    (globalThis as { window?: unknown }).window = {
+      isSecureContext: true,
+      location: { search: '?debug=1&fast=50' },
+    };
+    const fake = createFakeAdapter();
+    const onValidAttemptCaptured = jest.fn();
+
+    const { result } = renderHook(() =>
+      useVoiceAnswerInput({
+        enabled: true,
+        shouldListen: true,
+        isSessionActive: true,
+        currentProblem: problem,
+        options: { operation: 'addsub' } as SessionOptions,
+        onSpeechStart: jest.fn(),
+        onValidAttemptCaptured,
+        adapter: fake.adapter,
+      })
+    );
+    await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      fake.emit('start');
+      fake.emit('result', {
+        isFinal: false,
+        results: [{ transcript: 'seven', confidence: 1, segments: [] }],
+      });
+    });
+    await waitFor(() =>
+      expect(result.current.voiceState.pendingAttempt?.value).toBe('7')
+    );
+    expect(onValidAttemptCaptured).toHaveBeenCalledTimes(1);
+
+    // Safari delivers the final transcript of the same utterance later. It must
+    // not be counted again (it could belong to the next problem).
+    act(() => {
+      fake.emit('result', {
+        isFinal: true,
+        results: [{ transcript: 'seven', confidence: 1, segments: [] }],
+      });
+    });
+    expect(onValidAttemptCaptured).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not wait for a final result without ?fast', async () => {
+    const fake = createFakeAdapter();
+    const onValidAttemptCaptured = jest.fn();
+
+    renderHook(() =>
+      useVoiceAnswerInput({
+        enabled: true,
+        shouldListen: true,
+        isSessionActive: true,
+        currentProblem: problem,
+        options: { operation: 'addsub' } as SessionOptions,
+        onSpeechStart: jest.fn(),
+        onValidAttemptCaptured,
+        adapter: fake.adapter,
+      })
+    );
+    await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      fake.emit('result', {
+        isFinal: false,
+        results: [{ transcript: 'seven', confidence: 1, segments: [] }],
+      });
+    });
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    expect(onValidAttemptCaptured).not.toHaveBeenCalled();
+  });
+
+  function renderListeningHook(
+    fake: ReturnType<typeof createFakeAdapter>,
+    onValidAttemptCaptured = jest.fn()
+  ) {
+    return renderHook(() =>
+      useVoiceAnswerInput({
+        enabled: true,
+        shouldListen: true,
+        isSessionActive: true,
+        currentProblem: problem,
+        options: { operation: 'addsub' } as SessionOptions,
+        onSpeechStart: jest.fn(),
+        onValidAttemptCaptured,
+        adapter: fake.adapter,
+      })
+    );
+  }
+
+  const interimSeven = {
+    isFinal: false,
+    results: [{ transcript: 'seven', confidence: 1, segments: [] }],
+  };
+  const finalSeven = {
+    isFinal: true,
+    results: [{ transcript: 'seven', confidence: 1, segments: [] }],
+  };
+
+  it('does not restart the recognizer while a valid interim answer is waiting to be accepted', async () => {
+    const fake = createFakeAdapter();
+    const onValidAttemptCaptured = jest.fn();
+    renderListeningHook(fake, onValidAttemptCaptured);
+    await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      fake.emit('start');
+      fake.emit('speechstart');
+      fake.emit('result', interimSeven);
+      fake.emit('speechend');
+      fake.emit('end');
+    });
+    await waitFor(() => expect(onValidAttemptCaptured).toHaveBeenCalledTimes(1));
+    await new Promise(resolve => setTimeout(resolve, 400));
+
+    expect(fake.adapter.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts the last valid interim number when the recognizer ends with ?fast', async () => {
+    (globalThis as { window?: unknown }).window = {
+      isSecureContext: true,
+      location: { search: '?debug=1&fast=5000' },
+    };
+    const fake = createFakeAdapter();
+    const onValidAttemptCaptured = jest.fn();
+    const { result } = renderListeningHook(fake, onValidAttemptCaptured);
+    await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      fake.emit('start');
+      fake.emit('speechstart');
+      fake.emit('result', interimSeven);
+      fake.emit('end');
+    });
+
+    await waitFor(() =>
+      expect(result.current.voiceState.pendingAttempt?.value).toBe('7')
+    );
+    expect(fake.adapter.start).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not use the previous attempt's end-of-speech time for a retry", async () => {
+    const fake = createFakeAdapter();
+    const { result } = renderListeningHook(fake);
+    await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(1));
+
+    // Attempt 1: speech was heard but nothing usable came back.
+    act(() => {
+      fake.emit('start');
+      fake.emit('speechstart');
+      fake.emit('speechend');
+      fake.emit('end');
+    });
+    await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(2));
+
+    // Attempt 2: the final result arrives before this attempt's speechend.
+    act(() => {
+      fake.emit('start');
+      fake.emit('speechstart');
+    });
+    await new Promise(resolve => setTimeout(resolve, 150));
+    act(() => {
+      fake.emit('result', finalSeven);
+    });
+
+    expect(result.current.voiceState.pendingAttempt?.voiceProcessingMs).toBe(0);
+  });
 });
