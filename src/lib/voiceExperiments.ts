@@ -7,13 +7,14 @@ import { Platform } from 'react-native';
 //   delay=N  keep at least N ms between one recognizer ending and the next start
 //   abort=1  abort() the old recognizer and wait for its end before restarting
 //   reuse=1  use one recognizer object for the whole session (web only)
-//   keepmic=0  turn OFF the default of holding the microphone open for the whole
-//            session (web only). Holding it stops iPhone Safari from handing the
-//            next recognition a dead microphone.
+//   keepmic=1|0  force holding the microphone open for the whole session on or
+//            off (web only). Default: on in Safari/WebKit, where it stops the
+//            next recognition getting a dead microphone; off in Chrome, where
+//            it appeared to make recognitions come back empty.
 //   fast=N   change how long a valid interim number must stay unchanged before
 //            it is accepted instead of waiting for the browser's final result.
-//            On the web this is ON by default (DEFAULT_STABLE_INTERIM_MS);
-//            fast=0 turns it off
+//            Default: on (DEFAULT_STABLE_INTERIM_MS) in Safari/WebKit, off in
+//            Chrome; fast=0 forces it off
 export interface VoiceExperiments {
   delayMs: number;
   abortBeforeRestart: boolean;
@@ -27,8 +28,28 @@ export interface VoiceExperiments {
 // interim number is accepted once it has stayed unchanged this long.
 export const DEFAULT_STABLE_INTERIM_MS = 500;
 
+// Safari, and every browser on iPhone/iPad (they all use Apple's WebKit speech
+// engine). Safari needs workarounds that Chrome does not: Chrome's results
+// already worked and the workarounds made it worse, so they are Safari-only.
+export function isWebKitSpeechEngine(): boolean {
+  const userAgent = globalThis.navigator?.userAgent ?? '';
+  if (/iPhone|iPad|iPod/.test(userAgent)) {
+    return true;
+  }
+  return (
+    /Safari/.test(userAgent) &&
+    !/Chrome|Chromium|CriOS|Edg|OPR|Android/.test(userAgent)
+  );
+}
+
 function defaultStableInterimMs() {
-  return Platform.OS === 'web' ? DEFAULT_STABLE_INTERIM_MS : null;
+  return Platform.OS === 'web' && isWebKitSpeechEngine()
+    ? DEFAULT_STABLE_INTERIM_MS
+    : null;
+}
+
+function defaultKeepMic() {
+  return isWebKitSpeechEngine();
 }
 
 function noExperiments(): VoiceExperiments {
@@ -36,7 +57,7 @@ function noExperiments(): VoiceExperiments {
     delayMs: 0,
     abortBeforeRestart: false,
     reuseRecognizer: false,
-    keepMic: true,
+    keepMic: defaultKeepMic(),
     stableInterimMs: defaultStableInterimMs(),
   };
 }
@@ -68,7 +89,9 @@ export function getVoiceExperiments(): VoiceExperiments {
     delayMs: readMs(params, 'delay', 5000) ?? 0,
     abortBeforeRestart: params.get('abort') === '1',
     reuseRecognizer: params.get('reuse') === '1',
-    keepMic: params.get('keepmic') !== '0',
+    keepMic: params.has('keepmic')
+      ? params.get('keepmic') === '1'
+      : defaultKeepMic(),
     stableInterimMs: params.has('fast')
       ? readMs(params, 'fast', 3000)
       : defaultStableInterimMs(),
@@ -81,7 +104,7 @@ export function describeVoiceExperiments(): string {
     experiments.delayMs > 0 ? `delay=${experiments.delayMs}` : '',
     experiments.abortBeforeRestart ? 'abort' : '',
     experiments.reuseRecognizer ? 'reuse' : '',
-    experiments.keepMic ? '' : 'keepmic=off',
+    experiments.keepMic ? 'keepmic' : '',
     experiments.stableInterimMs !== null
       ? `fast=${experiments.stableInterimMs}`
       : '',

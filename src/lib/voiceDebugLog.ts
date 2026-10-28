@@ -1,4 +1,8 @@
-import { describeVoiceExperiments, getWebQueryParams } from './voiceExperiments';
+import {
+  describeVoiceExperiments,
+  getWebQueryParams,
+  isWebKitSpeechEngine,
+} from './voiceExperiments';
 
 export interface VoiceDebugEntry {
   id: number;
@@ -104,6 +108,7 @@ export function buildVoiceDebugReport(): string {
     'mathflash voice debug log',
     `started: ${startedAtIso ?? 'no events yet'}`,
     ...describeEnvironment(),
+    `webkitSpeechEngine: ${isWebKitSpeechEngine()}`,
     `experiments: ${describeVoiceExperiments()}`,
     `events: ${entries.length}`,
     '',

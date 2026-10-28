@@ -25,6 +25,9 @@ function emit(eventName: string, ...args: unknown[]) {
   (mockAttached[eventName] ?? []).forEach(handler => handler(...args));
 }
 
+const IPHONE_SAFARI =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1';
+
 describe('expoSpeechRecognitionAdapter.addListener', () => {
   beforeEach(() => {
     Object.keys(mockAttached).forEach(key => delete mockAttached[key]);
@@ -107,7 +110,7 @@ describe('expoSpeechRecognitionAdapter.addListener', () => {
         location: { search: '' },
       };
       Object.defineProperty(globalThis, 'navigator', {
-        value: { mediaDevices: { getUserMedia } },
+        value: { userAgent: IPHONE_SAFARI, mediaDevices: { getUserMedia } },
         configurable: true,
       });
     });

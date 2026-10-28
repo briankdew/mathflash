@@ -48,9 +48,20 @@ const problem: ProblemDisplay = {
   correct: 7,
 };
 
+const IPHONE_SAFARI =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1';
+
+function pretendToBeIphoneSafari() {
+  Object.defineProperty(globalThis, 'navigator', {
+    value: { userAgent: IPHONE_SAFARI },
+    configurable: true,
+  });
+}
+
 describe('useVoiceAnswerInput speech subscriptions', () => {
   // The hook refuses to listen on web unless the page is a secure context.
   beforeEach(() => {
+    pretendToBeIphoneSafari();
     (globalThis as { window?: unknown }).window = {
       isSecureContext: true,
       location: { search: '' },
@@ -235,7 +246,7 @@ describe('useVoiceAnswerInput speech subscriptions', () => {
     results: [{ transcript: 'seven', confidence: 1, segments: [] }],
   };
 
-  it('accepts a stable interim number by default on the web, timed from speech onset', async () => {
+  it('accepts a stable interim number by default in Safari, timed from speech onset', async () => {
     const fake = createFakeAdapter();
     const { result } = renderListeningHook(fake);
     await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(1));

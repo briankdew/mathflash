@@ -3,7 +3,24 @@ import {
   computeRestartDelayMs,
   describeVoiceExperiments,
   getVoiceExperiments,
+  isWebKitSpeechEngine,
 } from '../voiceExperiments';
+
+const IPHONE_SAFARI =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1';
+const CHROMEBOOK_CHROME =
+  'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36';
+const IPHONE_CHROME =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/156.0.0.0 Mobile/15E148 Safari/604.1';
+const MAC_SAFARI =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
+
+function setUserAgent(userAgent: string) {
+  Object.defineProperty(globalThis, 'navigator', {
+    value: { userAgent },
+    configurable: true,
+  });
+}
 
 const originalOS = Platform.OS;
 
@@ -13,6 +30,8 @@ function setPage(os: typeof Platform.OS, search: string) {
 }
 
 describe('voiceExperiments', () => {
+  beforeEach(() => setUserAgent(IPHONE_SAFARI));
+
   afterAll(() => {
     Object.defineProperty(Platform, 'OS', { value: originalOS });
     delete (globalThis as { window?: unknown }).window;
@@ -28,9 +47,7 @@ describe('voiceExperiments', () => {
       keepMic: false,
       stableInterimMs: 500,
     });
-    expect(describeVoiceExperiments()).toBe(
-      'delay=1500 abort reuse keepmic=off fast=500'
-    );
+    expect(describeVoiceExperiments()).toBe('delay=1500 abort reuse fast=500');
   });
 
   it('ignores every switch without debug=1', () => {
@@ -43,7 +60,7 @@ describe('voiceExperiments', () => {
       keepMic: true,
       stableInterimMs: 500,
     });
-    expect(describeVoiceExperiments()).toBe('fast=500');
+    expect(describeVoiceExperiments()).toBe('keepmic fast=500');
   });
 
   it('ignores switches off the web and bad numbers', () => {
@@ -68,15 +85,48 @@ describe('voiceExperiments', () => {
     expect(computeRestartDelayMs(0, 1500, Infinity)).toBe(0);
   });
 
-  it('accepts a stable interim number by default on the web, and fast=0 turns that off', () => {
+  it('turns the Safari workarounds on by default in Safari and off in Chrome', () => {
     setPage('web', '');
-    expect(getVoiceExperiments().stableInterimMs).toBe(500);
 
-    setPage('web', '?debug=1&fast=0');
-    expect(getVoiceExperiments().stableInterimMs).toBeNull();
+    setUserAgent(IPHONE_SAFARI);
+    expect(getVoiceExperiments()).toMatchObject({
+      keepMic: true,
+      stableInterimMs: 500,
+    });
 
-    setPage('web', '?debug=1&fast=800');
-    expect(getVoiceExperiments().stableInterimMs).toBe(800);
+    setUserAgent(CHROMEBOOK_CHROME);
+    expect(getVoiceExperiments()).toMatchObject({
+      keepMic: false,
+      stableInterimMs: null,
+    });
+    expect(describeVoiceExperiments()).toBe('none');
+  });
+
+  it('lets debug switches override the browser default either way', () => {
+    setUserAgent(CHROMEBOOK_CHROME);
+    setPage('web', '?debug=1&keepmic=1&fast=800');
+    expect(getVoiceExperiments()).toMatchObject({
+      keepMic: true,
+      stableInterimMs: 800,
+    });
+
+    setUserAgent(IPHONE_SAFARI);
+    setPage('web', '?debug=1&keepmic=0&fast=0');
+    expect(getVoiceExperiments()).toMatchObject({
+      keepMic: false,
+      stableInterimMs: null,
+    });
+  });
+
+  it('treats Safari and every iPhone browser as WebKit, but not Chrome', () => {
+    setUserAgent(IPHONE_SAFARI);
+    expect(isWebKitSpeechEngine()).toBe(true);
+    setUserAgent(IPHONE_CHROME);
+    expect(isWebKitSpeechEngine()).toBe(true);
+    setUserAgent(MAC_SAFARI);
+    expect(isWebKitSpeechEngine()).toBe(true);
+    setUserAgent(CHROMEBOOK_CHROME);
+    expect(isWebKitSpeechEngine()).toBe(false);
   });
 
   it('does not accept interim numbers by default off the web', () => {
