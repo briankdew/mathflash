@@ -122,6 +122,18 @@ export function useVoiceAnswerInput({
   const supportsOnDeviceRef = useRef(false);
   const suppressRestartRef = useRef(false);
   const speechStartPerfRef = useRef<number | null>(null);
+  // "Empty tries": the browser reported speech but ended with no text and no
+  // error. That stretch is engine dead time, so its length is added up here per
+  // problem and taken off the user's response time. See docs/voice-timing-principles.md.
+  const emptyTryMsRef = useRef(0);
+  const openStretchStartPerfRef = useRef<number | null>(null);
+  const stretchHadTextRef = useRef(false);
+  const stretchHadErrorRef = useRef(false);
+  const onsetReportedRef = useRef(false);
+  const onSpeechStartRef = useRef(onSpeechStart);
+  useEffect(() => {
+    onSpeechStartRef.current = onSpeechStart;
+  });
   const speechEndPerfRef = useRef<number | null>(null);
   const finalizeInterimTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -166,6 +178,9 @@ export function useVoiceAnswerInput({
     speechStartPerfRef.current = null;
     speechEndPerfRef.current = null;
     recognizerStartPerfRef.current = null;
+    emptyTryMsRef.current = 0;
+    openStretchStartPerfRef.current = null;
+    onsetReportedRef.current = false;
     if (finalizeInterimTimeoutRef.current) {
       clearTimeout(finalizeInterimTimeoutRef.current);
       finalizeInterimTimeoutRef.current = null;
@@ -274,6 +289,7 @@ export function useVoiceAnswerInput({
       // Response-time rule: the user's time ends when they began to speak, not
       // when the engine delivered the answer. What the engine added on top is
       // recorded separately and never charged to the user.
+      const emptyTryMs = emptyTryMsRef.current;
       const capturedPerfMs = performance.now();
       const speechStartPerfMs = speechStartPerfRef.current;
       const captureLagMs =
@@ -293,7 +309,7 @@ export function useVoiceAnswerInput({
 
       logVoiceDebug(
         'answer captured',
-        `"${value}" via ${via} onset-to-answer ${
+        `"${value}" via ${via} empty-tries ${Math.round(emptyTryMs)}ms onset-to-answer ${
           captureLagMs === null ? '?' : Math.round(captureLagMs)
         }ms engine-ready-lag ${
           recognizerReadyLagMs === null ? '?' : Math.round(recognizerReadyLagMs)
@@ -312,13 +328,15 @@ export function useVoiceAnswerInput({
           problemInstanceId,
           value,
           source: 'voice',
-          completedAtPerfMs: speechStartPerfMs ?? speechEndPerfMs,
+          completedAtPerfMs:
+            (speechStartPerfMs ?? speechEndPerfMs) - emptyTryMs,
           speechStartPerfMs,
           speechEndPerfMs,
           finalResultPerfMs,
           voiceProcessingMs,
           captureLagMs,
           recognizerReadyLagMs,
+          emptyTryMs,
           rawTranscript,
         },
         voiceProcessingMs,
@@ -513,6 +531,16 @@ export function useVoiceAnswerInput({
         return;
       }
 
+      // The first text of a stretch of speech is the proof that it was speech.
+      // Only now is the response onset reported, minus any engine dead time.
+      if (!onsetReportedRef.current && speechStartPerfRef.current !== null) {
+        onsetReportedRef.current = true;
+        onSpeechStartRef.current(
+          currentProblemRef.current.problemInstanceId ?? '',
+          speechStartPerfRef.current - emptyTryMsRef.current
+        );
+      }
+
       const acceptedRange = getVoiceAcceptedAnswerRange(
         currentProblemRef.current,
         optionsRef.current.operation
@@ -627,7 +655,6 @@ export function useVoiceAnswerInput({
     clearFinalizeInterimTimeout,
     handleError,
     handleResult,
-    onSpeechStart,
     scheduleInterimFinalize,
     scheduleRestart,
   });
@@ -636,7 +663,6 @@ export function useVoiceAnswerInput({
       clearFinalizeInterimTimeout,
       handleError,
       handleResult,
-      onSpeechStart,
       scheduleInterimFinalize,
       scheduleRestart,
     };
@@ -656,6 +682,22 @@ export function useVoiceAnswerInput({
       }),
       adapter.addListener('end', () => {
         lastEndPerfRef.current = performance.now();
+        const openStart = openStretchStartPerfRef.current;
+        if (
+          openStart !== null &&
+          !stretchHadTextRef.current &&
+          !stretchHadErrorRef.current
+        ) {
+          const emptyMs = Math.max(0, lastEndPerfRef.current - openStart);
+          emptyTryMsRef.current += emptyMs;
+          logVoiceDebug(
+            'empty try',
+            `${Math.round(emptyMs)}ms taken off response time (total ${Math.round(
+              emptyTryMsRef.current
+            )}ms)`
+          );
+        }
+        openStretchStartPerfRef.current = null;
         isRecognizerRunningRef.current = false;
         ignoreResultsSincePerfRef.current = null;
 
@@ -691,7 +733,10 @@ export function useVoiceAnswerInput({
         speechEndPerfRef.current = null;
         const speechStartPerfMs = performance.now();
         speechStartPerfRef.current = speechStartPerfMs;
-        handlers.current.onSpeechStart(problemInstanceId, speechStartPerfMs);
+        openStretchStartPerfRef.current = speechStartPerfMs;
+        stretchHadTextRef.current = false;
+        stretchHadErrorRef.current = false;
+        onsetReportedRef.current = false;
       }),
       adapter.addListener('speechend', () => {
         speechEndPerfRef.current = performance.now();
@@ -700,8 +745,16 @@ export function useVoiceAnswerInput({
           'speechend'
         );
       }),
-      adapter.addListener('result', event => handlers.current.handleResult(event)),
-      adapter.addListener('error', event => handlers.current.handleError(event)),
+      adapter.addListener('result', event => {
+        if (event.results[0]?.transcript?.trim()) {
+          stretchHadTextRef.current = true;
+        }
+        handlers.current.handleResult(event);
+      }),
+      adapter.addListener('error', event => {
+        stretchHadErrorRef.current = true;
+        handlers.current.handleError(event);
+      }),
       adapter.addListener('nomatch', () => {
         dispatch({ type: 'transcriptPreviewUpdated', transcriptPreview: '' });
         dispatch({
@@ -766,6 +819,8 @@ export function useVoiceAnswerInput({
     dispatch({ type: 'resetSessionMetrics' });
     speechStartPerfRef.current = null;
     speechEndPerfRef.current = null;
+    emptyTryMsRef.current = 0;
+    openStretchStartPerfRef.current = null;
     lastValidInterimRef.current = null;
     suppressRestartRef.current = false;
   }, [clearFinalizeInterimTimeout]);

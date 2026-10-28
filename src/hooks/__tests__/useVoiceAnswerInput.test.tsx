@@ -104,8 +104,17 @@ describe('useVoiceAnswerInput speech subscriptions', () => {
 
     expect(fake.addListener.mock.calls.length).toBe(subscriptionsAfterMount);
 
+    // The response onset is reported once the first text of the speech arrives.
     act(() => {
       fake.emit('speechstart');
+      fake.emit('result', {
+        isFinal: false,
+        results: [{ transcript: 'hello', confidence: 1, segments: [] }],
+      });
+      fake.emit('result', {
+        isFinal: false,
+        results: [{ transcript: 'hello there', confidence: 1, segments: [] }],
+      });
     });
 
     expect(latestOnSpeechStart).toHaveBeenCalledTimes(1);
@@ -303,6 +312,97 @@ describe('useVoiceAnswerInput speech subscriptions', () => {
     expect(
       result.current.voiceState.pendingAttempt?.recognizerReadyLagMs
     ).toBeLessThan(500);
+  });
+
+  describe('empty tries (speech reported, no text, no error)', () => {
+    async function setUpTwoStretches(
+      firstStretch: () => void,
+      fake: ReturnType<typeof createFakeAdapter>,
+      onSpeechStart = jest.fn()
+    ) {
+      const { result } = renderHook(() =>
+        useVoiceAnswerInput({
+          enabled: true,
+          shouldListen: true,
+          isSessionActive: true,
+          currentProblem: problem,
+          options: { operation: 'addsub' } as SessionOptions,
+          onSpeechStart,
+          onValidAttemptCaptured: jest.fn(),
+          adapter: fake.adapter,
+        })
+      );
+      await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(1));
+
+      act(() => {
+        fake.emit('start');
+        fake.emit('speechstart');
+      });
+      await new Promise(resolve => setTimeout(resolve, 150));
+      act(firstStretch);
+      await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(2));
+
+      act(() => {
+        fake.emit('start');
+        fake.emit('speechstart');
+      });
+      await new Promise(resolve => setTimeout(resolve, 50));
+      act(() => {
+        fake.emit('result', finalSeven);
+      });
+      await waitFor(() =>
+        expect(result.current.voiceState.pendingAttempt?.value).toBe('7')
+      );
+      return result.current.voiceState.pendingAttempt;
+    }
+
+    it('takes the empty stretch off the response time and the onset', async () => {
+      const fake = createFakeAdapter();
+      const onSpeechStart = jest.fn();
+
+      const attempt = await setUpTwoStretches(
+        () => fake.emit('end'),
+        fake,
+        onSpeechStart
+      );
+
+      expect(attempt?.emptyTryMs).toBeGreaterThanOrEqual(140);
+      expect(attempt?.completedAtPerfMs).toBeCloseTo(
+        (attempt?.speechStartPerfMs ?? 0) - (attempt?.emptyTryMs ?? 0),
+        3
+      );
+      // Reported once, from the stretch that produced text, minus the dead time.
+      expect(onSpeechStart).toHaveBeenCalledTimes(1);
+      expect(onSpeechStart.mock.calls[0][1]).toBeCloseTo(
+        (attempt?.speechStartPerfMs ?? 0) - (attempt?.emptyTryMs ?? 0),
+        3
+      );
+    });
+
+    it('does not take off a stretch that returned text', async () => {
+      const fake = createFakeAdapter();
+
+      const attempt = await setUpTwoStretches(() => {
+        fake.emit('result', {
+          isFinal: true,
+          results: [{ transcript: 'hello', confidence: 1, segments: [] }],
+        });
+        fake.emit('end');
+      }, fake);
+
+      expect(attempt?.emptyTryMs).toBe(0);
+    });
+
+    it('does not take off a stretch that ended in an error', async () => {
+      const fake = createFakeAdapter();
+
+      const attempt = await setUpTwoStretches(() => {
+        fake.emit('error', { error: 'no-speech', message: '' });
+        fake.emit('end');
+      }, fake);
+
+      expect(attempt?.emptyTryMs).toBe(0);
+    });
   });
 
   it('holds an interim number that could still grow, e.g. four -> fourteen', async () => {

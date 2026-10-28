@@ -72,6 +72,8 @@ export interface AnswerAttempt {
   // Engine delays, kept apart from the user's response time.
   captureLagMs?: number | null;
   recognizerReadyLagMs?: number | null;
+  // Engine dead time (speech reported, no text, no error) already taken off.
+  emptyTryMs?: number | null;
   rawTranscript?: string | null;
 }
 
@@ -153,6 +155,7 @@ export interface SessionProblemPerformance {
     voiceProcessingMs: number | null;
     captureLagMs: number | null;
     recognizerReadyLagMs: number | null;
+    emptyTryMs: number | null;
     transcript: string | null;
   };
   keypadDiagnostics: {

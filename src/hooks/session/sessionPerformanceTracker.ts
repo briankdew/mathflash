@@ -49,6 +49,7 @@ export function createSessionPerformanceRow(
       voiceProcessingMs: null,
       captureLagMs: null,
       recognizerReadyLagMs: null,
+      emptyTryMs: null,
       transcript: null,
     },
     keypadDiagnostics: {
@@ -150,6 +151,7 @@ export function recordPerformanceAttempt(
                 row.voiceDiagnostics.recognizerReadyLagMs ??
                 attempt.recognizerReadyLagMs ??
                 null,
+              emptyTryMs: attempt.emptyTryMs ?? row.voiceDiagnostics.emptyTryMs,
               transcript:
                 attempt.rawTranscript ?? row.voiceDiagnostics.transcript,
             }
