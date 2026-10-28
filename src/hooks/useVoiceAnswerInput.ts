@@ -13,6 +13,7 @@ import {
 } from '../lib/types';
 import {
   buildVoiceContextualStrings,
+  couldGrowIntoLongerNumber,
   getVoiceAcceptedAnswerRange,
   getVoiceAnswerRange,
   normalizeVoiceNumber,
@@ -36,6 +37,9 @@ const RESTART_DELAY_MS = 220;
 const FINALIZE_INTERIM_DELAY_MS = 250;
 // How long results from a recognizer that already produced an answer are ignored.
 const LATE_RESULT_GUARD_MS = 5000;
+// Extra time an interim number is held when it could still grow into a longer
+// answer ("four" may become "fourteen").
+const GROWING_NUMBER_EXTRA_HOLD_MS = 400;
 
 interface UseVoiceAnswerInputArgs {
   enabled: boolean;
@@ -124,6 +128,9 @@ export function useVoiceAnswerInput({
   );
   const lastValidInterimRef = useRef<LastValidInterim | null>(null);
   const lastEndPerfRef = useRef<number | null>(null);
+  // When the recognizer reported `start` for the current problem. Used to tell
+  // how long the engine took to become ready after the problem was shown.
+  const recognizerStartPerfRef = useRef<number | null>(null);
   const isRecognizerRunningRef = useRef(false);
   // Set when an answer is taken while the recognizer is still running. Its late
   // results (e.g. the final transcript of the same utterance) must not be
@@ -149,6 +156,7 @@ export function useVoiceAnswerInput({
     logVoiceDebug('problem', currentProblem?.problemInstanceId ?? 'none');
     speechStartPerfRef.current = null;
     speechEndPerfRef.current = null;
+    recognizerStartPerfRef.current = null;
     if (finalizeInterimTimeoutRef.current) {
       clearTimeout(finalizeInterimTimeoutRef.current);
       finalizeInterimTimeoutRef.current = null;
@@ -254,9 +262,29 @@ export function useVoiceAnswerInput({
           ? 0
           : Math.max(0, finalResultPerfMs - speechEndPerfMs);
 
+      // Response-time rule: the user's time ends when they began to speak, not
+      // when the engine delivered the answer. What the engine added on top is
+      // recorded separately and never charged to the user.
+      const capturedPerfMs = performance.now();
+      const speechStartPerfMs = speechStartPerfRef.current;
+      const captureLagMs =
+        speechStartPerfMs === null
+          ? null
+          : Math.max(0, capturedPerfMs - speechStartPerfMs);
+      const presentedAtPerfMs = currentProblemRef.current?.presentedAtPerf;
+      const recognizerReadyLagMs =
+        recognizerStartPerfRef.current === null ||
+        presentedAtPerfMs === undefined
+          ? null
+          : Math.max(0, recognizerStartPerfRef.current - presentedAtPerfMs);
+
       logVoiceDebug(
         'answer captured',
-        `"${value}" via ${via} processing ${Math.round(voiceProcessingMs)}ms`
+        `"${value}" via ${via} onset-to-answer ${
+          captureLagMs === null ? '?' : Math.round(captureLagMs)
+        }ms engine-ready-lag ${
+          recognizerReadyLagMs === null ? '?' : Math.round(recognizerReadyLagMs)
+        }ms`
       );
       clearFinalizeInterimTimeout();
       if (isRecognizerRunningRef.current) {
@@ -271,11 +299,13 @@ export function useVoiceAnswerInput({
           problemInstanceId,
           value,
           source: 'voice',
-          completedAtPerfMs: speechEndPerfMs,
-          speechStartPerfMs: speechStartPerfRef.current,
+          completedAtPerfMs: speechStartPerfMs ?? speechEndPerfMs,
+          speechStartPerfMs,
           speechEndPerfMs,
           finalResultPerfMs,
           voiceProcessingMs,
+          captureLagMs,
+          recognizerReadyLagMs,
           rawTranscript,
         },
         voiceProcessingMs,
@@ -493,10 +523,19 @@ export function useVoiceAnswerInput({
           if (stableInterimMs !== null) {
             // Once the browser has reported the end of speech, don't wait
             // longer than the normal end-of-speech delay.
+            const holdMs = couldGrowIntoLongerNumber(
+              rawTranscript,
+              getVoiceAnswerRange(
+                currentProblemRef.current,
+                optionsRef.current.operation
+              )
+            )
+              ? stableInterimMs + GROWING_NUMBER_EXTRA_HOLD_MS
+              : stableInterimMs;
             const delayMs =
               speechEndPerfRef.current !== null
-                ? Math.min(stableInterimMs, FINALIZE_INTERIM_DELAY_MS)
-                : stableInterimMs;
+                ? Math.min(holdMs, FINALIZE_INTERIM_DELAY_MS)
+                : holdMs;
             scheduleInterimFinalize(delayMs, 'stable');
           }
           return;
@@ -599,6 +638,7 @@ export function useVoiceAnswerInput({
     const subscriptions = [
       adapter.addListener('start', () => {
         isRecognizerRunningRef.current = true;
+        recognizerStartPerfRef.current = performance.now();
         dispatch({ type: 'listeningStarted' });
       }),
       adapter.addListener('end', () => {

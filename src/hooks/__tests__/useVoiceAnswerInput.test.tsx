@@ -176,6 +176,10 @@ describe('useVoiceAnswerInput speech subscriptions', () => {
   });
 
   it('does not wait for a final result without ?fast', async () => {
+    (globalThis as { window?: unknown }).window = {
+      isSecureContext: true,
+      location: { search: '?debug=1&fast=0' },
+    };
     const fake = createFakeAdapter();
     const onValidAttemptCaptured = jest.fn();
 
@@ -230,6 +234,63 @@ describe('useVoiceAnswerInput speech subscriptions', () => {
     isFinal: true,
     results: [{ transcript: 'seven', confidence: 1, segments: [] }],
   };
+
+  it('accepts a stable interim number by default on the web, timed from speech onset', async () => {
+    const fake = createFakeAdapter();
+    const { result } = renderListeningHook(fake);
+    await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      fake.emit('start');
+      fake.emit('speechstart');
+    });
+    const speechStartedAt = performance.now();
+    await new Promise(resolve => setTimeout(resolve, 100));
+    act(() => {
+      fake.emit('result', { ...interimSeven, results: [{ transcript: 'two', confidence: 1, segments: [] }] });
+    });
+
+    await waitFor(() =>
+      expect(result.current.voiceState.pendingAttempt?.value).toBe('2')
+    );
+    const attempt = result.current.voiceState.pendingAttempt;
+    // Response time ends at speech onset; the engine's wait is kept apart.
+    expect(attempt?.completedAtPerfMs).toBe(attempt?.speechStartPerfMs);
+    expect(attempt?.speechStartPerfMs).toBeLessThanOrEqual(speechStartedAt + 5);
+    expect(attempt?.captureLagMs).toBeGreaterThanOrEqual(500);
+  });
+
+  it('holds an interim number that could still grow, e.g. four -> fourteen', async () => {
+    (globalThis as { window?: unknown }).window = {
+      isSecureContext: true,
+      location: { search: '?debug=1&fast=100' },
+    };
+    const fake = createFakeAdapter();
+    const { result } = renderListeningHook(fake);
+    await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      fake.emit('start');
+      fake.emit('speechstart');
+      fake.emit('result', {
+        isFinal: false,
+        results: [{ transcript: 'four', confidence: 1, segments: [] }],
+      });
+    });
+    // Past the plain 100ms hold, but inside the extended hold for "four".
+    await new Promise(resolve => setTimeout(resolve, 250));
+    expect(result.current.voiceState.pendingAttempt).toBeNull();
+
+    act(() => {
+      fake.emit('result', {
+        isFinal: false,
+        results: [{ transcript: 'fourteen', confidence: 1, segments: [] }],
+      });
+    });
+    await waitFor(() =>
+      expect(result.current.voiceState.pendingAttempt?.value).toBe('14')
+    );
+  });
 
   it('does not restart the recognizer while a valid interim answer is waiting to be accepted', async () => {
     const fake = createFakeAdapter();

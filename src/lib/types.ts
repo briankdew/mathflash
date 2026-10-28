@@ -69,6 +69,9 @@ export interface AnswerAttempt {
   speechEndPerfMs?: number | null;
   finalResultPerfMs?: number | null;
   voiceProcessingMs?: number | null;
+  // Engine delays, kept apart from the user's response time.
+  captureLagMs?: number | null;
+  recognizerReadyLagMs?: number | null;
   rawTranscript?: string | null;
 }
 
@@ -148,6 +151,8 @@ export interface SessionProblemPerformance {
     speechEndPerfMs: number | null;
     finalResultPerfMs: number | null;
     voiceProcessingMs: number | null;
+    captureLagMs: number | null;
+    recognizerReadyLagMs: number | null;
     transcript: string | null;
   };
   keypadDiagnostics: {

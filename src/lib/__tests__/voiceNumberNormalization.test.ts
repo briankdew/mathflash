@@ -1,4 +1,5 @@
 import {
+  couldGrowIntoLongerNumber,
   buildVoiceContextualStrings,
   getVoiceAcceptedAnswerRange,
   getVoiceAnswerRange,
@@ -54,5 +55,25 @@ describe('voiceNumberNormalization', () => {
       'twenty-one',
       'twenty one',
     ]);
+  });
+});
+
+describe('couldGrowIntoLongerNumber', () => {
+  const addsub = { min: 2, max: 18 };
+  const multdiv = { min: 1, max: 81 };
+
+  it('holds numbers that may become a longer valid answer', () => {
+    expect(couldGrowIntoLongerNumber('four', addsub)).toBe(true);
+    expect(couldGrowIntoLongerNumber('Seven', addsub)).toBe(true);
+    expect(couldGrowIntoLongerNumber('twenty', multdiv)).toBe(true);
+    expect(couldGrowIntoLongerNumber('nine', multdiv)).toBe(true);
+  });
+
+  it('does not hold numbers that cannot grow within the range', () => {
+    expect(couldGrowIntoLongerNumber('nine', addsub)).toBe(false);
+    expect(couldGrowIntoLongerNumber('two', multdiv)).toBe(false);
+    expect(couldGrowIntoLongerNumber('fifteen', addsub)).toBe(false);
+    expect(couldGrowIntoLongerNumber('15', addsub)).toBe(false);
+    expect(couldGrowIntoLongerNumber('four', { min: 1, max: 9 })).toBe(false);
   });
 });

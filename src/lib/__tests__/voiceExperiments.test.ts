@@ -41,9 +41,9 @@ describe('voiceExperiments', () => {
       abortBeforeRestart: false,
       reuseRecognizer: false,
       keepMic: true,
-      stableInterimMs: null,
+      stableInterimMs: 500,
     });
-    expect(describeVoiceExperiments()).toBe('none');
+    expect(describeVoiceExperiments()).toBe('fast=500');
   });
 
   it('ignores switches off the web and bad numbers', () => {
@@ -66,5 +66,21 @@ describe('voiceExperiments', () => {
     expect(computeRestartDelayMs(0, 1500, 500)).toBe(1000);
     expect(computeRestartDelayMs(220, 1500, 1400)).toBe(220);
     expect(computeRestartDelayMs(0, 1500, Infinity)).toBe(0);
+  });
+
+  it('accepts a stable interim number by default on the web, and fast=0 turns that off', () => {
+    setPage('web', '');
+    expect(getVoiceExperiments().stableInterimMs).toBe(500);
+
+    setPage('web', '?debug=1&fast=0');
+    expect(getVoiceExperiments().stableInterimMs).toBeNull();
+
+    setPage('web', '?debug=1&fast=800');
+    expect(getVoiceExperiments().stableInterimMs).toBe(800);
+  });
+
+  it('does not accept interim numbers by default off the web', () => {
+    setPage('ios', '');
+    expect(getVoiceExperiments().stableInterimMs).toBeNull();
   });
 });

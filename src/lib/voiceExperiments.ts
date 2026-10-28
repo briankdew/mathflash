@@ -10,8 +10,10 @@ import { Platform } from 'react-native';
 //   keepmic=0  turn OFF the default of holding the microphone open for the whole
 //            session (web only). Holding it stops iPhone Safari from handing the
 //            next recognition a dead microphone.
-//   fast=N   accept a valid interim number once it has not changed for N ms,
-//            instead of waiting for the browser's final result
+//   fast=N   change how long a valid interim number must stay unchanged before
+//            it is accepted instead of waiting for the browser's final result.
+//            On the web this is ON by default (DEFAULT_STABLE_INTERIM_MS);
+//            fast=0 turns it off
 export interface VoiceExperiments {
   delayMs: number;
   abortBeforeRestart: boolean;
@@ -20,13 +22,24 @@ export interface VoiceExperiments {
   stableInterimMs: number | null;
 }
 
-const NO_EXPERIMENTS: VoiceExperiments = {
-  delayMs: 0,
-  abortBeforeRestart: false,
-  reuseRecognizer: false,
-  keepMic: true,
-  stableInterimMs: null,
-};
+// iPhone Safari delivers its final transcript 1.5-3.5s after you start
+// speaking, but its first guess is usually already right. On the web a valid
+// interim number is accepted once it has stayed unchanged this long.
+export const DEFAULT_STABLE_INTERIM_MS = 500;
+
+function defaultStableInterimMs() {
+  return Platform.OS === 'web' ? DEFAULT_STABLE_INTERIM_MS : null;
+}
+
+function noExperiments(): VoiceExperiments {
+  return {
+    delayMs: 0,
+    abortBeforeRestart: false,
+    reuseRecognizer: false,
+    keepMic: true,
+    stableInterimMs: defaultStableInterimMs(),
+  };
+}
 
 export function getWebQueryParams(): URLSearchParams | null {
   if (Platform.OS !== 'web') {
@@ -48,7 +61,7 @@ function readMs(params: URLSearchParams, name: string, max: number) {
 export function getVoiceExperiments(): VoiceExperiments {
   const params = getWebQueryParams();
   if (!params || params.get('debug') !== '1') {
-    return NO_EXPERIMENTS;
+    return noExperiments();
   }
 
   return {
@@ -56,7 +69,9 @@ export function getVoiceExperiments(): VoiceExperiments {
     abortBeforeRestart: params.get('abort') === '1',
     reuseRecognizer: params.get('reuse') === '1',
     keepMic: params.get('keepmic') !== '0',
-    stableInterimMs: readMs(params, 'fast', 3000),
+    stableInterimMs: params.has('fast')
+      ? readMs(params, 'fast', 3000)
+      : defaultStableInterimMs(),
   };
 }
 

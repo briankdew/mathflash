@@ -90,6 +90,27 @@ function parseNumberWords(cleaned: string): number | null {
   return TENS[first] + ONES[second];
 }
 
+// True when a spoken number could still grow into a larger valid answer, e.g.
+// "six" -> "sixteen", "twenty" -> "twenty four". Used so an early interim guess
+// is not accepted while the speaker may still be saying the rest of the number.
+export function couldGrowIntoLongerNumber(
+  rawTranscript: string,
+  range: VoiceAnswerRange
+): boolean {
+  const word = rawTranscript.toLowerCase().replace(/-/g, ' ').trim();
+  if (TENS[word] !== undefined && TENS[word] + 1 <= range.max) {
+    return true;
+  }
+
+  return Array.from(VALID_WORDS).some(candidate => {
+    if (candidate === word || !candidate.startsWith(word)) {
+      return false;
+    }
+    const value = parseNumberWords(candidate);
+    return value !== null && value <= range.max;
+  });
+}
+
 export function numberToWords(value: number): string {
   if (!Number.isInteger(value) || value < 0 || value > 99) {
     return String(value);
