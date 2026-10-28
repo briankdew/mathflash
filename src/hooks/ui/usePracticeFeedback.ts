@@ -68,6 +68,15 @@ export function usePracticeFeedback({
 
   useEffect(() => clearTimers, [clearTimers]);
 
+  // onInputChanged is re-created whenever the input value changes. Callers run
+  // resetFeedback from an effect, so resetFeedback must keep the same identity
+  // or a change of input value (e.g. a spoken answer arriving together with its
+  // preview) would cancel the pending advance to the next problem.
+  const onInputChangedRef = useRef(onInputChanged);
+  useEffect(() => {
+    onInputChangedRef.current = onInputChanged;
+  }, [onInputChanged]);
+
   useEffect(() => {
     if (!showWrongAnswer || wrongAnswerValue === null) {
       return;
@@ -103,10 +112,10 @@ export function usePracticeFeedback({
       setShowWrongAnswerFill(false);
       setWrongAnswerValue(null);
       if (clearInput) {
-        onInputChanged('');
+        onInputChangedRef.current('');
       }
     },
-    [clearTimers, onInputChanged]
+    [clearTimers]
   );
 
   const applyAnswerResult = useCallback(
