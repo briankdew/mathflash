@@ -64,8 +64,56 @@ const VALID_WORDS = new Set([
   ...Object.keys(TENS),
 ]);
 
-function parseNumberWords(cleaned: string): number | null {
-  const words = cleaned.replace(/-/g, ' ').split(' ').filter(Boolean);
+// Words speech engines often return instead of a number. Only used where a
+// number is expected, so they cannot affect anything else in the app.
+const NEAR_MISS_WORDS: Record<string, string> = {
+  oh: 'zero',
+  o: 'zero',
+  won: 'one',
+  to: 'two',
+  too: 'two',
+  tu: 'two',
+  tree: 'three',
+  free: 'three',
+  for: 'four',
+  fore: 'four',
+  or: 'four',
+  sex: 'six',
+  sicks: 'six',
+  sics: 'six',
+  ate: 'eight',
+  ait: 'eight',
+  nein: 'nine',
+};
+
+// "for teen" -> "fourteen": engines sometimes split a teen into two words.
+const TEEN_STEMS: Record<string, string> = {
+  four: 'fourteen',
+  six: 'sixteen',
+  seven: 'seventeen',
+  eight: 'eighteen',
+  nine: 'nineteen',
+  fif: 'fifteen',
+  thir: 'thirteen',
+};
+
+function applyNearMisses(cleaned: string): string {
+  const words = cleaned
+    .replace(/-/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map(word => NEAR_MISS_WORDS[word] ?? word);
+
+  if (words.length === 2 && words[1] === 'teen' && TEEN_STEMS[words[0]]) {
+    return TEEN_STEMS[words[0]];
+  }
+
+  return words.join(' ');
+}
+
+function parseNumberWords(rawCleaned: string): number | null {
+  const cleaned = applyNearMisses(rawCleaned);
+  const words = cleaned.split(' ').filter(Boolean);
 
   if (words.length === 0 || words.length > 2) {
     return null;
@@ -97,7 +145,9 @@ export function couldGrowIntoLongerNumber(
   rawTranscript: string,
   range: VoiceAnswerRange
 ): boolean {
-  const word = rawTranscript.toLowerCase().replace(/-/g, ' ').trim();
+  const word = applyNearMisses(
+    rawTranscript.toLowerCase().replace(/-/g, ' ').trim()
+  );
   if (TENS[word] !== undefined && TENS[word] + 1 <= range.max) {
     return true;
   }

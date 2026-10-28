@@ -77,3 +77,46 @@ describe('couldGrowIntoLongerNumber', () => {
     expect(couldGrowIntoLongerNumber('four', { min: 1, max: 9 })).toBe(false);
   });
 });
+
+describe('near-miss words', () => {
+  const range = { min: 0, max: 99 };
+  const value = (text: string) => {
+    const result = normalizeVoiceNumber(text, range);
+    return result.kind === 'valid' ? result.normalizedText : null;
+  };
+
+  it('maps common mishearings to the number', () => {
+    expect(value('sex')).toBe('6');
+    expect(value('Sicks')).toBe('6');
+    expect(value('or')).toBe('4');
+    expect(value('for')).toBe('4');
+    expect(value('to')).toBe('2');
+    expect(value('too')).toBe('2');
+    expect(value('tree')).toBe('3');
+    expect(value('free')).toBe('3');
+    expect(value('ate')).toBe('8');
+    expect(value('nein')).toBe('9');
+    expect(value('won')).toBe('1');
+    expect(value('oh')).toBe('0');
+  });
+
+  it('joins split teens and fixes the second word of a compound', () => {
+    expect(value('for teen')).toBe('14');
+    expect(value('six teen')).toBe('16');
+    expect(value('fif teen')).toBe('15');
+    expect(value('thir teen')).toBe('13');
+    expect(value('twenty for')).toBe('24');
+    expect(value('thirty to')).toBe('32');
+  });
+
+  it('still rejects things that are not numbers', () => {
+    expect(value('hello')).toBeNull();
+    expect(value('for sale')).toBeNull();
+    expect(value('teen')).toBeNull();
+  });
+
+  it('treats a mishearing like its number when holding an interim', () => {
+    expect(couldGrowIntoLongerNumber('for', { min: 2, max: 18 })).toBe(true);
+    expect(couldGrowIntoLongerNumber('to', { min: 1, max: 81 })).toBe(false);
+  });
+});
