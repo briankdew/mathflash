@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnswerCheckResult, SessionInputMode } from '../../lib/types';
+import { logVoiceDebug } from '../../lib/voiceDebugLog';
 
 const WRONG_ANSWER_RECOVERY_DELAY_MS = 400;
 const CORRECT_ANSWER_ADVANCE_DELAY_MS = 500;
@@ -54,10 +55,12 @@ export function usePracticeFeedback({
 
   const clearTimers = useCallback(() => {
     if (wrongAnswerTimeoutRef.current) {
+      logVoiceDebug('feedback timer cancelled', 'wrong-answer recovery');
       clearTimeout(wrongAnswerTimeoutRef.current);
       wrongAnswerTimeoutRef.current = null;
     }
     if (advanceProblemTimeoutRef.current) {
+      logVoiceDebug('feedback timer cancelled', 'advance to next problem');
       clearTimeout(advanceProblemTimeoutRef.current);
       advanceProblemTimeoutRef.current = null;
     }
@@ -108,6 +111,7 @@ export function usePracticeFeedback({
 
   const applyAnswerResult = useCallback(
     (attemptValue: string, result: AnswerCheckResult) => {
+      logVoiceDebug('answer checked', `"${attemptValue}" ${result}`);
       if (showWrongAnswer) {
         setShowWrongAnswer(false);
       }
@@ -130,6 +134,7 @@ export function usePracticeFeedback({
             latestState.isActive &&
             latestState.isInputEnabled
           ) {
+            logVoiceDebug('voice resumed after wrong answer');
             onResumeVoiceInput();
           }
           wrongAnswerTimeoutRef.current = null;
@@ -147,6 +152,7 @@ export function usePracticeFeedback({
           clearTimeout(advanceProblemTimeoutRef.current);
         }
         advanceProblemTimeoutRef.current = setTimeout(() => {
+          logVoiceDebug('advancing to next problem');
           onInputChanged('');
           setShowCorrect(false);
           onAdvanceProblem();
