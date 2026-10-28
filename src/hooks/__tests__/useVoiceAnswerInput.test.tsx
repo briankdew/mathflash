@@ -260,6 +260,40 @@ describe('useVoiceAnswerInput speech subscriptions', () => {
     expect(attempt?.captureLagMs).toBeGreaterThanOrEqual(500);
   });
 
+  it('counts the recognizer-ready delay from when listening resumed, not from when the problem appeared', async () => {
+    const fake = createFakeAdapter();
+    const shownLongAgo = { ...problem, presentedAtPerf: performance.now() - 5000 };
+    const { result, rerender } = renderHook(
+      (props: { shouldListen: boolean }) =>
+        useVoiceAnswerInput({
+          enabled: true,
+          shouldListen: props.shouldListen,
+          isSessionActive: true,
+          currentProblem: shownLongAgo,
+          options: { operation: 'addsub' } as SessionOptions,
+          onSpeechStart: jest.fn(),
+          onValidAttemptCaptured: jest.fn(),
+          adapter: fake.adapter,
+        }),
+      { initialProps: { shouldListen: false } }
+    );
+    rerender({ shouldListen: true });
+    await waitFor(() => expect(fake.adapter.start).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      fake.emit('start');
+      fake.emit('speechstart');
+      fake.emit('result', finalSeven);
+    });
+
+    await waitFor(() =>
+      expect(result.current.voiceState.pendingAttempt?.value).toBe('7')
+    );
+    expect(
+      result.current.voiceState.pendingAttempt?.recognizerReadyLagMs
+    ).toBeLessThan(500);
+  });
+
   it('holds an interim number that could still grow, e.g. four -> fourteen', async () => {
     (globalThis as { window?: unknown }).window = {
       isSecureContext: true,

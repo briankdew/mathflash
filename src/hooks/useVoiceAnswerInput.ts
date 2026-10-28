@@ -131,6 +131,9 @@ export function useVoiceAnswerInput({
   // When the recognizer reported `start` for the current problem. Used to tell
   // how long the engine took to become ready after the problem was shown.
   const recognizerStartPerfRef = useRef<number | null>(null);
+  // When listening was last wanted (problem shown, or voice resumed after a
+  // wrong answer). The engine's readiness delay is counted from here.
+  const listenWantedPerfRef = useRef(0);
   const isRecognizerRunningRef = useRef(false);
   // Set when an answer is taken while the recognizer is still running. Its late
   // results (e.g. the final transcript of the same utterance) must not be
@@ -145,6 +148,7 @@ export function useVoiceAnswerInput({
     shouldListenRef.current = shouldListen;
     logVoiceDebug('shouldListen', String(shouldListen));
     if (shouldListen) {
+      listenWantedPerfRef.current = performance.now();
       suppressRestartRef.current = false;
     } else {
       dispatch({ type: 'clearStatus' });
@@ -281,7 +285,11 @@ export function useVoiceAnswerInput({
         recognizerStartPerfRef.current === null ||
         presentedAtPerfMs === undefined
           ? null
-          : Math.max(0, recognizerStartPerfRef.current - presentedAtPerfMs);
+          : Math.max(
+              0,
+              recognizerStartPerfRef.current -
+                Math.max(presentedAtPerfMs, listenWantedPerfRef.current)
+            );
 
       logVoiceDebug(
         'answer captured',
