@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
 import {
+  buildVoiceDebugFileName,
+  buildVoiceDebugReport,
   formatVoiceDebugEntry,
   getVoiceDebugEntries,
   isVoiceDebugEnabled,
@@ -46,27 +48,68 @@ describe('voiceDebugLog', () => {
 
   it('keeps only the most recent entries, oldest first', () => {
     setPage('web', '?debug=1');
-    for (let i = 1; i <= 20; i += 1) {
+    for (let i = 1; i <= 3005; i += 1) {
       logVoiceDebug(`event${i}`);
     }
 
     const entries = getVoiceDebugEntries();
-    expect(entries).toHaveLength(14);
-    expect(entries[0].label).toBe('event7');
-    expect(entries[13].label).toBe('event20');
+    expect(entries).toHaveLength(3000);
+    expect(entries[0].label).toBe('event6');
+    expect(entries[2999].label).toBe('event3005');
   });
 
-  it('formats an entry with and without detail', () => {
+  it('folds identical consecutive events into a repeat count', () => {
+    setPage('web', '?debug=1');
+    logVoiceDebug('end');
+    logVoiceDebug('end');
+    logVoiceDebug('end');
+    logVoiceDebug('start');
+    logVoiceDebug('end');
+
+    const entries = getVoiceDebugEntries();
+    expect(entries.map(entry => [entry.label, entry.count])).toEqual([
+      ['end', 3],
+      ['start', 1],
+      ['end', 1],
+    ]);
+  });
+
+  it('formats an entry with detail and repeat count', () => {
     expect(
-      formatVoiceDebugEntry({ id: 1, atMs: 1500, label: 'end', detail: '' })
-    ).toBe('  1.5s end');
+      formatVoiceDebugEntry({
+        id: 1,
+        atMs: 1500,
+        label: 'end',
+        detail: '',
+        count: 1,
+      })
+    ).toBe('   1.5s end');
     expect(
       formatVoiceDebugEntry({
         id: 2,
         atMs: 31000,
         label: 'error',
         detail: 'audio-capture',
+        count: 9,
       })
-    ).toBe(' 31.0s error audio-capture');
+    ).toBe('  31.0s error audio-capture x9');
+  });
+
+  it('builds a report with a header and every event', () => {
+    setPage('web', '?debug=1');
+    logVoiceDebug('start()');
+    logVoiceDebug('error', 'aborted No speech detected');
+
+    const report = buildVoiceDebugReport();
+    expect(report).toContain('mathflash voice debug log');
+    expect(report).toContain('events: 2');
+    expect(report).toContain('start()');
+    expect(report).toContain('error aborted No speech detected');
+  });
+
+  it('names the saved file with the local date and time', () => {
+    expect(buildVoiceDebugFileName(new Date(2026, 9, 28, 8, 5))).toBe(
+      'mathflash-voice-log-2026-10-28-0805.txt'
+    );
   });
 });

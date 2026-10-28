@@ -21,6 +21,7 @@ import {
   expoSpeechRecognitionAdapter,
   SpeechRecognitionAdapter,
 } from '../lib/expoSpeechRecognitionAdapter';
+import { logVoiceDebug } from '../lib/voiceDebugLog';
 import {
   buildVoiceInputState,
   createInitialVoiceControllerState,
@@ -123,6 +124,7 @@ export function useVoiceAnswerInput({
 
   useEffect(() => {
     shouldListenRef.current = shouldListen;
+    logVoiceDebug('shouldListen', String(shouldListen));
     if (shouldListen) {
       suppressRestartRef.current = false;
     } else {
@@ -132,6 +134,7 @@ export function useVoiceAnswerInput({
 
   useEffect(() => {
     currentProblemRef.current = currentProblem;
+    logVoiceDebug('problem', currentProblem?.problemInstanceId ?? 'none');
     speechStartPerfRef.current = null;
     speechEndPerfRef.current = null;
     if (finalizeInterimTimeoutRef.current) {
@@ -234,6 +237,10 @@ export function useVoiceAnswerInput({
           ? 0
           : Math.max(0, finalResultPerfMs - speechEndPerfMs);
 
+      logVoiceDebug(
+        'answer captured',
+        `"${value}" processing ${Math.round(voiceProcessingMs)}ms`
+      );
       clearFinalizeInterimTimeout();
       suppressRestartRef.current = true;
       shouldListenRef.current = false;
@@ -331,6 +338,7 @@ export function useVoiceAnswerInput({
         return;
       }
 
+      logVoiceDebug('restart scheduled', isRetry ? 'retry' : 'initial');
       if (isRetry) {
         dispatch({ type: 'retryScheduled' });
       }
@@ -471,11 +479,35 @@ export function useVoiceAnswerInput({
     }
   }, []);
 
+  // The speech-event handlers are re-created on most renders. Subscribing to
+  // the recognizer is done once and calls the latest handlers through this ref,
+  // so a re-render never adds another listener (which made every browser event
+  // fire the handlers several times).
+  const handlersRef = useRef({
+    clearFinalizeInterimTimeout,
+    handleError,
+    handleResult,
+    onSpeechStart,
+    scheduleRestart,
+    submitVoiceAttempt,
+  });
+  useEffect(() => {
+    handlersRef.current = {
+      clearFinalizeInterimTimeout,
+      handleError,
+      handleResult,
+      onSpeechStart,
+      scheduleRestart,
+      submitVoiceAttempt,
+    };
+  });
+
   useEffect(() => {
     if (!platformSupported) {
       return;
     }
 
+    const handlers = handlersRef;
     const subscriptions = [
       adapter.addListener('start', () => {
         dispatch({ type: 'listeningStarted' });
@@ -487,7 +519,7 @@ export function useVoiceAnswerInput({
           !suppressRestartRef.current;
         dispatch({ type: 'listeningEnded', shouldRetry });
         if (shouldRetry) {
-          scheduleRestart(true);
+          handlers.current.scheduleRestart(true);
         }
       }),
       adapter.addListener('speechstart', () => {
@@ -495,15 +527,15 @@ export function useVoiceAnswerInput({
         if (!problemInstanceId) {
           return;
         }
-        clearFinalizeInterimTimeout();
+        handlers.current.clearFinalizeInterimTimeout();
         lastValidInterimRef.current = null;
         const speechStartPerfMs = performance.now();
         speechStartPerfRef.current = speechStartPerfMs;
-        onSpeechStart(problemInstanceId, speechStartPerfMs);
+        handlers.current.onSpeechStart(problemInstanceId, speechStartPerfMs);
       }),
       adapter.addListener('speechend', () => {
         speechEndPerfRef.current = performance.now();
-        clearFinalizeInterimTimeout();
+        handlers.current.clearFinalizeInterimTimeout();
         finalizeInterimTimeoutRef.current = setTimeout(() => {
           finalizeInterimTimeoutRef.current = null;
 
@@ -522,15 +554,15 @@ export function useVoiceAnswerInput({
           }
 
           lastValidInterimRef.current = null;
-          submitVoiceAttempt(
+          handlers.current.submitVoiceAttempt(
             lastValidInterim.value,
             lastValidInterim.rawTranscript,
             null
           );
         }, FINALIZE_INTERIM_DELAY_MS);
       }),
-      adapter.addListener('result', handleResult),
-      adapter.addListener('error', handleError),
+      adapter.addListener('result', event => handlers.current.handleResult(event)),
+      adapter.addListener('error', event => handlers.current.handleError(event)),
       adapter.addListener('nomatch', () => {
         dispatch({ type: 'transcriptPreviewUpdated', transcriptPreview: '' });
         dispatch({
@@ -546,16 +578,7 @@ export function useVoiceAnswerInput({
     return () => {
       subscriptions.forEach(subscription => subscription.remove());
     };
-  }, [
-    adapter,
-    clearFinalizeInterimTimeout,
-    handleError,
-    handleResult,
-    onSpeechStart,
-    platformSupported,
-    scheduleRestart,
-    submitVoiceAttempt,
-  ]);
+  }, [adapter, platformSupported]);
 
   useEffect(() => {
     if (!enabled || !shouldListen || !isSessionActive || !currentProblem) {

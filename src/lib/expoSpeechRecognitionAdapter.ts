@@ -4,7 +4,7 @@ import {
   type ExpoSpeechRecognitionOptions,
   type ExpoSpeechRecognitionResultEvent,
 } from 'expo-speech-recognition';
-import { logVoiceDebug } from './voiceDebugLog';
+import { isVoiceDebugEnabled, logVoiceDebug } from './voiceDebugLog';
 
 export type SpeechRecognitionEventName =
   | 'start'
@@ -68,13 +68,51 @@ export const expoSpeechRecognitionAdapter: SpeechRecognitionAdapter = {
     ExpoSpeechRecognitionModule.stop();
   },
   addListener: (eventName, listener) => {
-    const loggedListener = (...args: unknown[]) => {
+    return addGuardedListener(eventName, args => {
       logVoiceDebug(eventName, describeEvent(eventName, args[0]));
       (listener as (...listenerArgs: unknown[]) => void)(...args);
-    };
-    return ExpoSpeechRecognitionModule.addListener(
-      eventName,
-      loggedListener as never
-    );
+    });
   },
 };
+
+// On web, the library's subscription.remove() forgets a listener but never
+// detaches it from the live browser recognizer, so a "removed" listener keeps
+// firing and every event ends up handled several times. This guard makes a
+// removed listener inert no matter what the library does.
+function addGuardedListener(
+  eventName: string,
+  handler: (args: unknown[]) => void
+): { remove: () => void } {
+  let active = true;
+  const subscription = ExpoSpeechRecognitionModule.addListener(
+    eventName as never,
+    ((...args: unknown[]) => {
+      if (active) {
+        handler(args);
+      }
+    }) as never
+  );
+
+  return {
+    remove: () => {
+      active = false;
+      subscription.remove();
+    },
+  };
+}
+
+// Debug-only (?debug=1): also log the browser's audio-level events, which show
+// whether audio ever reaches the recognizer. Returns a cleanup function.
+export function attachVoiceDebugAudioLogging(): () => void {
+  if (!isVoiceDebugEnabled()) {
+    return () => undefined;
+  }
+
+  const subscriptions = (
+    ['audiostart', 'audioend', 'soundstart', 'soundend'] as const
+  ).map(eventName =>
+    addGuardedListener(eventName, () => logVoiceDebug(eventName))
+  );
+
+  return () => subscriptions.forEach(subscription => subscription.remove());
+}
