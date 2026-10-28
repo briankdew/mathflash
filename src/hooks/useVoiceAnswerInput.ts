@@ -153,7 +153,12 @@ export function useVoiceAnswerInput({
 
   useEffect(() => {
     currentProblemRef.current = currentProblem;
-    logVoiceDebug('problem', currentProblem?.problemInstanceId ?? 'none');
+    logVoiceDebug(
+      'problem',
+      currentProblem
+        ? `${currentProblem.problemInstanceId} missing=${currentProblem.missing} answer=${currentProblem.correct}`
+        : 'none'
+    );
     speechStartPerfRef.current = null;
     speechEndPerfRef.current = null;
     recognizerStartPerfRef.current = null;
