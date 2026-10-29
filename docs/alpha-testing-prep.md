@@ -42,6 +42,7 @@ This document is an informal working list for items we want to clean up, refine,
 6. `Not started` Consider a triad-centric app name and/or tagline
    Notes:
    - Keep branding ideas separate from any final rename decision until product direction is firmer.
+   - Names to consider: triadmath or triadmathfacts
 
 7. `Not started` Change session reports to tenths-of-a-second values instead of milliseconds
    Notes:
@@ -79,9 +80,19 @@ This document is an informal working list for items we want to clean up, refine,
 
 Add new prep items here as they come up.
 
-1. `Not started` Example new item
+1. `Not started` Define freemium strategy and features/settings
    Notes:
-   - Replace this example when the first new item is added.
+   - Consider the following strategy for the first production release:
+     `Strategy` Offer premium features for a trial period (10 days?) upon free download (with no login required).
+
+     `Free (single device, no login required)` Basic 1-9 digit selection for fact sets, keypad-only answer input, shareable simplified current session report (date, time, fact set (fact count only), session cycles, total session facts, facts completed, first-attempt correct count+percentage, first-attempt missed count+percentage, list of first-attempt missed facts (standard form only), average correct-fact speed (all facts), average correct-first-attempt-fact speed, average missed first-attempt-fact speed), session performance grade level equivalent.
+
+     `Premium (multiple devices(number???), login required)` Free features, plus custom problem sets, traditional horizontal and vertical problem layout options, voice input, detailed session reports and analysis (including lists of all session facts), recent session history (limit to how many?), intentional performance assessment sessions (for consistent performance assessment and recommendations), AI generated session settings (problems, cycles, standard/random options, etc.) based on the most recent intentional performancee assessment and/or recent session history.
+
+2. `Not started` 
+   Notes:
+   - Create a simple animated tutorial and app walkthrough to demonstrate/explain the triad math fact learning philosophy and app features/settings.
+
 
 ## Decision Notes
 
