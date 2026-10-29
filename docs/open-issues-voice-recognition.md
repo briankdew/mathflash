@@ -38,4 +38,4 @@ Only after these: decide the solution for the items under "Not decided yet".
 
 ## Parking lot (decisions to revisit)
 
-- (empty; add items here as they come up)
+- Reorganize information that has been "squirreled away" in scattered places (docs, notes, memory). Not now; the owner does not want to derail the current objective.
