@@ -1,4 +1,5 @@
 import {
+  applyAddTestPreset,
   createInitialSessionState,
   getSessionOptionsFromState,
   sessionReducer,
@@ -79,5 +80,33 @@ describe('sessionState reducer', () => {
     expect(completed.phase).toBe('idle');
     expect(completed.sessionPerformanceReport).not.toBeNull();
     expect(completed.isPerformanceReportVisible).toBe(true);
+  });
+});
+
+describe('applyAddTestPreset', () => {
+  it('sets voice, addition/subtraction, numbers 6-9 and a missing result', () => {
+    const state = applyAddTestPreset(createInitialSessionState());
+    const options = getSessionOptionsFromState(state);
+
+    expect(state.inputMode).toBe('voice');
+    expect(options.operation).toBe('addsub');
+    expect(options.activeChips).toEqual([6, 7, 8, 9]);
+    expect(options.missingValue).toBe('result');
+  });
+
+  it('leaves every other setting at its default', () => {
+    const defaults = createInitialSessionState();
+    const state = applyAddTestPreset(defaults);
+    const options = getSessionOptionsFromState(state);
+    const base = getSessionOptionsFromState(defaults);
+
+    expect({ ...options, activeChips: [], missingValue: 'random' }).toEqual({
+      ...base,
+      activeChips: [],
+    });
+    expect(state.settingsByOperation.multdiv).toEqual(
+      defaults.settingsByOperation.multdiv
+    );
+    expect(state.globalSettings).toEqual(defaults.globalSettings);
   });
 });

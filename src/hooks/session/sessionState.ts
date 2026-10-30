@@ -102,6 +102,26 @@ export function createInitialSessionState(): SessionState {
   };
 }
 
+// The owner's usual test setup (?debug=1&addtest=1): voice input,
+// addition/subtraction, numbers 6-9, missing value 'result'. Everything else
+// keeps its default.
+export function applyAddTestPreset(state: SessionState): SessionState {
+  return {
+    ...state,
+    operation: 'addsub',
+    inputMode: 'voice',
+    settingsByOperation: {
+      ...state.settingsByOperation,
+      addsub: {
+        ...state.settingsByOperation.addsub,
+        missingValue: 'result',
+        activeChips: [6, 7, 8, 9],
+        customSet: null,
+      },
+    },
+  };
+}
+
 export function getSessionOptionsFromState(state: SessionState): SessionOptions {
   return getSessionOptions(
     state.operation,

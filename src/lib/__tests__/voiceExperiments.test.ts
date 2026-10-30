@@ -38,17 +38,18 @@ describe('voiceExperiments', () => {
   });
 
   it('reads every switch when debug=1 is present', () => {
-    setPage('web', '?debug=1&delay=1500&abort=1&reuse=1&custrec=1&keepmic=0&fast=500');
+    setPage('web', '?debug=1&delay=1500&abort=1&reuse=1&custrec=1&addtest=1&keepmic=0&fast=500');
 
     expect(getVoiceExperiments()).toEqual({
       delayMs: 1500,
       abortBeforeRestart: true,
       reuseRecognizer: true,
       customRecognizer: true,
+      addTestPreset: true,
       keepMic: false,
       stableInterimMs: 500,
     });
-    expect(describeVoiceExperiments()).toBe('delay=1500 abort reuse custrec fast=500');
+    expect(describeVoiceExperiments()).toBe('delay=1500 abort reuse custrec addtest fast=500');
   });
 
   it('ignores every switch without debug=1', () => {
@@ -59,6 +60,7 @@ describe('voiceExperiments', () => {
       abortBeforeRestart: false,
       reuseRecognizer: false,
       customRecognizer: false,
+      addTestPreset: false,
       keepMic: true,
       stableInterimMs: 500,
     });

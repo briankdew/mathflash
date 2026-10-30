@@ -10,6 +10,8 @@ import { Platform } from 'react-native';
 //   custrec=1 use our custom recording recognizer (a new browser recognizer per
 //            start, each with a recId, events timed with the browser's own
 //            timestamps and written to the session record). Web only.
+//   addtest=1 start with the usual 10-problem test setup: voice input,
+//            addition/subtraction, numbers 6-9, missing value 'result'
 //   keepmic=1|0  force holding the microphone open for the whole session on or
 //            off (web only). Default: on in Safari/WebKit, where it stops the
 //            next recognition getting a dead microphone; off in Chrome, where
@@ -23,6 +25,7 @@ export interface VoiceExperiments {
   abortBeforeRestart: boolean;
   reuseRecognizer: boolean;
   customRecognizer: boolean;
+  addTestPreset: boolean;
   keepMic: boolean;
   stableInterimMs: number | null;
 }
@@ -62,6 +65,7 @@ function noExperiments(): VoiceExperiments {
     abortBeforeRestart: false,
     reuseRecognizer: false,
     customRecognizer: false,
+    addTestPreset: false,
     keepMic: defaultKeepMic(),
     stableInterimMs: defaultStableInterimMs(),
   };
@@ -95,6 +99,7 @@ export function getVoiceExperiments(): VoiceExperiments {
     abortBeforeRestart: params.get('abort') === '1',
     reuseRecognizer: params.get('reuse') === '1',
     customRecognizer: params.get('custrec') === '1',
+    addTestPreset: params.get('addtest') === '1',
     keepMic: params.has('keepmic')
       ? params.get('keepmic') === '1'
       : defaultKeepMic(),
@@ -111,6 +116,7 @@ export function describeVoiceExperiments(): string {
     experiments.abortBeforeRestart ? 'abort' : '',
     experiments.reuseRecognizer ? 'reuse' : '',
     experiments.customRecognizer ? 'custrec' : '',
+    experiments.addTestPreset ? 'addtest' : '',
     experiments.keepMic ? 'keepmic' : '',
     experiments.stableInterimMs !== null
       ? `fast=${experiments.stableInterimMs}`

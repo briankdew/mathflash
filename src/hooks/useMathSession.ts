@@ -26,9 +26,11 @@ import {
   SessionProblemPerformance,
   SessionPhase,
 } from '../lib/types';
+import { getVoiceExperiments } from '../lib/voiceExperiments';
 import { useSessionInput } from './session/useSessionInput';
 import { useVoiceAnswerInput } from './useVoiceAnswerInput';
 import {
+  applyAddTestPreset,
   createInitialSessionState,
   getSessionOptionsFromState,
   sessionReducer,
@@ -53,7 +55,10 @@ export function useMathSession() {
   const [state, dispatch] = useReducer(
     sessionReducer,
     undefined,
-    createInitialSessionState
+    () =>
+      getVoiceExperiments().addTestPreset
+        ? applyAddTestPreset(createInitialSessionState())
+        : createInitialSessionState()
   );
   const options = useMemo(() => getSessionOptionsFromState(state), [state]);
   const {
