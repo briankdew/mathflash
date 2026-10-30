@@ -10,7 +10,7 @@ import {
   toPayload,
 } from './webSpeechRecognizer';
 
-// Our own web recognizer (switch ?debug=1&own=1; docs/timing-core-design.md,
+// Our own web recognizer (switch ?debug=1&custrec=1; docs/timing-core-design.md,
 // section 6). Like the library it makes a new browser recognizer for every
 // start(), but each one gets a recId and every browser event is written to the
 // session record with the browser's own timestamp. Events reach the voice hook

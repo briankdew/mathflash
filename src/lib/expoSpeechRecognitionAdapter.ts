@@ -60,7 +60,7 @@ const ABORT_WAIT_MS = 800;
 
 function getBackend(): SpeechBackend {
   const experiments = getVoiceExperiments();
-  if (Platform.OS === 'web' && experiments.ownRecognizer) {
+  if (Platform.OS === 'web' && experiments.customRecognizer) {
     return recordingWebRecognizer as unknown as SpeechBackend;
   }
   return experiments.reuseRecognizer
