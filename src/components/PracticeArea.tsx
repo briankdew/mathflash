@@ -67,8 +67,6 @@ export function PracticeArea({
     isRecoveringWrongAnswerInput,
     resetFeedback,
     applyAnswerResult,
-    answerFlash,
-    flashAnswer,
   } = usePracticeFeedback({
     inputMode,
     isActive,
@@ -80,6 +78,9 @@ export function PracticeArea({
     onAdvanceProblem,
   });
 
+  // The answer box is rebuilt for each card (the right answer replaces it for a
+  // moment), so it needs the keyboard focus again whenever the card changes.
+  const problemInstanceId = currentProblem?.problemInstanceId;
   useEffect(() => {
     if (inputMode === 'keypad' && isActive && isInputEnabled) {
       const focusTimeout = setTimeout(() => inputRef.current?.focus(), 100);
@@ -89,7 +90,7 @@ export function PracticeArea({
     inputRef.current?.blur();
     resetFeedback(!isInputEnabled);
     return undefined;
-  }, [inputMode, isActive, isInputEnabled, resetFeedback]);
+  }, [inputMode, isActive, isInputEnabled, problemInstanceId, resetFeedback]);
 
   const processAnswer = useCallback(
     (attempt: AnswerAttempt, forceComplete: boolean) => {
@@ -103,13 +104,21 @@ export function PracticeArea({
     [applyAnswerResult, onCheckAnswer, pace]
   );
 
+  // The new flow moves on by itself. A wrong answer keeps its card: shake, red
+  // answer, then wait for the right one (as before). A right answer shows the
+  // correct number in the card for the flow's pause (phase), then the next card.
+  const applyAnswerResultRef = useRef(applyAnswerResult);
+  useEffect(() => {
+    applyAnswerResultRef.current = applyAnswerResult;
+  }, [applyAnswerResult]);
   const answerFeedbackId = answerFeedback?.id;
   const answerFeedbackResult = answerFeedback?.result;
+  const answerFeedbackValue = answerFeedback?.value;
   useEffect(() => {
-    if (answerFeedbackResult) {
-      flashAnswer(answerFeedbackResult);
+    if (answerFeedbackResult === 'wrong') {
+      applyAnswerResultRef.current(String(answerFeedbackValue), 'wrong');
     }
-  }, [answerFeedbackId, answerFeedbackResult, flashAnswer]);
+  }, [answerFeedbackId, answerFeedbackResult, answerFeedbackValue]);
 
   const handleSubmit = useCallback(() => {
     if (
@@ -211,9 +220,8 @@ export function PracticeArea({
         phase={phase}
         shakeTrigger={shakeTrigger}
         showWrongAnswer={isWrongAnswerDisplayActive}
-        showWrongAnswerFill={showWrongAnswerFill || answerFlash === 'wrong'}
-        showCorrectFill={answerFlash === 'correct'}
-        showCorrect={showCorrect}
+        showWrongAnswerFill={showWrongAnswerFill}
+        showCorrect={pace ? phase === 'feedbackPendingAdvance' : showCorrect}
         isActive={isActive}
         renderInput={
           <TextInput

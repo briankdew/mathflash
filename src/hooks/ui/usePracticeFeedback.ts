@@ -4,7 +4,6 @@ import { logVoiceDebug } from '../../lib/voiceDebugLog';
 
 const WRONG_ANSWER_RECOVERY_DELAY_MS = 400;
 const CORRECT_ANSWER_ADVANCE_DELAY_MS = 500;
-const ANSWER_FLASH_MS = 300;
 
 interface SessionStateSnapshot {
   inputMode: SessionInputMode;
@@ -38,8 +37,6 @@ export function usePracticeFeedback({
   const [showWrongAnswer, setShowWrongAnswer] = useState(false);
   const [showWrongAnswerFill, setShowWrongAnswerFill] = useState(false);
   const [wrongAnswerValue, setWrongAnswerValue] = useState<string | null>(null);
-  const [answerFlash, setAnswerFlash] = useState<'correct' | 'wrong' | null>(null);
-  const answerFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrongAnswerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advanceProblemTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionStateRef = useRef<SessionStateSnapshot>({
@@ -70,28 +67,6 @@ export function usePracticeFeedback({
   }, []);
 
   useEffect(() => clearTimers, [clearTimers]);
-
-  useEffect(
-    () => () => {
-      if (answerFlashTimeoutRef.current) {
-        clearTimeout(answerFlashTimeoutRef.current);
-      }
-    },
-    []
-  );
-
-  // Evaluation pace: the next card is already up, so the answer card only
-  // flashes the result. The "correct" display would show the new card's answer.
-  const flashAnswer = useCallback((result: 'correct' | 'wrong') => {
-    setAnswerFlash(result);
-    if (answerFlashTimeoutRef.current) {
-      clearTimeout(answerFlashTimeoutRef.current);
-    }
-    answerFlashTimeoutRef.current = setTimeout(() => {
-      setAnswerFlash(null);
-      answerFlashTimeoutRef.current = null;
-    }, ANSWER_FLASH_MS);
-  }, []);
 
   // onInputChanged is re-created whenever the input value changes. Callers run
   // resetFeedback from an effect, so resetFeedback must keep the same identity
@@ -231,7 +206,5 @@ export function usePracticeFeedback({
     isRecoveringWrongAnswerInput,
     resetFeedback,
     applyAnswerResult,
-    answerFlash,
-    flashAnswer,
   };
 }

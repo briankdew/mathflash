@@ -44,19 +44,4 @@ describe('usePracticeFeedback', () => {
 
     expect(onAdvanceProblem).toHaveBeenCalledTimes(1);
   });
-
-  it('flashes the result briefly without showing the answer or advancing', () => {
-    const onAdvanceProblem = jest.fn();
-    const { result } = renderFeedback(onAdvanceProblem);
-
-    act(() => result.current.flashAnswer('correct'));
-    expect(result.current.answerFlash).toBe('correct');
-    expect(result.current.showCorrect).toBe(false);
-
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(result.current.answerFlash).toBeNull();
-    expect(onAdvanceProblem).not.toHaveBeenCalled();
-  });
 });

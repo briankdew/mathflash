@@ -67,6 +67,9 @@ import { deviceOf } from './voiceLogToRecord';
 // How long a card waits for its recognizer before showing anyway.
 export const LISTENER_WAIT_MS = 500;
 
+// How long a right answer stays filled in before the next card (the old pause).
+export const CORRECT_HOLD_MS = 500;
+
 const NOTICE_TEXT: Record<AccepterNotice, string> = {
   number_only: 'Say a number only',
   whole_number: 'Say the whole number',
@@ -176,6 +179,7 @@ export function createCoreSession(deps: CoreSessionDeps) {
   let prepTimers: ReturnType<typeof setTimeout>[] = [];
   let acceptTimer: ReturnType<typeof setTimeout> | null = null;
   let listenerTimer: ReturnType<typeof setTimeout> | null = null;
+  let holdTimer: ReturnType<typeof setTimeout> | null = null;
 
   function update(change: Partial<CoreSnapshot>) {
     snapshot = { ...snapshot, ...change };
@@ -199,6 +203,8 @@ export function createCoreSession(deps: CoreSessionDeps) {
     if (acceptTimer) clearTimeout(acceptTimer);
     acceptTimer = null;
     clearListenerTimer();
+    if (holdTimer) clearTimeout(holdTimer);
+    holdTimer = null;
   }
 
   function takeNextCard(): ProblemDisplay | null {
@@ -291,6 +297,13 @@ export function createCoreSession(deps: CoreSessionDeps) {
       alternative: answer.alternative,
       ...(answer.onsetSeq === undefined ? {} : { onsetSeq: answer.onsetSeq }),
     });
+    // A wrong answer keeps the card up, so the accepter keeps listening for it.
+    const wrong = answer.value !== snapshot.flow.problem?.correct;
+    if (wrong) {
+      dispatch({ type: 'answer', value: answer.value, next: null });
+      update({ preview: String(answer.value) });
+      return;
+    }
     feed({ type: 'problem', problem: null });
     dispatch({ type: 'answer', value: answer.value, next: takeNextCard() });
   }
@@ -321,6 +334,13 @@ export function createCoreSession(deps: CoreSessionDeps) {
         break;
       case 'readyListenerForNextCard':
         listening?.readyForNextCard();
+        break;
+      case 'holdForCorrect':
+        if (holdTimer) clearTimeout(holdTimer);
+        holdTimer = setTimeout(() => {
+          holdTimer = null;
+          dispatch({ type: 'holdOver' });
+        }, CORRECT_HOLD_MS);
         break;
       case 'waitForListener':
         clearListenerTimer();
@@ -542,7 +562,8 @@ export function createCoreSession(deps: CoreSessionDeps) {
         value,
         via: 'keypad',
       });
-      dispatch({ type: 'answer', value, next: takeNextCard() });
+      const wrong = value !== problem?.correct;
+      dispatch({ type: 'answer', value, next: wrong ? null : takeNextCard() });
     },
 
     problemDrawn(problemId: string) {

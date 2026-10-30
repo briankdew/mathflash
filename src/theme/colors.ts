@@ -153,7 +153,6 @@ export const theme = {
     dangerText: palette.red[8],
     dangerAccent: palette.red[7],
     statusListening: palette.status.green,
-    statusCorrect: palette.status.green,
     statusRetrying: palette.status.yellow,
     statusError: palette.status.red,
     floorLine: palette.red[6],

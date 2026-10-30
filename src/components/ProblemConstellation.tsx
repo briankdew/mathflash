@@ -45,17 +45,9 @@ function getProblemSlotValue(
     return problem[slot];
 }
 
-function getAnswerHostFill(
-    isActive: boolean,
-    showWrongAnswerFill: boolean,
-    showCorrectFill: boolean
-) {
+function getAnswerHostFill(isActive: boolean, showWrongAnswerFill: boolean) {
     if (showWrongAnswerFill) {
         return theme.statusError;
-    }
-
-    if (showCorrectFill) {
-        return theme.statusCorrect;
     }
 
     if (isActive) {
@@ -73,7 +65,6 @@ interface ProblemConstellationProps {
     shakeTrigger?: number; // pass a random value to trigger a shake
     showWrongAnswer?: boolean;
     showWrongAnswerFill?: boolean;
-    showCorrectFill?: boolean;
     renderInput?: React.ReactNode;
     showCorrect?: boolean;
     isActive?: boolean;
@@ -87,7 +78,6 @@ export function ProblemConstellation({
     shakeTrigger = 0,
     showWrongAnswer = false,
     showWrongAnswerFill = false,
-    showCorrectFill = false,
     renderInput,
     showCorrect = false,
     isActive = false,
@@ -372,19 +362,19 @@ export function ProblemConstellation({
         result: getProblemSlotValue(problem, 'result', showProblemValues, showCorrect),
     };
 
+    // The answer card's text is always the muted olive (the red for a wrong
+    // answer is set on the input), including the right answer filled in.
+    const answerSlotColor = (slot: 'left' | 'right' | 'result', color: string) =>
+        problem?.missing === slot ? theme.textMuted : color;
     const slotTextColors = {
-        left: problem ? opTheme.textOperand : palette.beige[3],
-        right: problem ? opTheme.textOperand : palette.beige[3],
-        result: problem ? opTheme.textResult : palette.beige[4],
+        left: problem ? answerSlotColor('left', opTheme.textOperand) : palette.beige[3],
+        right: problem ? answerSlotColor('right', opTheme.textOperand) : palette.beige[3],
+        result: problem ? answerSlotColor('result', opTheme.textResult) : palette.beige[4],
     };
     const prepBackTextColors = opTheme.prepBackText;
     const prepResultLabel = operation === 'addsub' ? 'add!' : 'multiply!';
     const shouldShowPrepBackText = !problem && startMode !== 'min' && !showBlankFinalBackText;
-    const answerHostFill = getAnswerHostFill(
-        isActive && !!problem,
-        showWrongAnswerFill,
-        showCorrectFill
-    );
+    const answerHostFill = getAnswerHostFill(isActive && !!problem, showWrongAnswerFill);
     const mainOperatorStandardColors = opTheme.mainOperator;
     const mainOperatorMutedColors = { circleFill: palette.beige[2], operatorFill: palette.beige[3] };
     const secondaryOperatorStandardColors = opTheme.secondaryOperator;

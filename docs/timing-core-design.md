@@ -110,8 +110,8 @@ A small reducer (state machine) with explicit states: `idle -> preparing -> show
 Notes from building step 3 (2026-10-30):
 
 - The next card waits for its recognizer, at most 0.5 s, and the first card's recognizer starts during the opening animation. A card should not appear while nothing is listening.
-- At evaluation pace the answer card flashes green or red for 0.3 s. The old correct display fills in the missing slot, which on the new card would show its answer.
-- Wrong answers move on for the keypad too (D2), and every answered card counts as completed.
+- At evaluation pace a right answer is shown filled into the card for 0.5 s (the old display), then the next card appears; a wrong answer shakes and turns red, and the card stays. The green flash planned at first was dropped (owner, 2026-10-30).
+- D2 reversed by the owner (2026-10-30): a wrong answer keeps the card (shake, red answer) and waits for the right one, for voice and keypad alike. Only the right answer finishes the card and brings the next one. The student must see the correct answer for every problem, most of all after a miss.
 - The owner chose to keep one Safari recognizer for the session, to be tested further. If it proves unreliable, one measurement matters: with the microphone held, about 100 iPhone restarts in 11 logs each took 0.1 s or less (the 1.3-3.4 s starts were all without it). `&continuous=0` already gives a new recognizer per card on Safari.
 
 ## 6. Instruments
@@ -173,5 +173,5 @@ A few "read this digit aloud" cards before a session. Their median response beco
 ## Decisions (approved 2026-10-29: all as recommended)
 
 - **D1. Unrecognized and fragment tries before the answer.** Recommended: the response starts at the **first** speech of the problem when everything between it and the accepted answer was Unrecognized or a non-number fragment. Example from your 16:55 log: 1.3 s instead of today's 8.9 s. The cost: a cough or noise just before speaking makes the time a little short. The alternative is today's rule (subtract only the empty stretches), which made that problem 8.9 s.
-- **D2. Wrong answer at evaluation pace.** Recommended: like the physical cards, a wrong answer goes on the "wrong" pile and the next card appears at once (the missed problem is reported). Alternative: the card stays until answered correctly, as now.
+- **D2. Wrong answer at evaluation pace. REVERSED 2026-10-30: the card stays until answered correctly (the Alternative). The owner's "wrong pile" is the shake and red answer.** Recommended: like the physical cards, a wrong answer goes on the "wrong" pile and the next card appears at once (the missed problem is reported). Alternative: the card stays until answered correctly, as now.
 - **D3. Which time the student sees for a wrong-then-correct problem.** Recommended: the time to the first answer (how fast they responded), with the problem marked as missed. Alternative: the time to the correct answer.

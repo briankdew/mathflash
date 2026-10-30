@@ -5,7 +5,11 @@ import {
   createInitialSessionState,
   getSessionOptionsFromState,
 } from '../../../hooks/session/sessionState';
-import { createCoreSession, LISTENER_WAIT_MS } from '../coreSession';
+import {
+  CORRECT_HOLD_MS,
+  createCoreSession,
+  LISTENER_WAIT_MS,
+} from '../coreSession';
 import { LOST_SERVICE_RETRY_MS, RETRY_DELAY_MS } from '../listeningController';
 import { score } from '../scorer';
 import { createSessionRecorder } from '../sessionRecorder';
@@ -152,10 +156,13 @@ describe('coreSession on Chrome (new recognizer per card)', () => {
         expect(recognition.stopped).toBe(1);
         recognition.fire('end');
         session.current().fire('start');
+        expect(session.flow().phase).toBe('feedback');
+        session.tick(CORRECT_HOLD_MS);
         expect(session.flow().phase).toBe('showing');
       }
     }
 
+    session.tick(CORRECT_HOLD_MS);
     expect(session.flow().phase).toBe('idle');
     expect(session.kinds('answer.accepted')).toHaveLength(total);
     expect(session.kinds('answer.checked')).toHaveLength(total);
@@ -181,23 +188,34 @@ describe('coreSession on Chrome (new recognizer per card)', () => {
     say(session, String(session.answer()));
     session.current().fire('end');
     expect(session.flow().phase).toBe('feedback');
+    session.tick(CORRECT_HOLD_MS);
+    expect(session.flow().phase).toBe('feedback');
     session.tick(LISTENER_WAIT_MS);
     expect(session.flow().phase).toBe('showing');
   });
 
-  it('moves on after a wrong answer and reports it missed', async () => {
+  it('keeps the card after a wrong answer and listens for the right one', async () => {
     const session = await setup(CHROME);
     session.tick(PREP_MS);
     session.draw();
     const first = session.flow().problem?.problemInstanceId;
     say(session, String(session.answer() - 1));
     session.current().fire('end');
+    session.tick(1000);
     session.current().fire('start');
 
+    expect(session.flow().problem?.problemInstanceId).toBe(first);
+    expect(session.flow().phase).toBe('showing');
+    expect(session.flow().stats).toMatchObject({ completed: 0, missedFirst: 1 });
+    expect(session.flow().feedback?.result).toBe('wrong');
+
+    say(session, String(session.answer()));
+    session.current().fire('end');
+    session.current().fire('start');
+    session.tick(CORRECT_HOLD_MS);
     expect(session.flow().problem?.problemInstanceId).not.toBe(first);
     expect(session.flow().stats).toMatchObject({ completed: 1, missedFirst: 1 });
-    expect(session.flow().feedback?.result).toBe('wrong');
-    expect(session.scored().rows[0].outcome).toBe('wrong_only');
+    expect(session.scored().rows[0].outcome).toBe('wrong_then_correct');
   });
 
   it('a late final never answers the next card', async () => {
@@ -333,7 +351,7 @@ describe('coreSession on Safari (one recognizer for the session)', () => {
     session.tick(900);
   }
 
-  it('uses one recognizer and shows the next card at once', async () => {
+  it('uses one recognizer and shows the next card after the pause', async () => {
     const session = await setup(SAFARI);
     session.tick(PREP_MS);
     session.draw();
@@ -343,6 +361,8 @@ describe('coreSession on Safari (one recognizer for the session)', () => {
     expect(session.made).toHaveLength(1);
     expect(session.made[0].continuous).toBe(true);
     expect(session.made[0].maxAlternatives).toBe(5);
+    expect(session.flow().phase).toBe('feedback');
+    session.tick(CORRECT_HOLD_MS);
     expect(session.flow().phase).toBe('showing');
     expect(session.flow().problem?.problemInstanceId).not.toBe(first);
   });
@@ -353,6 +373,7 @@ describe('coreSession on Safari (one recognizer for the session)', () => {
     session.draw();
     const spoken = String(session.answer());
     say(session, spoken, 0);
+    session.tick(CORRECT_HOLD_MS);
     session.draw();
     session.current().result(spoken, true, 0);
 
@@ -373,6 +394,7 @@ describe('coreSession on Safari (one recognizer for the session)', () => {
     session.draw();
     const firstAnswer = session.answer();
     say(session, String(firstAnswer), 0);
+    session.tick(CORRECT_HOLD_MS);
     session.draw();
     const secondAnswer = session.answer();
     say(session, `${firstAnswer} ${secondAnswer}`, 0);
@@ -451,7 +473,7 @@ describe('coreSession with the keypad', () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
 
-  it('times from the first digit, needs no recognizer, and moves on when wrong', async () => {
+  it('times from the first digit, needs no recognizer, and keeps the card when wrong', async () => {
     const session = await setup(CHROME, 'keypad');
     session.tick(PREP_MS);
     session.draw();
@@ -463,9 +485,13 @@ describe('coreSession with the keypad', () => {
     session.tick(200);
     session.core.submitKeypad(firstId, 99);
 
+    expect(session.flow().problem?.problemInstanceId).toBe(firstId);
+    session.tick(500);
+    session.core.submitKeypad(firstId, session.answer());
+    session.tick(CORRECT_HOLD_MS);
     expect(session.flow().problem?.problemInstanceId).not.toBe(firstId);
     const row = session.scored().rows[0];
-    expect(row.outcome).toBe('wrong_only');
+    expect(row.outcome).toBe('wrong_then_correct');
     expect(row.firstResponseMs).toBe(700);
   });
 
@@ -474,8 +500,9 @@ describe('coreSession with the keypad', () => {
     session.tick(PREP_MS);
     session.draw();
     const firstId = session.flow().problem?.problemInstanceId;
-    session.core.submitKeypad(firstId, 1);
-    session.core.submitKeypad(firstId, 1);
+    const right = session.answer();
+    session.core.submitKeypad(firstId, right);
+    session.core.submitKeypad(firstId, right);
     expect(session.kinds('answer.accepted')).toHaveLength(1);
   });
 });

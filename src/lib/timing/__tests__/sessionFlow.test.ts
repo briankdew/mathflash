@@ -86,7 +86,7 @@ describe('sessionFlow answers', () => {
       { type: 'prepFinished' }
     ).state;
 
-  it('shows the next card at once with one recognizer for the session', () => {
+  it('shows the right answer, then the next card, with one recognizer', () => {
     const answered = run(showing(false), {
       type: 'answer',
       value: 8,
@@ -96,12 +96,17 @@ describe('sessionFlow answers', () => {
       'problemShown',
       'answerChecked',
       'problemLeft',
-      'cardPresented',
+      'holdForCorrect',
     ]);
-    expect(answered.state.phase).toBe('showing');
-    expect(answered.state.problem?.problemInstanceId).toBe('s-p2');
-    expect(answered.state.isFirstCard).toBe(false);
-    expect(answered.state.feedback).toEqual({ id: 1, result: 'correct' });
+    expect(answered.state.phase).toBe('feedback');
+    expect(answered.state.problem?.problemInstanceId).toBe('s-p1');
+    expect(answered.state.feedback).toEqual({ id: 1, result: 'correct', value: 8 });
+
+    const next = run(answered.state, { type: 'holdOver' });
+    expect(next.types).toEqual(['cardPresented']);
+    expect(next.state.phase).toBe('showing');
+    expect(next.state.problem?.problemInstanceId).toBe('s-p2');
+    expect(next.state.isFirstCard).toBe(false);
   });
 
   it('waits for the next recognizer when each card has its own', () => {
@@ -115,28 +120,61 @@ describe('sessionFlow answers', () => {
       'problemShown',
       'answerChecked',
       'problemLeft',
+      'holdForCorrect',
       'readyListenerForNextCard',
-      'waitForListener',
     ]);
     const ready = run(answered.state, { type: 'listenerReady' });
-    expect(ready.state.phase).toBe('showing');
-    expect(ready.state.problem?.problemInstanceId).toBe('s-p2');
+    expect(ready.state.phase).toBe('feedback');
+    const over = run(ready.state, { type: 'holdOver' });
+    expect(over.state.phase).toBe('showing');
+    expect(over.state.problem?.problemInstanceId).toBe('s-p2');
   });
 
-  it('moves on after a wrong answer and counts it once (D2)', () => {
-    const answered = run(showing(false), {
+  it('asks for a short wait when the recognizer is not ready after the pause', () => {
+    const answered = run(showing(true), { type: 'answer', value: 8, next: card(2) });
+    const over = run(answered.state, { type: 'holdOver' });
+    expect(over.types).toEqual(['waitForListener']);
+    expect(run(over.state, { type: 'listenerWaitOver' }).state.phase).toBe('showing');
+  });
+
+  it('finishes after the last right answer has been shown', () => {
+    const last = run(showing(false), { type: 'answer', value: 8, next: null });
+    expect(last.state.phase).toBe('feedback');
+    expect(last.types).not.toContain('finish');
+    const over = run(last.state, { type: 'holdOver' });
+    expect(over.state.phase).toBe('done');
+    expect(over.types).toEqual(['finish']);
+  });
+
+  it('keeps the card after a wrong answer until the right one comes', () => {
+    const wrong = run(showing(false), {
       type: 'answer',
       value: 3,
-      next: card(2),
+      next: null,
     });
-    expect(answered.state.problem?.problemInstanceId).toBe('s-p2');
-    expect(answered.state.stats).toEqual({
+    expect(wrong.state.phase).toBe('showing');
+    expect(wrong.state.problem?.problemInstanceId).toBe('s-p1');
+    expect(wrong.types).toEqual(['problemShown', 'answerChecked']);
+    expect(wrong.effects[1]).toMatchObject({ correct: false, value: 3 });
+    expect(wrong.state.feedback).toEqual({ id: 1, result: 'wrong', value: 3 });
+    expect(wrong.state.stats).toEqual({
+      completed: 0,
+      correctFirst: 0,
+      missedFirst: 1,
+    });
+
+    const again = run(wrong.state, { type: 'answer', value: 4, next: null });
+    expect(again.state.stats.missedFirst).toBe(1);
+
+    const answered = run(again.state, { type: 'answer', value: 8, next: card(2) });
+    const right = run(answered.state, { type: 'holdOver' });
+    expect(right.state.problem?.problemInstanceId).toBe('s-p2');
+    expect(right.state.stats).toEqual({
       completed: 1,
       correctFirst: 0,
       missedFirst: 1,
     });
-    expect(answered.effects[1]).toMatchObject({ correct: false, value: 3 });
-    expect(answered.state.feedback?.result).toBe('wrong');
+    expect(right.state.missed).toBe(false);
   });
 
   it('ignores a second answer while the next card is on its way', () => {
@@ -152,22 +190,12 @@ describe('sessionFlow answers', () => {
   it('gives each answer its own feedback id', () => {
     const answered = run(
       showing(false),
-      { type: 'answer', value: 8, next: card(2) },
-      { type: 'answer', value: 8, next: card(3) }
+      { type: 'answer', value: 3, next: null },
+      { type: 'answer', value: 3, next: null }
     );
     expect(answered.state.feedback?.id).toBe(2);
   });
 
-  it('finishes after the last card', () => {
-    const answered = run(showing(false), { type: 'answer', value: 8, next: null });
-    expect(answered.state.phase).toBe('done');
-    expect(answered.types).toEqual([
-      'problemShown',
-      'answerChecked',
-      'problemLeft',
-      'finish',
-    ]);
-  });
 });
 
 describe('sessionFlow drawing and ending', () => {
