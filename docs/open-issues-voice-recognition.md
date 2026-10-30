@@ -1,6 +1,6 @@
 # Open issue: speech engine reports speech but returns no text ("empty tries")
 
-Status: **open**, raised 2026-10-28, not yet resolved. Read `docs/voice-timing-principles.md` first for the timing rules this touches.
+Status: **design approved 2026-10-29** (`docs/timing-core-design.md`); fix comes with the rebuilt timing core. Raised 2026-10-28. Read `docs/voice-timing-principles.md` first for the timing rules this touches.
 
 ## What happens
 
@@ -19,7 +19,10 @@ The browser reports that it heard speech (`speechstart`) and then ends with no t
 
 Hypothesis: the user spoke before the recognizer was "really" listening. Across 29 Chrome recognitions, empties began 1.2-2.8s after `start`; tries that returned text began 0.7-3.6s after `start`. The mic was open about 0.1s after `start` and speech was detected each time. No timing threshold separates them. Cannot be fully ruled out. Optional test: on Chrome, wait 2-3s after each problem appears before speaking, for ~10 problems.
 
-## Not decided yet
+## Not decided yet (updated 2026-10-29)
+
+Superseded by the approved design: item 1 (the owner rejected engine-caused "not clean" flags; D1 starts the response at the first speech instead), item 5 (startup measured per restart, design 4.4). Still open: items 2-4.
+
 
 1. Treat any problem with an empty try as "not clean": keep the time, exclude it from performance averages and from custom-problem-set inputs, and count how many were excluded. (Recommended; no change to the practice flow. `emptyTryMs > 0` is the flag.)
 2. A skip rule: after N empty tries in a row on one problem (suggested 3), move on and mark it "unrecognized" instead of retrying forever.
@@ -34,8 +37,15 @@ Hypothesis: the user spoke before the recognizer was "really" listening. Across 
 3. Redesign of the Performance report page, first as a troubleshooting tool for the owner (the data is also read directly by Claude). The current page is a preliminary version.
 4. Re-evaluating other original app decisions, as they come up. Add them to the parking lot below.
 
+Status 2026-10-29: topics 1-3 discussed; design approved. Topic 4 continues as items come up.
+
 Only after these: decide the solution for the items under "Not decided yet".
 
 ## Parking lot (decisions to revisit)
 
 - Reorganize information that has been "squirreled away" in scattered places (docs, notes, memory). Not now; the owner does not want to derail the current objective.
+- Background-noise indicator or message when noise may affect recognition (onset detector can supply the level).
+- Learning (paced) vs evaluation (at speed) modes; evaluation pace is in the design, learning later.
+- Calibration warm-up (read digits aloud) as a response-time and noise baseline; how often to offer it as a setting.
+- User login (premium) so several users on one device keep their own history and settings; after basic app and premium voice settle.
+- Free on-device number-only recognizer, if it passes a size-versus-effectiveness test.
