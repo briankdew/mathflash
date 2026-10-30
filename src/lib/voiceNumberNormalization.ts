@@ -138,6 +138,37 @@ function parseNumberWords(rawCleaned: string): number | null {
   return TENS[first] + ONES[second];
 }
 
+// True for a number said digit by digit ("seven eight", "one five", "7 8").
+// Users learn the real number word, so voice input never accepts these. The
+// engine may still turn such speech into "78"; a web page cannot see that.
+export function isDigitByDigit(rawTranscript: string): boolean {
+  const words = applyNearMisses(
+    rawTranscript
+      .toLowerCase()
+      .replace(/[.,!?/\\]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  )
+    .split(' ')
+    .filter(Boolean);
+
+  return (
+    words.length >= 2 &&
+    words.every(word => ONES[word] !== undefined || /^\d$/.test(word))
+  );
+}
+
+// Consecutive tries that are pieces of one number ("if" + "teen"). Only pieces
+// that are not numbers themselves reach here, so two digits are never joined.
+export function joinNumberFragments(
+  first: string,
+  second: string,
+  range: VoiceAnswerRange
+): VoiceNormalizationResult {
+  const stem = first.trim().toLowerCase() === 'if' ? 'fif' : first;
+  return normalizeVoiceNumber(`${stem} ${second}`, range);
+}
+
 // True when a spoken number could still grow into a larger valid answer, e.g.
 // "six" -> "sixteen", "twenty" -> "twenty four". Used so an early interim guess
 // is not accepted while the speaker may still be saying the rest of the number.

@@ -98,6 +98,14 @@ export interface AnswerAcceptedEvent extends EventBase {
   recId?: number;
   /** `seq` of the `rec.result` the answer was taken from. */
   resultSeq?: number;
+  /** Which of the browser's guesses was used (0 = its best guess). */
+  alternative?: number;
+  /**
+   * `seq` of the `rec.result` where this answer began, when the engine ran it
+   * together with the previous answer in one stretch ("Seven" then "Seven
+   * eight"). The scorer starts a new utterance there.
+   */
+  onsetSeq?: number;
 }
 
 export interface AnswerCheckedEvent extends EventBase {

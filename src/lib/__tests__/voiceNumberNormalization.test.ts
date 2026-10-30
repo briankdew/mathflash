@@ -3,6 +3,8 @@ import {
   buildVoiceContextualStrings,
   getVoiceAcceptedAnswerRange,
   getVoiceAnswerRange,
+  isDigitByDigit,
+  joinNumberFragments,
   normalizeVoiceNumber,
   numberToWords,
 } from '../voiceNumberNormalization';
@@ -113,6 +115,31 @@ describe('near-miss words', () => {
     expect(value('hello')).toBeNull();
     expect(value('for sale')).toBeNull();
     expect(value('teen')).toBeNull();
+  });
+
+  it('never accepts a number said digit by digit', () => {
+    ['seven eight', 'one five', 'three zero', '7 8', 'one 5', 'oh five'].forEach(
+      text => {
+        expect(isDigitByDigit(text)).toBe(true);
+        expect(value(text)).toBeNull();
+      }
+    );
+  });
+
+  it('does not mistake real numbers for digit-by-digit speech', () => {
+    ['seventy-eight', 'seventy eight', 'fifteen', 'thirty', '78', 'eight'].forEach(
+      text => expect(isDigitByDigit(text)).toBe(false)
+    );
+  });
+
+  it('joins fragments of one number but never two digits', () => {
+    const range = { min: 0, max: 99 };
+    const joined = (first: string, second: string) =>
+      joinNumberFragments(first, second, range).kind;
+    expect(joined('if', 'teen')).toBe('valid');
+    expect(joined('fif', 'teen')).toBe('valid');
+    expect(joined('hello', 'teen')).toBe('invalid');
+    expect(joined('seven', 'eight')).toBe('invalid');
   });
 
   it('treats a mishearing like its number when holding an interim', () => {

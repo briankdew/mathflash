@@ -3,7 +3,10 @@
 // No browser code, so it runs in tests and in the log script. Changing a rule
 // bumps SCORER_VERSION so old records can be rescored.
 
-import { normalizeVoiceNumber } from '../voiceNumberNormalization';
+import {
+  isDigitByDigit,
+  normalizeVoiceNumber,
+} from '../voiceNumberNormalization';
 import {
   AnswerAcceptedEvent,
   ProblemSpec,
@@ -14,7 +17,7 @@ import {
   SessionRecord,
 } from './sessionRecord';
 
-export const SCORER_VERSION = 1;
+export const SCORER_VERSION = 2;
 
 /** Where utterance onsets come from; one source per session, never mixed. */
 export type OnsetSource = 'speechstart' | 'first_text' | 'keypad';
@@ -58,9 +61,13 @@ export interface ProblemRow {
   correctResponseMs: number | null;
   captureLagMs: number | null;
   startupLagMs: number;
+  /** Speech service lost while the card was up: the engine's, not charged. */
+  lostMs: number;
   utterances: number;
   unrecognized: number;
   fragments: number;
+  /** Tries said digit by digit ("seven eight"), rejected as answers. */
+  digitTries: number;
   restarts: number;
   errors: Record<string, number>;
   flags: ScoreFlag[];
@@ -101,7 +108,7 @@ interface Utterance {
   resultIndex?: number;
 }
 
-type UtteranceKind = 'empty' | 'fragment' | 'number';
+type UtteranceKind = 'empty' | 'fragment' | 'digits' | 'number';
 
 function lastText(utterance: Utterance): string {
   return utterance.results[utterance.results.length - 1]?.text ?? '';
@@ -110,6 +117,7 @@ function lastText(utterance: Utterance): string {
 function kindOf(utterance: Utterance): UtteranceKind {
   const text = lastText(utterance);
   if (!text.trim()) return 'empty';
+  if (isDigitByDigit(text)) return 'digits';
   return normalizeVoiceNumber(text, NUMBER_RANGE).kind === 'valid'
     ? 'number'
     : 'fragment';
@@ -117,14 +125,21 @@ function kindOf(utterance: Utterance): UtteranceKind {
 
 // Builds the session's utterances. An utterance is one stretch of speech. With
 // `speechstart` as the source each speechstart opens one; with `first_text`
-// (Safari) the first text does. A final result closes the utterance, and a
-// different `resultIndex` starts a new one.
+// (Safari) the first text does. A final result closes the utterance, a
+// different `resultIndex` starts a new one, and so does the `onsetSeq` of an
+// answer the engine ran together with the one before it.
 function buildUtterances(
   events: SessionEvent[],
   source: OnsetSource
 ): Utterance[] {
   const utterances: Utterance[] = [];
   const open = new Map<number, Utterance>();
+  const splits = new Set<number>();
+  for (const event of events) {
+    if (event.kind === 'answer.accepted' && event.onsetSeq !== undefined) {
+      splits.add(event.onsetSeq);
+    }
+  }
   for (const event of events) {
     if (event.kind === 'rec.speechstart' && source === 'speechstart') {
       const utterance: Utterance = {
@@ -141,6 +156,7 @@ function buildUtterances(
         !utterance ||
         (source === 'first_text' &&
           (utterance.closed ||
+            splits.has(event.seq) ||
             (event.resultIndex !== undefined &&
               utterance.resultIndex !== undefined &&
               event.resultIndex !== utterance.resultIndex)));
@@ -184,21 +200,64 @@ export function spreadStats(values: number[]): SpreadStats {
   };
 }
 
+// Stretches of time the speech service was lost: from `error network` until a
+// recognizer starts that does not fail the same way.
+function lostWindows(events: SessionEvent[]): [number, number][] {
+  const failed = new Set<number>();
+  for (const event of events) {
+    if (event.kind === 'rec.error' && event.code === 'network') {
+      failed.add(event.recId);
+    }
+  }
+
+  const windows: [number, number][] = [];
+  let lostSince: number | null = null;
+  for (const event of events) {
+    if (event.kind === 'rec.error' && event.code === 'network') {
+      lostSince = lostSince ?? event.t;
+    } else if (
+      event.kind === 'rec.started' &&
+      lostSince !== null &&
+      !failed.has(event.recId)
+    ) {
+      windows.push([lostSince, event.t]);
+      lostSince = null;
+    }
+  }
+  if (lostSince !== null) {
+    windows.push([lostSince, Infinity]);
+  }
+  return windows;
+}
+
+function overlapMs(windows: [number, number][], from: number, to: number) {
+  return windows.reduce(
+    (total, [start, end]) =>
+      total + Math.max(0, Math.min(end, to) - Math.max(start, from)),
+    0
+  );
+}
+
 export function score(record: SessionRecord): ScoredSession {
   const events = record.events;
   const started = events.find(event => event.kind === 'session.started');
   const engine: RecordEngine = started?.engine ?? 'unknown';
   const inputMode: RecordInputMode = started?.inputMode ?? 'voice';
   const hasSpeechStart = events.some(event => event.kind === 'rec.speechstart');
+  // A continuous recognizer reports `speechstart` only once, not per utterance.
+  const isContinuous = events.some(
+    event => event.kind === 'rec.requested' && event.continuous
+  );
   const onsetSource: OnsetSource =
     inputMode === 'keypad'
       ? 'keypad'
-      : engine !== 'webkit' && hasSpeechStart
+      : engine !== 'webkit' && hasSpeechStart && !isContinuous
         ? 'speechstart'
         : 'first_text';
 
   const utterances =
     inputMode === 'voice' ? buildUtterances(events, onsetSource) : [];
+  const lost = lostWindows(events);
 
   const rows: ProblemRow[] = [];
   events.forEach((shown, position) => {
@@ -266,10 +325,12 @@ export function score(record: SessionRecord): ScoredSession {
           onsetT = utterance.onsetT;
           captureLagMs = Math.max(0, attempt.t - utterance.onsetT);
           // D1: empty and non-number tries since the previous attempt belong
-          // to this answer; a spoken number nothing accepted stops the chain.
+          // to this answer. A spoken number nothing accepted, or one said digit
+          // by digit, was the user's own try and stops the chain.
           let start = index < 0 ? -1 : index;
           for (let j = index - 1; j > previousIndex && j >= 0; j -= 1) {
-            if (kindOf(own[j]) === 'number') break;
+            const kind = kindOf(own[j]);
+            if (kind === 'number' || kind === 'digits') break;
             start = j;
           }
           if (start >= 0 && start < index) {
@@ -283,7 +344,7 @@ export function score(record: SessionRecord): ScoredSession {
 
       let responseMs: number | null = null;
       if (onsetT !== null) {
-        responseMs = onsetT - shown.t;
+        responseMs = onsetT - shown.t - overlapMs(lost, shown.t, onsetT);
         if (responseMs < 0) {
           responseMs = 0;
           flags.add('onset_before_shown');
@@ -362,9 +423,13 @@ export function score(record: SessionRecord): ScoredSession {
         (correctIndex >= 0 ? attempts[correctIndex] : attempts[0])
           ?.captureLagMs ?? null,
       startupLagMs,
+      lostMs: Number.isFinite(windowEnd)
+        ? overlapMs(lost, shown.t, windowEnd)
+        : 0,
       utterances: own.length,
       unrecognized: own.filter(u => kindOf(u) === 'empty').length,
       fragments: own.filter(u => kindOf(u) === 'fragment').length,
+      digitTries: own.filter(u => kindOf(u) === 'digits').length,
       restarts,
       errors,
       flags: [...flags],

@@ -234,3 +234,124 @@ describe('scorer rules on small records', () => {
     });
   });
 });
+
+describe('scorer version 2 rules', () => {
+  const voice = (drafts: Draft[]) =>
+    score(recordOf([session('chrome', 'voice'), ...drafts]));
+  const accepted = (t: number, resultSeq: number, value = 8, extra = {}) =>
+    ({
+      t,
+      kind: 'answer.accepted',
+      problemId: 'p1',
+      value,
+      via: 'final',
+      recId: 1,
+      resultSeq,
+      ...extra,
+    }) as Draft;
+  const checked = (t: number, value = 8) =>
+    ({ t, kind: 'answer.checked', problemId: 'p1', value, correct: true }) as Draft;
+
+  it('uses first text as the onset when any recognizer is continuous', () => {
+    const scored = voice([
+      { t: 0, kind: 'rec.requested', recId: 1, continuous: true },
+      { t: 10, kind: 'rec.started', recId: 1 },
+      { t: 20, kind: 'rec.speechstart', recId: 1 },
+      shown(100),
+      { t: 900, kind: 'rec.result', recId: 1, text: 'eight', isFinal: true },
+      accepted(910, 5),
+      checked(911),
+    ]);
+    expect(scored.onsetSource).toBe('first_text');
+    expect(scored.rows[0].firstResponseMs).toBe(800);
+  });
+
+  it('takes speech-service-lost time off the response', () => {
+    const scored = voice([
+      shown(0),
+      { t: 1000, kind: 'rec.error', recId: 1, code: 'network' },
+      { t: 1000, kind: 'rec.ended', recId: 1 },
+      { t: 3000, kind: 'rec.started', recId: 2 },
+      { t: 3100, kind: 'rec.error', recId: 2, code: 'network' },
+      { t: 5000, kind: 'rec.started', recId: 3 },
+      { t: 5600, kind: 'rec.speechstart', recId: 3 },
+      { t: 6000, kind: 'rec.result', recId: 3, text: 'eight', isFinal: true },
+      accepted(6010, 7),
+      checked(6011),
+      { t: 6012, kind: 'problem.left', problemId: 'p1', reason: 'answered' },
+    ]);
+    expect(scored.rows[0].lostMs).toBe(4000);
+    expect(scored.rows[0].firstResponseMs).toBe(1600);
+  });
+
+  it('does not charge or subtract when speech came before the service was lost', () => {
+    const scored = voice([
+      shown(0),
+      { t: 1000, kind: 'rec.speechstart', recId: 1 },
+      { t: 1500, kind: 'rec.error', recId: 1, code: 'network' },
+      { t: 1500, kind: 'rec.ended', recId: 1 },
+      { t: 3500, kind: 'rec.started', recId: 2 },
+      { t: 4000, kind: 'rec.speechstart', recId: 2 },
+      { t: 4500, kind: 'rec.result', recId: 2, text: 'eight', isFinal: true },
+      accepted(4510, 7),
+      checked(4511),
+    ]);
+    expect(scored.rows[0].firstResponseMs).toBe(1000);
+    expect(scored.rows[0].flags).toEqual(['tries_before_answer']);
+  });
+
+  it('counts a digit-by-digit try as the user own, stopping the D1 chain', () => {
+    const scored = voice([
+      shown(0),
+      { t: 1000, kind: 'rec.speechstart', recId: 1 },
+      { t: 1500, kind: 'rec.result', recId: 1, text: 'one five', isFinal: true },
+      { t: 1600, kind: 'rec.ended', recId: 1 },
+      { t: 3000, kind: 'rec.speechstart', recId: 2 },
+      { t: 3500, kind: 'rec.result', recId: 2, text: 'fifteen', isFinal: true },
+      accepted(3510, 6, 15),
+      checked(3511, 15),
+    ]);
+    expect(scored.rows[0].firstResponseMs).toBe(3000);
+    expect(scored.rows[0].digitTries).toBe(1);
+    expect(scored.rows[0].fragments).toBe(0);
+  });
+
+  it('starts a new utterance where the engine ran two answers together', () => {
+    const scored = score(
+      recordOf([
+        session('webkit', 'voice'),
+        { t: 0, kind: 'rec.requested', recId: 1, continuous: true },
+        { t: 10, kind: 'rec.started', recId: 1 },
+        shown(100, 'p1', 1),
+        { t: 900, kind: 'rec.result', recId: 1, resultIndex: 0, text: 'Seven', isFinal: false },
+        {
+          t: 1400,
+          kind: 'answer.accepted',
+          problemId: 'p1',
+          value: 7,
+          via: 'stable',
+          recId: 1,
+          resultSeq: 4,
+        },
+        { t: 1401, kind: 'answer.checked', problemId: 'p1', value: 7, correct: true },
+        { t: 1402, kind: 'problem.left', problemId: 'p1', reason: 'answered' },
+        shown(1450, 'p2', 2),
+        { t: 2200, kind: 'rec.result', recId: 1, resultIndex: 0, text: 'Seven eight', isFinal: false },
+        {
+          t: 2700,
+          kind: 'answer.accepted',
+          problemId: 'p2',
+          value: 8,
+          via: 'stable',
+          recId: 1,
+          resultSeq: 9,
+          onsetSeq: 9,
+        },
+        { t: 2701, kind: 'answer.checked', problemId: 'p2', value: 8, correct: true },
+      ])
+    );
+    expect(scored.rows[1].firstResponseMs).toBe(750);
+    expect(scored.rows[1].captureLagMs).toBe(500);
+    expect(scored.rows[1].flags).toEqual([]);
+  });
+});
