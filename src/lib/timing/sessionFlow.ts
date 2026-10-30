@@ -176,6 +176,8 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowStep {
       const problemId = problem.problemInstanceId;
       const correct = action.value === problem.correct;
       const effects: FlowEffect[] = [
+        // An answer can beat the frame that reports the card as drawn.
+        ...(state.isDrawn ? [] : [{ type: 'problemShown', problem } as const]),
         { type: 'answerChecked', problemId, value: action.value, correct },
         { type: 'problemLeft', problemId, reason: 'answered' },
       ];

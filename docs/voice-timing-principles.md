@@ -37,11 +37,17 @@ Ask, in order:
 | Safari waits for the final result | Valid interim number accepted after 500ms (900ms if it could grow, e.g. "four" -> "fourteen"); wait recorded as `captureLagMs` | engine's, not charged |
 | Late final result after an accepted answer | Ignored | n/a |
 | Browser mishears a number ("sex") | Near-miss word list in `voiceNumberNormalization.ts` | counts |
-| Browser reports `error network` (speech service lost) | Planned for the new session flow: show "lost speech service", restart listening; the time spent lost is the engine's and is recorded in `rec.error`. Not handled in the current code (it stalls). | engine's |
+| Browser reports `error network` (speech service lost) | New flow (`core=2`): shows "Lost speech service" and retries every 2 s. The time from the error until a recognizer starts that does not fail the same way is `lostMs`, taken off the response. Speech cut off by the error is covered by D1. Not handled in the old code (it stalls). | engine's, taken off |
+| Number said digit by digit ("seven eight", "one five") | Rejected, even if another guess is a valid number; shows "Say the whole number". Stops the D1 chain, so the time runs from the accepted answer. A browser that turns it into "15" cannot be detected (open-issues item 7). | counts |
+| Safari runs the next answer into the last one ("Seven", then "Seven eight") | New flow: only the new part counts, as the answer to the current card. `onsetSeq` marks where it began, and the scorer starts a new utterance there. | counts, from the new part |
+| Late revision of an answered stretch ("six", then "sixteen") | Ignored: it is the same speech, already answered. | n/a |
+| Next card's recognizer is not ready yet | New flow: the card waits for it, at most 0.5 s. The wait comes before the card is shown, so it is never charged. | engine's, not charged |
+| Split number ("if", then "teen") | New flow: joined into one answer, starting at the first piece (D1). Pieces kept in the record. | counts, from the first piece |
 
 ## Where it lives in code
 
 - `src/hooks/useVoiceAnswerInput.ts`: speech events, empty-try tracking, `submitVoiceAttempt` (builds the attempt).
 - `src/hooks/session/sessionPerformanceTracker.ts`: per-problem performance rows and voice diagnostics.
 - `src/lib/voiceExperiments.ts`: browser-specific defaults and debug switches.
+- `src/lib/timing/`: the new timing core (`core=2`). `answerAccepter.ts` (what counts as an answer), `listeningController.ts` (keeping a recognizer running), `sessionFlow.ts` (what is on screen), `coreSession.ts` (connects them), `scorer.ts` (all response times).
 - Debug log: add `?debug=1`; see `CLAUDE.md`.

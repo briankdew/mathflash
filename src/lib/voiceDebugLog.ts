@@ -19,6 +19,7 @@ let nextId = 1;
 let startedAtMs: number | null = null;
 let startedAtIso: string | null = null;
 const listeners = new Set<() => void>();
+let reportSection: (() => string) | null = null;
 
 export function isVoiceDebugEnabled(): boolean {
   return getWebQueryParams()?.get('debug') === '1';
@@ -80,6 +81,19 @@ export function formatVoiceDebugEntry(entry: VoiceDebugEntry): string {
   return `${seconds}s ${entry.label}${detail}${repeat}`;
 }
 
+// Extra text for the end of the report: the session record, when there is one.
+export function setVoiceDebugReportSection(section: () => string): void {
+  reportSection = section;
+}
+
+export function getBuildName(): string {
+  const scripts = globalThis.window?.document?.scripts;
+  const bundle = Array.from(scripts ?? [])
+    .map(script => script.src)
+    .find(src => src.includes('/_expo/static/js/web/index-'));
+  return bundle?.split('/').pop() ?? 'unknown';
+}
+
 function describeEnvironment(): string[] {
   const win = globalThis.window as
     | (Window & { webkitSpeechRecognition?: unknown })
@@ -88,13 +102,9 @@ function describeEnvironment(): string[] {
     return [];
   }
 
-  const bundle = Array.from(win.document?.scripts ?? [])
-    .map(script => script.src)
-    .find(src => src.includes('/_expo/static/js/web/index-'));
-
   return [
     `url: ${win.location?.href ?? ''}`,
-    `build: ${bundle?.split('/').pop() ?? 'unknown'}`,
+    `build: ${getBuildName()}`,
     `userAgent: ${win.navigator?.userAgent ?? ''}`,
     `screen: ${win.innerWidth}x${win.innerHeight} @${win.devicePixelRatio}x`,
     `secureContext: ${win.isSecureContext}`,
@@ -113,7 +123,12 @@ export function buildVoiceDebugReport(): string {
     `events: ${entries.length}`,
     '',
   ];
-  return [...header, ...entries.map(formatVoiceDebugEntry), ''].join('\n');
+  return [
+    ...header,
+    ...entries.map(formatVoiceDebugEntry),
+    '',
+    ...(reportSection ? [reportSection(), ''] : []),
+  ].join('\n');
 }
 
 export function buildVoiceDebugFileName(now: Date = new Date()): string {

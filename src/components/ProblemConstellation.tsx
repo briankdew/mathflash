@@ -45,9 +45,17 @@ function getProblemSlotValue(
     return problem[slot];
 }
 
-function getAnswerHostFill(isActive: boolean, showWrongAnswerFill: boolean) {
+function getAnswerHostFill(
+    isActive: boolean,
+    showWrongAnswerFill: boolean,
+    showCorrectFill: boolean
+) {
     if (showWrongAnswerFill) {
         return theme.statusError;
+    }
+
+    if (showCorrectFill) {
+        return theme.statusCorrect;
     }
 
     if (isActive) {
@@ -65,6 +73,7 @@ interface ProblemConstellationProps {
     shakeTrigger?: number; // pass a random value to trigger a shake
     showWrongAnswer?: boolean;
     showWrongAnswerFill?: boolean;
+    showCorrectFill?: boolean;
     renderInput?: React.ReactNode;
     showCorrect?: boolean;
     isActive?: boolean;
@@ -78,6 +87,7 @@ export function ProblemConstellation({
     shakeTrigger = 0,
     showWrongAnswer = false,
     showWrongAnswerFill = false,
+    showCorrectFill = false,
     renderInput,
     showCorrect = false,
     isActive = false,
@@ -370,7 +380,11 @@ export function ProblemConstellation({
     const prepBackTextColors = opTheme.prepBackText;
     const prepResultLabel = operation === 'addsub' ? 'add!' : 'multiply!';
     const shouldShowPrepBackText = !problem && startMode !== 'min' && !showBlankFinalBackText;
-    const answerHostFill = getAnswerHostFill(isActive && !!problem, showWrongAnswerFill);
+    const answerHostFill = getAnswerHostFill(
+        isActive && !!problem,
+        showWrongAnswerFill,
+        showCorrectFill
+    );
     const mainOperatorStandardColors = opTheme.mainOperator;
     const mainOperatorMutedColors = { circleFill: palette.beige[2], operatorFill: palette.beige[3] };
     const secondaryOperatorStandardColors = opTheme.secondaryOperator;

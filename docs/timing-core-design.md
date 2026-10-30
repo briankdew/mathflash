@@ -107,6 +107,13 @@ A small reducer (state machine) with explicit states: `idle -> preparing -> show
 - The accept rules carry over unchanged: Safari accepts a stable number after 0.5 s (0.9 s if it could grow, "four" -> "fourteen"); Chrome accepts a final result, or the last interim 0.25 s after `speechend`.
 - The first card no longer includes the 0.22 s fade in its time: `problem.shown` is taken when the card is fully visible.
 
+Notes from building step 3 (2026-10-30):
+
+- The next card waits for its recognizer, at most 0.5 s, and the first card's recognizer starts during the opening animation. A card should not appear while nothing is listening.
+- At evaluation pace the answer card flashes green or red for 0.3 s. The old correct display fills in the missing slot, which on the new card would show its answer.
+- Wrong answers move on for the keypad too (D2), and every answered card counts as completed.
+- The owner chose to keep one Safari recognizer for the session, to be tested further. If it proves unreliable, one measurement matters: with the microphone held, about 100 iPhone restarts in 11 logs each took 0.1 s or less (the 1.3-3.4 s starts were all without it). `&continuous=0` already gives a new recognizer per card on Safari.
+
 ## 6. Instruments
 
 - **Web recognizer:** our own thin wrapper around the browser's speech API (extending `src/lib/webSpeechRecognizer.ts`) instead of going through the library on web. It gives us `recId`, `Event.timeStamp`, `resultIndex`, and listeners that are really removed. The library stays for the native app.

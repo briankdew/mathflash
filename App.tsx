@@ -16,13 +16,21 @@ import { PracticeArea } from './src/components/PracticeArea';
 import { ControlDashboard } from './src/components/ControlDashboard';
 import { SessionPerformanceSheet } from './src/components/SessionPerformanceSheet';
 import { VoiceDebugPanel } from './src/components/VoiceDebugPanel';
+import { useCoreSession } from './src/hooks/useCoreSession';
+import type { SessionApi } from './src/hooks/useCoreSession';
 import { useMathSession } from './src/hooks/useMathSession';
+import { getVoiceExperiments } from './src/lib/voiceExperiments';
 import { theme, getOperationTheme } from './src/theme/colors';
 import { useFonts } from 'expo-font';
 import { appStyles as styles } from './src/theme/App.styles';
 
+// Chosen once when the page loads: the new timing core runs only with ?core=2.
+const useSession: () => SessionApi = getVoiceExperiments().coreFlow
+  ? useCoreSession
+  : useMathSession;
+
 export default function App() {
-  const session = useMathSession();
+  const session = useSession();
   const opTheme = getOperationTheme(session.options.operation);
   const pendingCount = session.getPendingCount();
   const selectedCountColor = !session.isActive && pendingCount === 0 ? theme.dangerText : theme.textMuted;
@@ -125,6 +133,8 @@ export default function App() {
                   onResumeVoiceInput={session.resumeVoiceInput}
                   onClearPendingVoiceAttempt={session.clearPendingVoiceAttempt}
                   inputValue={session.inputValue}
+                  pace={session.pace}
+                  answerFeedback={session.answerFeedback}
                 />
 
                 <View style={styles.inputArea}>

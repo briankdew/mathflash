@@ -13,6 +13,7 @@ import {
   VoiceInputState,
 } from '../lib/types';
 import { usePracticeFeedback } from '../hooks/ui/usePracticeFeedback';
+import type { AnswerFeedback } from '../lib/timing/sessionFlow';
 
 interface PracticeAreaProps {
   currentProblem: ProblemDisplay | null;
@@ -29,6 +30,9 @@ interface PracticeAreaProps {
   onResumeVoiceInput: () => void;
   onClearPendingVoiceAttempt: () => void;
   inputValue: string;
+  // Set by the new session flow (?core=2), which moves on by itself.
+  pace?: 'evaluation';
+  answerFeedback?: AnswerFeedback | null;
 }
 
 export function PracticeArea({
@@ -46,6 +50,8 @@ export function PracticeArea({
   onResumeVoiceInput,
   onClearPendingVoiceAttempt,
   inputValue,
+  pace,
+  answerFeedback,
 }: PracticeAreaProps) {
   const inputRef = useRef<TextInput>(null);
   const webInputResetStyle: StyleProp<TextStyle> =
@@ -61,6 +67,8 @@ export function PracticeArea({
     isRecoveringWrongAnswerInput,
     resetFeedback,
     applyAnswerResult,
+    answerFlash,
+    flashAnswer,
   } = usePracticeFeedback({
     inputMode,
     isActive,
@@ -88,10 +96,20 @@ export function PracticeArea({
       if (!attempt.value) return;
 
       const result = onCheckAnswer(attempt, forceComplete);
-      applyAnswerResult(attempt.value, result);
+      if (!pace) {
+        applyAnswerResult(attempt.value, result);
+      }
     },
-    [applyAnswerResult, onCheckAnswer]
+    [applyAnswerResult, onCheckAnswer, pace]
   );
+
+  const answerFeedbackId = answerFeedback?.id;
+  const answerFeedbackResult = answerFeedback?.result;
+  useEffect(() => {
+    if (answerFeedbackResult) {
+      flashAnswer(answerFeedbackResult);
+    }
+  }, [answerFeedbackId, answerFeedbackResult, flashAnswer]);
 
   const handleSubmit = useCallback(() => {
     if (
@@ -193,7 +211,8 @@ export function PracticeArea({
         phase={phase}
         shakeTrigger={shakeTrigger}
         showWrongAnswer={isWrongAnswerDisplayActive}
-        showWrongAnswerFill={showWrongAnswerFill}
+        showWrongAnswerFill={showWrongAnswerFill || answerFlash === 'wrong'}
+        showCorrectFill={answerFlash === 'correct'}
         showCorrect={showCorrect}
         isActive={isActive}
         renderInput={

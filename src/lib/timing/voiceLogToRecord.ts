@@ -42,7 +42,7 @@ function engineOf(header: Record<string, string>): RecordEngine {
   return /Safari\//.test(ua) ? 'webkit' : 'unknown';
 }
 
-function deviceOf(ua: string): string {
+export function deviceOf(ua: string): string {
   if (/iPhone|iPad/.test(ua)) return 'iPhone';
   if (/CrOS/.test(ua)) return 'Chromebook';
   return /Android/.test(ua) ? 'Android' : 'other';

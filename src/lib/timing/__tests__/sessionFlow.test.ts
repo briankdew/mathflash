@@ -93,6 +93,7 @@ describe('sessionFlow answers', () => {
       next: card(2),
     });
     expect(answered.types).toEqual([
+      'problemShown',
       'answerChecked',
       'problemLeft',
       'cardPresented',
@@ -111,6 +112,7 @@ describe('sessionFlow answers', () => {
     });
     expect(answered.state.phase).toBe('feedback');
     expect(answered.types).toEqual([
+      'problemShown',
       'answerChecked',
       'problemLeft',
       'readyListenerForNextCard',
@@ -133,7 +135,7 @@ describe('sessionFlow answers', () => {
       correctFirst: 0,
       missedFirst: 1,
     });
-    expect(answered.effects[0]).toMatchObject({ correct: false, value: 3 });
+    expect(answered.effects[1]).toMatchObject({ correct: false, value: 3 });
     expect(answered.state.feedback?.result).toBe('wrong');
   });
 
@@ -159,7 +161,12 @@ describe('sessionFlow answers', () => {
   it('finishes after the last card', () => {
     const answered = run(showing(false), { type: 'answer', value: 8, next: null });
     expect(answered.state.phase).toBe('done');
-    expect(answered.types).toEqual(['answerChecked', 'problemLeft', 'finish']);
+    expect(answered.types).toEqual([
+      'problemShown',
+      'answerChecked',
+      'problemLeft',
+      'finish',
+    ]);
   });
 });
 

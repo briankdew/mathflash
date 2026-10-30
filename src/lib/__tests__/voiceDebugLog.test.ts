@@ -7,6 +7,7 @@ import {
   isVoiceDebugEnabled,
   logVoiceDebug,
   resetVoiceDebugLog,
+  setVoiceDebugReportSection,
 } from '../voiceDebugLog';
 
 const originalOS = Platform.OS;
@@ -105,6 +106,18 @@ describe('voiceDebugLog', () => {
     expect(report).toContain('events: 2');
     expect(report).toContain('start()');
     expect(report).toContain('error aborted No speech detected');
+  });
+
+  it('adds the extra section at the end of the report', () => {
+    setPage('web', '?debug=1');
+    logVoiceDebug('start()');
+    setVoiceDebugReportSection(() => 'session record: {}');
+
+    const report = buildVoiceDebugReport();
+    expect(report.indexOf('start()')).toBeLessThan(
+      report.indexOf('session record: {}')
+    );
+    setVoiceDebugReportSection(() => '');
   });
 
   it('names the saved file with the local date and time', () => {
