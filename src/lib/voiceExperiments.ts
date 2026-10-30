@@ -7,6 +7,9 @@ import { Platform } from 'react-native';
 //   delay=N  keep at least N ms between one recognizer ending and the next start
 //   abort=1  abort() the old recognizer and wait for its end before restarting
 //   reuse=1  use one recognizer object for the whole session (web only)
+//   own=1    use our own recording recognizer (a new browser recognizer per
+//            start, each with a recId, events timed with the browser's own
+//            timestamps and written to the session record). Web only.
 //   keepmic=1|0  force holding the microphone open for the whole session on or
 //            off (web only). Default: on in Safari/WebKit, where it stops the
 //            next recognition getting a dead microphone; off in Chrome, where
@@ -19,6 +22,7 @@ export interface VoiceExperiments {
   delayMs: number;
   abortBeforeRestart: boolean;
   reuseRecognizer: boolean;
+  ownRecognizer: boolean;
   keepMic: boolean;
   stableInterimMs: number | null;
 }
@@ -57,6 +61,7 @@ function noExperiments(): VoiceExperiments {
     delayMs: 0,
     abortBeforeRestart: false,
     reuseRecognizer: false,
+    ownRecognizer: false,
     keepMic: defaultKeepMic(),
     stableInterimMs: defaultStableInterimMs(),
   };
@@ -89,6 +94,7 @@ export function getVoiceExperiments(): VoiceExperiments {
     delayMs: readMs(params, 'delay', 5000) ?? 0,
     abortBeforeRestart: params.get('abort') === '1',
     reuseRecognizer: params.get('reuse') === '1',
+    ownRecognizer: params.get('own') === '1',
     keepMic: params.has('keepmic')
       ? params.get('keepmic') === '1'
       : defaultKeepMic(),
@@ -104,6 +110,7 @@ export function describeVoiceExperiments(): string {
     experiments.delayMs > 0 ? `delay=${experiments.delayMs}` : '',
     experiments.abortBeforeRestart ? 'abort' : '',
     experiments.reuseRecognizer ? 'reuse' : '',
+    experiments.ownRecognizer ? 'own' : '',
     experiments.keepMic ? 'keepmic' : '',
     experiments.stableInterimMs !== null
       ? `fast=${experiments.stableInterimMs}`

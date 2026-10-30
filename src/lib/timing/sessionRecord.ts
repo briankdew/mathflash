@@ -74,6 +74,8 @@ export interface RecResultEvent extends EventBase {
   resultIndex?: number;
   /** Only the newest piece of text, never the whole running transcript. */
   text: string;
+  /** Every alternative the browser returned for this result, best first. */
+  alternatives?: string[];
   isFinal: boolean;
 }
 

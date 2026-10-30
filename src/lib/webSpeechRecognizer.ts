@@ -9,17 +9,17 @@ import { logVoiceDebug } from './voiceDebugLog';
 
 type Listener = (payload?: unknown) => void;
 
-interface BrowserAlternative {
+export interface BrowserAlternative {
   transcript: string;
   confidence: number;
 }
 
-interface BrowserResultEvent {
+export interface BrowserResultEvent {
   resultIndex: number;
   results: ArrayLike<ArrayLike<BrowserAlternative> & { isFinal: boolean }>;
 }
 
-interface BrowserRecognition {
+export interface BrowserRecognition {
   lang: string;
   interimResults: boolean;
   maxAlternatives: number;
@@ -28,11 +28,12 @@ interface BrowserRecognition {
   stop: () => void;
   abort: () => void;
   addEventListener: (name: string, handler: (event: never) => void) => void;
+  removeEventListener?: (name: string, handler: (event: never) => void) => void;
 }
 
 type BrowserRecognitionConstructor = new () => BrowserRecognition;
 
-const EVENT_NAMES = [
+export const EVENT_NAMES = [
   'start',
   'end',
   'speechstart',
@@ -56,7 +57,7 @@ function emit(eventName: string, payload?: unknown) {
 }
 
 // Same payload shapes as the library's web module.
-function toResultPayload(event: BrowserResultEvent) {
+export function toResultPayload(event: BrowserResultEvent) {
   const latest = event.results[event.resultIndex];
   if (latest?.isFinal) {
     return {
@@ -79,7 +80,7 @@ function toResultPayload(event: BrowserResultEvent) {
   };
 }
 
-function toPayload(eventName: string, event: unknown) {
+export function toPayload(eventName: string, event: unknown) {
   switch (eventName) {
     case 'result':
       return toResultPayload(event as BrowserResultEvent);
@@ -95,7 +96,7 @@ function toPayload(eventName: string, event: unknown) {
   }
 }
 
-function applyOptions(
+export function applyOptions(
   target: BrowserRecognition,
   options: ExpoSpeechRecognitionOptions
 ) {
@@ -105,11 +106,7 @@ function applyOptions(
   target.continuous = options.continuous ?? false;
 }
 
-function getRecognition(): BrowserRecognition {
-  if (recognition) {
-    return recognition;
-  }
-
+export function newBrowserRecognition(): BrowserRecognition {
   const win = globalThis.window as unknown as {
     webkitSpeechRecognition?: BrowserRecognitionConstructor;
     SpeechRecognition?: BrowserRecognitionConstructor;
@@ -119,7 +116,15 @@ function getRecognition(): BrowserRecognition {
     throw new Error('Speech recognition is not available in this browser');
   }
 
-  const created = new Recognition();
+  return new Recognition();
+}
+
+function getRecognition(): BrowserRecognition {
+  if (recognition) {
+    return recognition;
+  }
+
+  const created = newBrowserRecognition();
   EVENT_NAMES.forEach(eventName => {
     created.addEventListener(eventName, ((event: unknown) => {
       if (eventName === 'start') {

@@ -7,6 +7,7 @@ import {
 } from 'expo-speech-recognition';
 import { isVoiceDebugEnabled, logVoiceDebug } from './voiceDebugLog';
 import { getVoiceExperiments } from './voiceExperiments';
+import { recordingWebRecognizer } from './recordingWebRecognizer';
 import { webSpeechRecognizer } from './webSpeechRecognizer';
 
 export type SpeechRecognitionEventName =
@@ -58,7 +59,11 @@ interface SpeechBackend {
 const ABORT_WAIT_MS = 800;
 
 function getBackend(): SpeechBackend {
-  return getVoiceExperiments().reuseRecognizer
+  const experiments = getVoiceExperiments();
+  if (Platform.OS === 'web' && experiments.ownRecognizer) {
+    return recordingWebRecognizer as unknown as SpeechBackend;
+  }
+  return experiments.reuseRecognizer
     ? (webSpeechRecognizer as unknown as SpeechBackend)
     : (ExpoSpeechRecognitionModule as unknown as SpeechBackend);
 }
