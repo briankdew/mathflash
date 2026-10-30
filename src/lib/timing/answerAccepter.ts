@@ -274,6 +274,16 @@ function handleResult(
         };
   }
 
+  if (!isFinal && digitByDigit) {
+    // "one" then "one eight": the number held so far was only the first digit.
+    return {
+      state: { ...next, timerVia: null, waiting: null },
+      notice: 'whole_number',
+      preview: '',
+      timer: null,
+    };
+  }
+
   if (!isFinal) {
     // The speech changed into something that is not a valid answer.
     if (next.stableInterimMs === null) {

@@ -196,6 +196,38 @@ describe('answerAccepter several guesses', () => {
   });
 });
 
+describe('answerAccepter digit by digit on Chrome', () => {
+  it('does not take the first digit when the speech turns into "1/8"', () => {
+    const driver = chrome();
+    driver.result('1', false);
+    driver.result('1/8', false);
+    driver.send({ type: 'speechend' });
+    driver.send({ type: 'ended', recId: 1 });
+    driver.advance(1000);
+    expect(driver.accepted).toHaveLength(0);
+    expect(driver.notices).toContain('whole_number');
+  });
+
+  it('does not take the first digit when "one two" arrives after speechend', () => {
+    const driver = chrome();
+    driver.result('1', false);
+    driver.send({ type: 'speechend' });
+    driver.result('one two', false);
+    driver.send({ type: 'ended', recId: 1 });
+    driver.advance(1000);
+    expect(driver.accepted).toHaveLength(0);
+  });
+
+  it('still takes the real number that follows', () => {
+    const driver = chrome();
+    driver.result('1', false);
+    driver.result('1/8', false);
+    driver.send({ type: 'ended', recId: 1 });
+    driver.result('eighteen', true, { recId: 2 });
+    expect(driver.values()).toEqual([18]);
+  });
+});
+
 describe('answerAccepter split numbers', () => {
   it('joins "if" and "teen" into fifteen', () => {
     const driver = chrome();
