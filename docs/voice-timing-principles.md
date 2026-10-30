@@ -37,6 +37,7 @@ Ask, in order:
 | Safari waits for the final result | Valid interim number accepted after 500ms (900ms if it could grow, e.g. "four" -> "fourteen"); wait recorded as `captureLagMs` | engine's, not charged |
 | Late final result after an accepted answer | Ignored | n/a |
 | Browser mishears a number ("sex") | Near-miss word list in `voiceNumberNormalization.ts` | counts |
+| Browser reports `error network` (speech service lost) | Planned for the new session flow: show "lost speech service", restart listening; the time spent lost is the engine's and is recorded in `rec.error`. Not handled in the current code (it stalls). | engine's |
 
 ## Where it lives in code
 

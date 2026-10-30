@@ -29,6 +29,7 @@ Superseded by the approved design: item 1 (the owner rejected engine-caused "not
 3. Whether skipped problems are re-queued later (a re-shown problem has been seen, so its time is a different measurement; it would need a "retake" flag) or just reported and left out.
 4. The Safari blind spot: a dropped answer looks like silence and the timer keeps running. No fix yet.
 5. Small cosmetic fix: `recognizerReadyLagMs` is inflated on retries (counts the failed tries); measure each restart from the previous `end`.
+6. Speech service lost (found 2026-10-30, Chromebook, github.io, `custrec=1` run, log 11:19): Chrome reported `error network` after speech started and the app then did nothing, so the session stalled on problem 8 with no message and no restart. Agreed (owner, 2026-10-30): handle it in the new session flow (step 3) with a visible "lost speech service" message and an automatic restart. One occurrence in 38 problems; not shown to be caused by `custrec`.
 
 ## Discussion queue (agreed 2026-10-29, in this order)
 
