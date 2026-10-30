@@ -16,6 +16,11 @@ import { Platform } from 'react-native';
 //            off (web only). Default: on in Safari/WebKit, where it stops the
 //            next recognition getting a dead microphone; off in Chrome, where
 //            it appeared to make recognitions come back empty.
+//   core=2   run the new timing core: session flow, voice controller and
+//            session record (docs/timing-core-design.md). Web only.
+//   continuous=1|0  with core=2, force one recognizer for the whole session on
+//            or off. Default: on in Safari/WebKit, off (a new recognizer per
+//            card) in Chrome.
 //   fast=N   change how long a valid interim number must stay unchanged before
 //            it is accepted instead of waiting for the browser's final result.
 //            Default: on (DEFAULT_STABLE_INTERIM_MS) in Safari/WebKit, off in
@@ -26,6 +31,8 @@ export interface VoiceExperiments {
   reuseRecognizer: boolean;
   customRecognizer: boolean;
   addTestPreset: boolean;
+  coreFlow: boolean;
+  continuous: boolean;
   keepMic: boolean;
   stableInterimMs: number | null;
 }
@@ -59,6 +66,10 @@ function defaultKeepMic() {
   return isWebKitSpeechEngine();
 }
 
+function defaultContinuous() {
+  return isWebKitSpeechEngine();
+}
+
 function noExperiments(): VoiceExperiments {
   return {
     delayMs: 0,
@@ -66,6 +77,8 @@ function noExperiments(): VoiceExperiments {
     reuseRecognizer: false,
     customRecognizer: false,
     addTestPreset: false,
+    coreFlow: false,
+    continuous: defaultContinuous(),
     keepMic: defaultKeepMic(),
     stableInterimMs: defaultStableInterimMs(),
   };
@@ -100,6 +113,10 @@ export function getVoiceExperiments(): VoiceExperiments {
     reuseRecognizer: params.get('reuse') === '1',
     customRecognizer: params.get('custrec') === '1',
     addTestPreset: params.get('addtest') === '1',
+    coreFlow: params.get('core') === '2',
+    continuous: params.has('continuous')
+      ? params.get('continuous') === '1'
+      : defaultContinuous(),
     keepMic: params.has('keepmic')
       ? params.get('keepmic') === '1'
       : defaultKeepMic(),
@@ -117,6 +134,8 @@ export function describeVoiceExperiments(): string {
     experiments.reuseRecognizer ? 'reuse' : '',
     experiments.customRecognizer ? 'custrec' : '',
     experiments.addTestPreset ? 'addtest' : '',
+    experiments.coreFlow ? 'core=2' : '',
+    experiments.coreFlow && experiments.continuous ? 'continuous' : '',
     experiments.keepMic ? 'keepmic' : '',
     experiments.stableInterimMs !== null
       ? `fast=${experiments.stableInterimMs}`

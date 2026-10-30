@@ -1,6 +1,7 @@
 import type { ExpoSpeechRecognitionOptions } from 'expo-speech-recognition';
 import { sessionRecorder as defaultRecorder } from './timing/sessionRecorder';
 import type { SessionRecorder } from './timing/sessionRecorder';
+import type { SessionEvent } from './timing/sessionRecord';
 import {
   applyOptions,
   BrowserRecognition,
@@ -8,6 +9,7 @@ import {
   EVENT_NAMES,
   newBrowserRecognition,
   toPayload,
+  toResultPayload,
 } from './webSpeechRecognizer';
 
 // Our own web recognizer (switch ?debug=1&custrec=1; docs/timing-core-design.md,
@@ -15,10 +17,12 @@ import {
 // start(), but each one gets a recId and every browser event is written to the
 // session record with the browser's own timestamp. Events reach the voice hook
 // in the library's payload shapes, so the hook cannot tell the difference. When
-// a recognizer ends, its browser listeners are really removed.
+// a recognizer ends, its browser listeners are really removed. The new session
+// flow (?core=2) reads the recorded events instead, through subscribe().
 
 type Listener = (payload?: unknown) => void;
 type Handler = (event: never) => void;
+type RecordListener = (event: SessionEvent) => void;
 
 interface Active {
   recId: number;
@@ -31,11 +35,18 @@ export function createRecordingWebRecognizer(
   makeRecognition: () => BrowserRecognition = newBrowserRecognition
 ) {
   const listeners = new Map<string, Set<Listener>>();
+  const recordListeners = new Set<RecordListener>();
   let nextRecId = 1;
   let current: Active | null = null;
 
   const emit = (eventName: string, payload?: unknown) =>
     listeners.get(eventName)?.forEach(listener => listener(payload));
+
+  const append: SessionRecorder['append'] = draft => {
+    const event = recorder.append(draft);
+    recordListeners.forEach(listener => listener(event));
+    return event;
+  };
 
   function record(active: Active, eventName: string, event: unknown) {
     const { recId } = active;
@@ -43,19 +54,19 @@ export function createRecordingWebRecognizer(
     const stamp = typeof browserT === 'number' ? { browserT } : {};
     switch (eventName) {
       case 'start':
-        recorder.append({ kind: 'rec.started', recId, ...stamp });
+        append({ kind: 'rec.started', recId, ...stamp });
         break;
       case 'end':
-        recorder.append({ kind: 'rec.ended', recId, ...stamp });
+        append({ kind: 'rec.ended', recId, ...stamp });
         break;
       case 'speechstart':
-        recorder.append({ kind: 'rec.speechstart', recId, ...stamp });
+        append({ kind: 'rec.speechstart', recId, ...stamp });
         break;
       case 'speechend':
-        recorder.append({ kind: 'rec.speechend', recId, ...stamp });
+        append({ kind: 'rec.speechend', recId, ...stamp });
         break;
       case 'error':
-        recorder.append({
+        append({
           kind: 'rec.error',
           recId,
           code: (event as { error?: string }).error ?? 'unknown',
@@ -68,11 +79,12 @@ export function createRecordingWebRecognizer(
         const alternatives = Array.from(latest ?? []).map(
           alternative => alternative.transcript
         );
-        recorder.append({
+        // An interim can come in pieces ("four" + "teen"): keep all of them.
+        append({
           kind: 'rec.result',
           recId,
           resultIndex: resultEvent.resultIndex,
-          text: alternatives[0] ?? '',
+          text: toResultPayload(resultEvent).results[0]?.transcript ?? '',
           alternatives,
           isFinal: Boolean(latest?.isFinal),
           ...stamp,
@@ -115,7 +127,7 @@ export function createRecordingWebRecognizer(
         recognition.addEventListener(eventName, handler);
       });
 
-      recorder.append({
+      append({
         kind: 'rec.requested',
         recId: active.recId,
         continuous: Boolean(options.continuous),
@@ -129,6 +141,13 @@ export function createRecordingWebRecognizer(
 
     abort() {
       current?.recognition.abort();
+    },
+
+    subscribe(listener: RecordListener) {
+      recordListeners.add(listener);
+      return () => {
+        recordListeners.delete(listener);
+      };
     },
 
     addListener(eventName: string, listener: Listener) {

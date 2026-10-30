@@ -113,6 +113,39 @@ describe('recordingWebRecognizer', () => {
     });
   });
 
+  it('keeps every piece of an interim result', () => {
+    const { recognizer, recorder, made } = setup();
+    recognizer.start({});
+    const piece = (text: string) =>
+      Object.assign(alternatives(text), { isFinal: false });
+    made[0].fire('result', {
+      resultIndex: 0,
+      results: [piece('four'), piece('teen')],
+    });
+
+    expect(recorder.getRecord().events.pop()).toMatchObject({
+      kind: 'rec.result',
+      text: 'fourteen',
+      alternatives: ['four'],
+      isFinal: false,
+    });
+  });
+
+  it('hands each recorded event to subscribers until they leave', () => {
+    const { recognizer, made } = setup();
+    const onEvent = jest.fn();
+    const leave = recognizer.subscribe(onEvent);
+    recognizer.start({});
+    made[0].fire('start');
+    leave();
+    made[0].fire('end');
+
+    expect(onEvent.mock.calls.map(([event]) => event.kind)).toEqual([
+      'rec.requested',
+      'rec.started',
+    ]);
+  });
+
   it('records errors by code', () => {
     const { recognizer, recorder, made } = setup();
     recognizer.start({});

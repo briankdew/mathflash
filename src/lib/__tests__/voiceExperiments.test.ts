@@ -38,7 +38,7 @@ describe('voiceExperiments', () => {
   });
 
   it('reads every switch when debug=1 is present', () => {
-    setPage('web', '?debug=1&delay=1500&abort=1&reuse=1&custrec=1&addtest=1&keepmic=0&fast=500');
+    setPage('web', '?debug=1&delay=1500&abort=1&reuse=1&custrec=1&addtest=1&core=2&continuous=0&keepmic=0&fast=500');
 
     expect(getVoiceExperiments()).toEqual({
       delayMs: 1500,
@@ -46,18 +46,22 @@ describe('voiceExperiments', () => {
       reuseRecognizer: true,
       customRecognizer: true,
       addTestPreset: true,
+      coreFlow: true,
+      continuous: false,
       keepMic: false,
       stableInterimMs: 500,
     });
-    expect(describeVoiceExperiments()).toBe('delay=1500 abort reuse custrec addtest fast=500');
+    expect(describeVoiceExperiments()).toBe('delay=1500 abort reuse custrec addtest core=2 fast=500');
   });
 
   it('ignores every switch without debug=1', () => {
-    setPage('web', '?delay=1500&abort=1&reuse=1&fast=500');
+    setPage('web', '?delay=1500&abort=1&reuse=1&core=2&continuous=0&fast=500');
 
     expect(getVoiceExperiments()).toEqual({
       delayMs: 0,
       abortBeforeRestart: false,
+      coreFlow: false,
+      continuous: true,
       reuseRecognizer: false,
       customRecognizer: false,
       addTestPreset: false,
@@ -136,5 +140,18 @@ describe('voiceExperiments', () => {
   it('does not accept interim numbers by default off the web', () => {
     setPage('ios', '');
     expect(getVoiceExperiments().stableInterimMs).toBeNull();
+  });
+
+  it('defaults to one recognizer for the session only on WebKit', () => {
+    setPage('web', '?debug=1&core=2');
+    expect(getVoiceExperiments()).toMatchObject({ coreFlow: true, continuous: true });
+    expect(describeVoiceExperiments()).toContain('core=2 continuous');
+  });
+
+  it('can force one recognizer for the session on or off', () => {
+    setPage('web', '?debug=1&core=2&continuous=0');
+    expect(getVoiceExperiments().continuous).toBe(false);
+    setPage('web', '?debug=1&core=2&continuous=1');
+    expect(getVoiceExperiments().continuous).toBe(true);
   });
 });
