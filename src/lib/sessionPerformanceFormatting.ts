@@ -4,9 +4,11 @@ import {
   SessionProblemPerformance,
 } from './types';
 
-export function formatMetric(value: number | null, suffix = ' ms') {
+// Times are stored in milliseconds and shown in seconds to 0.1: finer than that
+// is not meaningful for a spoken or typed response.
+export function formatMetric(value: number | null, suffix = ' s') {
   if (value === null) return 'N/A';
-  return `${Math.round(value)}${suffix}`;
+  return `${(value / 1000).toFixed(1)}${suffix}`;
 }
 
 export function formatPercent(value: number | null) {
