@@ -1,0 +1,223 @@
+mathflash voice debug log
+started: 2026-10-28T19:18:36.349Z
+url: https://briankdew.github.io/mathflash/?debug=1
+build: index-90e18cbce113480370a0bebe19157815.js
+userAgent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1
+screen: 393x641 @3x
+secureContext: true
+webkitSpeechRecognition: true
+experiments: fast=500
+events: 212
+
+   0.0s shouldListen false
+   0.0s problem none
+   0.0s stop() x2
+  70.3s problem mf-mvsi0rfv-mru2nsb13t-p1 missing=result answer=12
+  70.3s stop()
+  78.0s problem none
+  78.0s stop() x2
+  85.4s mic held
+  85.4s stop()
+  87.9s problem mf-mvsi152f-4khe8r4o8qu-p1 missing=result answer=15
+  87.9s stop()
+  88.0s shouldListen true
+  88.0s restart scheduled initial in 0ms
+  88.0s start()
+  88.0s start
+  88.0s audiostart
+  90.0s speechstart
+  90.0s result interim "15"
+  90.5s answer captured "15" via stable onset-to-answer 505ms engine-ready-lag 54ms
+  90.6s answer checked "15" correct
+  90.6s shouldListen false
+  90.6s stop()
+  90.6s audioend
+  90.6s speechend
+  90.6s end
+  91.1s advancing to next problem
+  91.1s problem mf-mvsi152f-4khe8r4o8qu-p2 missing=result answer=18
+  91.1s stop()
+  91.1s shouldListen true
+  91.1s restart scheduled initial in 0ms
+  91.1s start()
+  91.1s start
+  91.1s audiostart
+  92.7s speechstart
+  92.7s result interim "18"
+  93.2s answer captured "18" via stable onset-to-answer 502ms engine-ready-lag 45ms
+  93.2s answer checked "18" correct
+  93.2s shouldListen false
+  93.2s stop()
+  93.2s audioend
+  93.2s speechend
+  93.2s end
+  93.7s advancing to next problem
+  93.7s problem mf-mvsi152f-4khe8r4o8qu-p3 missing=result answer=14
+  93.7s stop()
+  93.7s shouldListen true
+  93.7s restart scheduled initial in 0ms
+  93.7s start()
+  93.7s start
+  93.7s audiostart
+  95.3s speechstart
+  95.3s result interim "14"
+  95.8s answer captured "14" via stable onset-to-answer 502ms engine-ready-lag 47ms
+  95.8s answer checked "14" correct
+  95.8s shouldListen false
+  95.8s stop()
+  95.8s audioend
+  95.8s speechend
+  95.8s end
+  96.3s advancing to next problem
+  96.3s problem mf-mvsi152f-4khe8r4o8qu-p4 missing=result answer=12
+  96.3s stop()
+  96.3s shouldListen true
+  96.3s restart scheduled initial in 0ms
+  96.3s start()
+  96.3s start
+  96.3s audiostart
+  97.7s speechstart
+  97.7s result interim "12"
+  98.2s answer captured "12" via stable onset-to-answer 501ms engine-ready-lag 46ms
+  98.2s answer checked "12" correct
+  98.2s shouldListen false
+  98.2s stop()
+  98.2s audioend
+  98.2s speechend
+  98.2s end
+  98.7s advancing to next problem
+  98.7s problem mf-mvsi152f-4khe8r4o8qu-p5 missing=result answer=16
+  98.7s stop()
+  98.7s shouldListen true
+  98.7s restart scheduled initial in 0ms
+  98.7s start()
+  98.8s start
+  98.8s audiostart
+ 100.3s speechstart
+ 100.3s result interim "16"
+ 100.8s answer captured "16" via stable onset-to-answer 502ms engine-ready-lag 46ms
+ 100.8s answer checked "16" correct
+ 100.8s shouldListen false
+ 100.8s stop()
+ 100.8s audioend
+ 100.8s speechend
+ 100.9s end
+ 101.3s advancing to next problem
+ 101.4s problem mf-mvsi152f-4khe8r4o8qu-p6 missing=result answer=15
+ 101.4s stop()
+ 101.4s shouldListen true
+ 101.4s restart scheduled initial in 0ms
+ 101.4s start()
+ 101.4s start
+ 101.4s audiostart
+ 107.0s speechstart
+ 107.0s result interim "15"
+ 107.5s answer captured "15" via stable onset-to-answer 504ms engine-ready-lag 47ms
+ 107.5s answer checked "15" correct
+ 107.5s shouldListen false
+ 107.5s stop()
+ 107.6s audioend
+ 107.6s speechend
+ 107.6s end
+ 108.0s advancing to next problem
+ 108.1s problem mf-mvsi152f-4khe8r4o8qu-p7 missing=result answer=14
+ 108.1s stop()
+ 108.1s shouldListen true
+ 108.1s restart scheduled initial in 0ms
+ 108.1s start()
+ 108.1s start
+ 108.1s audiostart
+ 112.8s speechstart
+ 112.8s result interim "14"
+ 113.3s answer captured "14" via stable onset-to-answer 502ms engine-ready-lag 33ms
+ 113.3s answer checked "14" correct
+ 113.3s shouldListen false
+ 113.3s stop()
+ 113.3s audioend
+ 113.3s speechend
+ 113.3s end
+ 113.8s advancing to next problem
+ 113.8s problem mf-mvsi152f-4khe8r4o8qu-p8 missing=result answer=13
+ 113.8s stop()
+ 113.8s shouldListen true
+ 113.8s restart scheduled initial in 0ms
+ 113.8s start()
+ 113.8s start
+ 113.8s audiostart
+ 116.6s speechstart
+ 116.6s result interim "13"
+ 117.1s answer captured "13" via stable onset-to-answer 503ms engine-ready-lag 49ms
+ 117.1s answer checked "13" correct
+ 117.1s shouldListen false
+ 117.1s stop()
+ 117.1s audioend
+ 117.1s speechend
+ 117.1s end
+ 117.6s advancing to next problem
+ 117.6s problem mf-mvsi152f-4khe8r4o8qu-p9 missing=result answer=16
+ 117.6s stop()
+ 117.6s shouldListen true
+ 117.6s restart scheduled initial in 0ms
+ 117.6s start()
+ 117.6s start
+ 117.6s audiostart
+ 120.9s speechstart
+ 120.9s result interim "Six"
+ 121.8s answer captured "6" via stable onset-to-answer 903ms engine-ready-lag 47ms
+ 121.8s answer checked "6" wrong
+ 121.8s shouldListen false
+ 121.8s stop()
+ 121.8s audioend
+ 121.8s speechend
+ 121.8s end
+ 122.2s voice resumed after wrong answer
+ 122.2s shouldListen true
+ 122.2s restart scheduled initial in 0ms
+ 122.2s start()
+ 122.3s start
+ 122.3s audiostart
+ 125.5s speechstart
+ 125.5s result interim "16"
+ 126.0s answer captured "16" via stable onset-to-answer 503ms engine-ready-lag 4671ms
+ 126.0s answer checked "16" correct
+ 126.0s shouldListen false
+ 126.0s stop()
+ 126.0s audioend
+ 126.1s speechend
+ 126.1s end
+ 126.5s advancing to next problem
+ 126.6s problem mf-mvsi152f-4khe8r4o8qu-p10 missing=result answer=17
+ 126.6s stop()
+ 126.6s shouldListen true
+ 126.6s restart scheduled initial in 0ms
+ 126.6s start()
+ 126.6s start
+ 126.6s audiostart
+ 129.4s speechstart
+ 129.4s result interim "Seven"
+ 130.3s answer captured "7" via stable onset-to-answer 903ms engine-ready-lag 48ms
+ 130.3s answer checked "7" wrong
+ 130.3s shouldListen false
+ 130.3s stop()
+ 130.3s audioend
+ 130.3s speechend
+ 130.3s end
+ 130.7s voice resumed after wrong answer
+ 130.7s shouldListen true
+ 130.7s restart scheduled initial in 0ms
+ 130.7s start()
+ 130.7s start
+ 130.7s audiostart
+ 133.0s speechstart
+ 133.0s result interim "17"
+ 133.5s answer captured "17" via stable onset-to-answer 501ms engine-ready-lag 4172ms
+ 133.5s answer checked "17" correct
+ 133.5s shouldListen false
+ 133.5s stop()
+ 133.5s audioend
+ 133.5s speechend
+ 133.5s end
+ 134.0s advancing to next problem
+ 134.0s problem none
+ 134.0s stop()
+ 134.0s mic released

@@ -1,0 +1,200 @@
+mathflash voice debug log
+started: 2026-10-28T20:52:08.371Z
+url: http://localhost:8081/?debug=1
+build: unknown
+userAgent: Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+screen: 768x839 @1.25x
+secureContext: true
+webkitSpeechRecognition: true
+webkitSpeechEngine: false
+experiments: none
+events: 188
+
+   0.0s shouldListen false
+   0.0s problem none
+   0.0s stop() x2
+  61.4s problem mf-mvslcut6-k37hyzn7n7-p1 missing=left answer=9
+  61.4s stop()
+  84.9s problem none
+  84.9s stop() x3
+ 125.0s problem mf-mvsle7xr-ipg6w6el94-p1 missing=result answer=16
+ 125.0s stop()
+ 125.0s shouldListen true
+ 125.0s restart scheduled initial in 0ms
+ 125.0s start()
+ 125.1s start
+ 125.4s audiostart
+ 126.7s soundstart
+ 126.7s speechstart
+ 127.8s result interim "16"
+ 128.3s result final "16"
+ 128.3s answer captured "16" via final empty-tries 0ms onset-to-answer 1573ms engine-ready-lag 68ms
+ 128.3s answer checked "16" correct
+ 128.3s shouldListen false
+ 128.3s stop()
+ 128.4s speechend
+ 128.4s soundend
+ 128.4s audioend
+ 128.4s end
+ 128.8s advancing to next problem
+ 128.8s problem mf-mvsle7xr-ipg6w6el94-p2 missing=result answer=14
+ 128.8s stop()
+ 128.9s shouldListen true
+ 128.9s restart scheduled initial in 0ms
+ 128.9s start()
+ 128.9s start
+ 129.0s audiostart
+ 129.9s soundstart
+ 129.9s speechstart
+ 130.9s result interim "14"
+ 131.2s speechend
+ 131.2s soundend
+ 131.2s audioend
+ 131.3s end
+ 131.5s answer captured "14" via speechend empty-tries 0ms onset-to-answer 1548ms engine-ready-lag 33ms
+ 131.5s answer checked "14" correct
+ 131.5s shouldListen false
+ 131.5s stop()
+ 132.0s advancing to next problem
+ 132.0s problem mf-mvsle7xr-ipg6w6el94-p3 missing=right answer=8
+ 132.0s stop()
+ 132.0s shouldListen true
+ 132.1s restart scheduled initial in 0ms
+ 132.1s start()
+ 132.1s start
+ 132.2s audiostart
+ 133.3s soundstart
+ 133.3s speechstart
+ 134.4s speechend
+ 134.4s soundend
+ 134.4s audioend
+ 134.5s end
+ 134.5s empty try 1178ms taken off response time (total 1178ms)
+ 134.5s restart scheduled retry in 220ms
+ 134.7s start()
+ 134.7s start
+ 134.9s audiostart
+ 137.1s soundstart
+ 137.1s speechstart
+ 138.1s speechend
+ 138.1s soundend
+ 138.1s audioend
+ 138.2s end
+ 138.2s empty try 1108ms taken off response time (total 2286ms)
+ 138.2s restart scheduled retry in 220ms
+ 138.4s start()
+ 138.4s start
+ 138.6s audiostart
+ 140.3s soundstart
+ 140.3s speechstart
+ 141.3s speechend
+ 141.3s soundend
+ 141.3s audioend
+ 141.4s end
+ 141.4s empty try 1121ms taken off response time (total 3407ms)
+ 141.4s restart scheduled retry in 220ms
+ 141.6s start()
+ 141.6s start
+ 141.8s audiostart
+ 144.3s soundstart
+ 144.3s speechstart
+ 145.3s speechend
+ 145.3s soundend
+ 145.3s audioend
+ 145.4s result interim "eight"
+ 145.4s result final "eight"
+ 145.4s answer captured "8" via final empty-tries 3407ms onset-to-answer 1152ms engine-ready-lag 9601ms
+ 145.4s answer checked "8" correct
+ 145.4s shouldListen false
+ 145.4s stop()
+ 145.4s end
+ 145.9s advancing to next problem
+ 146.0s problem mf-mvsle7xr-ipg6w6el94-p4 missing=right answer=9
+ 146.0s stop()
+ 146.0s shouldListen true
+ 146.0s restart scheduled initial in 0ms
+ 146.0s start()
+ 146.0s start
+ 146.1s audiostart
+ 149.6s soundstart
+ 149.6s speechstart
+ 150.5s result interim "9"
+ 150.8s speechend
+ 150.8s soundend
+ 150.8s audioend
+ 150.9s result interim "nine"
+ 151.0s result final "nine"
+ 151.0s answer captured "9" via final empty-tries 0ms onset-to-answer 1325ms engine-ready-lag 33ms
+ 151.0s answer checked "9" correct
+ 151.0s shouldListen false
+ 151.0s stop()
+ 151.0s end
+ 151.5s advancing to next problem
+ 151.5s problem mf-mvsle7xr-ipg6w6el94-p5 missing=left answer=8
+ 151.5s stop()
+ 151.5s shouldListen true
+ 151.5s restart scheduled initial in 0ms
+ 151.5s start()
+ 151.5s start
+ 151.7s audiostart
+ 154.7s soundstart
+ 154.7s speechstart
+ 155.6s result interim "8"
+ 155.8s speechend
+ 155.8s soundend
+ 155.8s audioend
+ 155.9s result interim "eight"
+ 155.9s result final "eight"
+ 155.9s answer captured "8" via final empty-tries 0ms onset-to-answer 1221ms engine-ready-lag 32ms
+ 155.9s answer checked "8" correct
+ 155.9s shouldListen false
+ 155.9s stop()
+ 156.0s end
+ 156.4s advancing to next problem
+ 156.4s problem mf-mvsle7xr-ipg6w6el94-p6 missing=result answer=15
+ 156.4s stop()
+ 156.5s shouldListen true
+ 156.5s restart scheduled initial in 0ms
+ 156.5s start()
+ 156.5s start
+ 156.6s audiostart
+ 159.2s soundstart
+ 159.2s speechstart
+ 160.6s result interim "if"
+ 161.0s speechend
+ 161.0s soundend
+ 161.0s audioend
+ 161.1s result interim "if"
+ 161.1s result final "if"
+ 161.2s end
+ 161.2s restart scheduled retry in 220ms
+ 161.4s start()
+ 161.4s start
+ 161.5s audiostart
+ 162.1s soundstart
+ 162.1s speechstart
+ 163.5s speechend
+ 163.5s soundend
+ 163.5s audioend
+ 163.6s result interim "teen"
+ 163.6s result final "teen"
+ 163.7s end
+ 163.7s restart scheduled retry in 220ms
+ 163.9s start()
+ 163.9s start
+ 164.1s audiostart
+ 165.0s soundstart
+ 165.0s speechstart
+ 166.3s result interim "15" x2
+ 167.0s speechend
+ 167.0s soundend
+ 167.0s audioend
+ 167.0s result final "15"
+ 167.0s answer captured "15" via final empty-tries 0ms onset-to-answer 2054ms engine-ready-lag 7465ms
+ 167.0s answer checked "15" correct
+ 167.0s shouldListen false
+ 167.0s stop()
+ 167.1s end
+ 167.5s advancing to next problem
+ 167.6s problem none
+ 167.6s stop()

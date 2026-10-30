@@ -1,0 +1,327 @@
+mathflash voice debug log
+started: 2026-10-28T19:32:02.383Z
+url: http://localhost:8081/?debug=1
+build: unknown
+userAgent: Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+screen: 768x839 @1.25x
+secureContext: true
+webkitSpeechRecognition: true
+experiments: fast=500
+events: 316
+
+   0.0s shouldListen false
+   0.0s problem none
+   0.0s stop() x2
+  39.1s mic held
+  39.2s stop()
+  41.7s problem mf-mvsihfb0-wdls6ujx7ek-p1 missing=result answer=14
+  41.7s stop()
+  41.7s shouldListen true
+  41.7s restart scheduled initial in 0ms
+  41.7s start()
+  41.7s start
+  41.8s audiostart
+  43.0s soundstart
+  43.0s speechstart
+  43.7s result interim "14"
+  44.2s answer captured "14" via stable onset-to-answer 1160ms engine-ready-lag 42ms
+  44.2s answer checked "14" correct
+  44.2s shouldListen false
+  44.2s stop()
+  44.2s result final "14"
+  44.2s late result ignored
+  44.2s speechend
+  44.2s soundend
+  44.2s audioend
+  44.3s end
+  44.7s advancing to next problem
+  44.7s problem mf-mvsihfb0-wdls6ujx7ek-p2 missing=right answer=9
+  44.7s stop()
+  44.7s shouldListen true
+  44.7s restart scheduled initial in 0ms
+  44.7s start()
+  44.8s start
+  44.9s audiostart
+  46.2s soundstart
+  46.2s speechstart
+  47.7s result interim "16"
+  48.2s answer captured "16" via stable onset-to-answer 2060ms engine-ready-lag 36ms
+  48.2s answer checked "16" wrong
+  48.2s shouldListen false
+  48.2s stop()
+  48.3s speechend
+  48.3s soundend
+  48.3s audioend
+  48.3s result interim "16"
+  48.3s late result ignored
+  48.3s result final "16"
+  48.3s late result ignored
+  48.3s end
+  48.6s voice resumed after wrong answer
+  48.7s shouldListen true
+  48.7s restart scheduled initial in 0ms
+  48.7s start()
+  48.7s start
+  48.8s audiostart
+  50.7s soundstart
+  50.7s speechstart
+  52.1s speechend
+  52.1s soundend
+  52.1s audioend
+  52.2s result interim "nine"
+  52.3s result final "nine"
+  52.3s answer captured "9" via final onset-to-answer 1552ms engine-ready-lag 35ms
+  52.3s answer checked "9" correct
+  52.3s shouldListen false
+  52.3s stop()
+  52.3s end
+  52.8s advancing to next problem
+  52.8s problem mf-mvsihfb0-wdls6ujx7ek-p3 missing=result answer=15
+  52.8s stop()
+  52.8s shouldListen true
+  52.8s restart scheduled initial in 0ms
+  52.8s start()
+  52.8s start
+  53.0s audiostart
+  54.3s soundstart
+  54.3s speechstart
+  55.8s result interim "15"
+  56.1s speechend
+  56.1s soundend
+  56.1s audioend
+  56.1s end
+  56.2s answer captured "15" via end onset-to-answer 1891ms engine-ready-lag 37ms
+  56.2s answer checked "15" correct
+  56.2s shouldListen false
+  56.2s stop()
+  56.7s advancing to next problem
+  56.7s problem mf-mvsihfb0-wdls6ujx7ek-p4 missing=result answer=14
+  56.7s stop()
+  56.7s shouldListen true
+  56.7s restart scheduled initial in 0ms
+  56.7s start()
+  56.7s start
+  56.8s audiostart
+  58.0s soundstart
+  58.0s speechstart
+  59.2s speechend
+  59.2s soundend
+  59.2s audioend
+  59.3s end
+  59.3s restart scheduled retry in 220ms
+  59.5s start()
+  59.5s start
+  59.6s audiostart
+  61.7s soundstart
+  61.7s speechstart
+  63.4s result interim "14"
+  63.9s answer captured "14" via stable onset-to-answer 2179ms engine-ready-lag 2857ms
+  63.9s answer checked "14" correct
+  63.9s shouldListen false
+  63.9s stop()
+  64.0s speechend
+  64.0s soundend
+  64.0s audioend
+  64.0s result interim "14"
+  64.0s late result ignored
+  64.0s result final "14"
+  64.0s late result ignored
+  64.0s end
+  64.4s advancing to next problem
+  64.5s problem mf-mvsihfb0-wdls6ujx7ek-p5 missing=result answer=12
+  64.5s stop()
+  64.5s shouldListen true
+  64.5s restart scheduled initial in 0ms
+  64.5s start()
+  64.5s start
+  64.6s audiostart
+  65.9s soundstart
+  65.9s speechstart
+  66.7s result interim "12"
+  67.1s speechend
+  67.1s soundend
+  67.1s audioend
+  67.2s result interim "12"
+  67.3s result final "12"
+  67.3s answer captured "12" via final onset-to-answer 1346ms engine-ready-lag 31ms
+  67.3s answer checked "12" correct
+  67.3s shouldListen false
+  67.3s stop()
+  67.3s end
+  67.8s advancing to next problem
+  67.8s problem mf-mvsihfb0-wdls6ujx7ek-p6 missing=result answer=17
+  67.8s stop()
+  67.8s shouldListen true
+  67.8s restart scheduled initial in 0ms
+  67.8s start()
+  67.8s start
+  67.9s audiostart
+  68.9s soundstart
+  68.9s speechstart
+  70.7s result interim "17"
+  71.2s answer captured "17" via stable onset-to-answer 2280ms engine-ready-lag 34ms
+  71.2s answer checked "17" correct
+  71.2s shouldListen false
+  71.2s stop()
+  71.3s speechend
+  71.3s soundend
+  71.3s audioend
+  71.3s result interim "17"
+  71.3s late result ignored
+  71.3s result final "17"
+  71.3s late result ignored
+  71.3s end
+  71.7s advancing to next problem
+  71.8s problem mf-mvsihfb0-wdls6ujx7ek-p7 missing=left answer=6
+  71.8s stop()
+  71.8s shouldListen true
+  71.8s restart scheduled initial in 0ms
+  71.8s start()
+  71.8s start
+  71.9s audiostart
+  73.6s soundstart
+  73.6s speechstart
+  74.8s result interim "13"
+  75.3s answer captured "13" via stable onset-to-answer 1673ms engine-ready-lag 31ms
+  75.3s answer checked "13" wrong
+  75.3s shouldListen false
+  75.3s stop()
+  75.3s result interim "13"
+  75.3s late result ignored
+  75.3s speechend
+  75.3s soundend
+  75.3s audioend
+  75.4s result final "13"
+  75.4s late result ignored
+  75.4s end
+  75.7s voice resumed after wrong answer
+  75.7s shouldListen true
+  75.7s restart scheduled initial in 0ms
+  75.7s start()
+  75.7s start
+  75.9s audiostart
+  76.9s soundstart
+  76.9s speechstart
+  78.4s speechend
+  78.4s soundend
+  78.4s audioend
+  78.5s end
+  78.5s restart scheduled retry in 220ms
+  78.7s start()
+  78.7s start
+  78.8s audiostart
+  81.1s soundstart
+  81.1s speechstart
+  82.5s speechend
+  82.5s soundend
+  82.5s audioend
+  82.6s end
+  82.6s restart scheduled retry in 220ms
+  82.8s start()
+  82.8s start
+  83.0s audiostart
+  85.4s soundstart
+  85.4s speechstart
+  86.9s speechend
+  86.9s soundend
+  86.9s audioend
+  87.0s end
+  87.0s restart scheduled retry in 220ms
+  87.2s start()
+  87.2s start
+  87.3s audiostart
+  90.0s soundstart
+  90.0s speechstart
+  91.8s speechend
+  91.8s soundend
+  91.8s audioend
+  92.0s end
+  92.0s restart scheduled retry in 220ms
+  92.2s start()
+  92.2s start
+  92.3s audiostart
+  93.5s soundstart
+  93.5s speechstart
+  95.1s result interim "sex"
+  95.2s result final "sex"
+  95.2s answer captured "6" via final onset-to-answer 1627ms engine-ready-lag 16511ms
+  95.2s answer checked "6" correct
+  95.2s shouldListen false
+  95.2s stop()
+  95.2s speechend
+  95.2s soundend
+  95.2s audioend
+  95.2s end
+  95.7s advancing to next problem
+  95.7s problem mf-mvsihfb0-wdls6ujx7ek-p8 missing=right answer=9
+  95.7s stop()
+  95.7s shouldListen true
+  95.7s restart scheduled initial in 0ms
+  95.7s start()
+  95.7s start
+  95.8s audiostart
+  98.6s soundstart
+  98.6s speechstart
+  99.5s result interim "9"
+ 100.0s result final "nine"
+ 100.0s answer captured "9" via final onset-to-answer 1385ms engine-ready-lag 32ms
+ 100.0s answer checked "9" correct
+ 100.0s shouldListen false
+ 100.0s stop()
+ 100.1s speechend
+ 100.1s soundend
+ 100.1s audioend
+ 100.1s end
+ 100.5s advancing to next problem
+ 100.6s problem mf-mvsihfb0-wdls6ujx7ek-p9 missing=right answer=7
+ 100.6s stop()
+ 100.6s shouldListen true
+ 100.6s restart scheduled initial in 0ms
+ 100.6s start()
+ 100.6s start
+ 100.7s audiostart
+ 102.0s soundstart
+ 102.0s speechstart
+ 103.3s speechend
+ 103.3s soundend
+ 103.3s audioend
+ 103.4s end
+ 103.4s restart scheduled retry in 220ms
+ 103.6s start()
+ 103.7s start
+ 103.8s audiostart
+ 106.5s soundstart
+ 106.5s speechstart
+ 107.6s result interim "7"
+ 107.7s speechend
+ 107.7s soundend
+ 107.7s audioend
+ 107.8s end
+ 107.8s answer captured "7" via end onset-to-answer 1331ms engine-ready-lag 3078ms
+ 107.8s answer checked "7" correct
+ 107.8s shouldListen false
+ 107.8s stop()
+ 108.3s advancing to next problem
+ 108.3s problem mf-mvsihfb0-wdls6ujx7ek-p10 missing=left answer=8
+ 108.3s stop()
+ 108.3s shouldListen true
+ 108.3s restart scheduled initial in 0ms
+ 108.3s start()
+ 108.4s start
+ 108.5s audiostart
+ 110.2s soundstart
+ 110.2s speechstart
+ 111.5s speechend
+ 111.5s soundend
+ 111.5s audioend
+ 111.7s result interim "eight"
+ 111.7s result final "eight"
+ 111.7s answer captured "8" via final onset-to-answer 1558ms engine-ready-lag 33ms
+ 111.7s answer checked "8" correct
+ 111.7s shouldListen false
+ 111.7s stop()
+ 111.8s end
+ 112.2s advancing to next problem
+ 112.3s problem none
+ 112.3s stop()
+ 112.3s mic released

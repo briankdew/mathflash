@@ -1,0 +1,75 @@
+mathflash voice debug log
+started: 2026-10-28T17:34:23.320Z
+url: https://briankdew.github.io/mathflash/?debug=1&continuous=1
+build: index-20306790fdaf343cdd07026da5578477.js
+userAgent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1
+screen: 393x641 @3x
+secureContext: true
+webkitSpeechRecognition: true
+experiments: continuous
+events: 64
+
+   0.0s shouldListen false
+   0.0s problem none
+   0.0s stop() x2
+  10.9s problem mf-mvse9gsj-znyra7v30ce-p1
+  11.0s shouldListen true
+  11.0s restart scheduled initial in 0ms
+  11.0s start()
+  14.4s start
+  14.4s audiostart
+  20.0s speechstart
+  20.0s result interim "One"
+  21.7s result final "One"
+  21.7s answer captured "1" via final processing 0ms
+  21.7s shouldListen false
+  22.2s problem mf-mvse9gsj-znyra7v30ce-p2
+  22.2s shouldListen true
+  22.2s restart scheduled initial in 0ms
+  22.2s continuous: recognizer already running
+  24.8s result interim "11"
+  24.8s late result ignored
+  26.5s result final "11"
+  26.5s late result ignored
+  31.1s result interim "11"
+  32.7s result final "11"
+  32.7s answer captured "11" via final processing 0ms
+  32.7s shouldListen false
+  33.3s problem mf-mvse9gsj-znyra7v30ce-p3
+  33.3s shouldListen true
+  33.3s restart scheduled initial in 0ms
+  33.3s continuous: recognizer already running
+  37.8s result interim "Seven"
+  39.7s result final "Seven"
+  39.7s answer captured "7" via final processing 0ms
+  39.7s shouldListen false
+  40.2s problem mf-mvse9gsj-znyra7v30ce-p4
+  40.2s shouldListen true
+  40.2s restart scheduled initial in 0ms
+  40.3s continuous: recognizer already running
+  42.3s result interim "Six"
+  42.3s late result ignored
+  44.0s result final "Six"
+  44.0s late result ignored
+  49.6s result interim "Six"
+  51.2s result final "Six"
+  51.2s answer captured "6" via final processing 0ms
+  51.2s shouldListen false
+  51.7s problem mf-mvse9gsj-znyra7v30ce-p5
+  51.8s shouldListen true
+  51.8s restart scheduled initial in 0ms
+  51.8s continuous: recognizer already running
+  54.3s result interim "15"
+  54.3s late result ignored
+  56.2s result final "15"
+  56.2s answer captured "15" via final processing 0ms
+  56.3s shouldListen false
+  75.2s result interim "15"
+  75.2s result ignored (not listening)
+  77.9s result final "15"
+  77.9s result ignored (not listening)
+  95.9s problem none
+  95.9s stop()
+  96.0s audioend
+  96.0s speechend
+  96.0s end
